@@ -10,6 +10,7 @@ import {
 import type {
   AgentRuntimeExtension,
   BeforeSessionRunResult,
+  BeforeSessionRunContext,
   AgentRuntimeCustomTool,
 } from '../extensions/agent-runtime-extension';
 import { getSharedAuthStorage, ModelRegistry } from './shared-auth';
@@ -17,10 +18,26 @@ import { MCPManager } from '../mcp/mcp-manager';
 import { configStore } from '../config/config-store';
 import { log, logError } from '../utils/logger';
 import { resolvePiRegistryModel, resolvePiRouteProtocol } from './pi-model-resolution';
+import type { ServerEvent } from '../../renderer/types';
+import { v4 as uuidv4 } from 'uuid';
 
-const MAX_TIMEOUT_MS = 300_000; // 5 minutes
-const DEFAULT_TIMEOUT_MS = 120_000; // 2 minutes
+const MAX_TIMEOUT_MS = 300_000;
+const DEFAULT_TIMEOUT_MS = 120_000;
 const TIMEOUT_MESSAGE = 'Subagent timed out';
+const MAX_CONCURRENT_SUBAGENTS = 3;
+const MAX_TASK_LENGTH = 10_000;
+
+class SubagentTimeoutError extends Error {
+  constructor() {
+    super(TIMEOUT_MESSAGE);
+  }
+}
+
+class ParentCancelledError extends Error {
+  constructor() {
+    super('Parent session cancelled');
+  }
+}
 
 interface SubagentParams {
   task: string;
@@ -43,7 +60,38 @@ function buildChildSystemPrompt(task: string, resultFormat?: string): string {
   return parts.join('\n');
 }
 
-function createSpawnSubagentTool(mcpManager: MCPManager | null): AgentRuntimeCustomTool {
+function safeSendEvent(sendEvent: SendEvent, event: ServerEvent): void {
+  try {
+    sendEvent(event);
+  } catch {
+    // Renderer may be disconnected — swallow to avoid disrupting tool execution
+  }
+}
+
+type SubagentProgressPayload = Extract<ServerEvent, { type: 'subagent.progress' }>['payload'];
+
+function buildProgressEvent(
+  parentSessionId: string,
+  subagentId: string,
+  payload: Omit<SubagentProgressPayload, 'parentSessionId' | 'subagentId'>
+): ServerEvent {
+  return {
+    type: 'subagent.progress',
+    payload: { parentSessionId, subagentId, ...payload },
+  };
+}
+
+type SendEvent = (event: ServerEvent) => void;
+type PermissionHandler = (toolName: string, toolInput: unknown) => Promise<'allow' | 'deny'>;
+
+function createSpawnSubagentTool(
+  mcpManager: MCPManager | null,
+  sendEvent: SendEvent,
+  parentSessionId: string,
+  requestPermission: PermissionHandler | null,
+  getParentAbortSignal: () => AbortSignal | null,
+  concurrencyState: { active: number }
+): AgentRuntimeCustomTool {
   return {
     name: 'spawn_subagent',
     label: 'spawn_subagent',
@@ -88,13 +136,49 @@ function createSpawnSubagentTool(mcpManager: MCPManager | null): AgentRuntimeCus
         };
       }
 
+      if (task.length > MAX_TASK_LENGTH) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error: task exceeds maximum length (${MAX_TASK_LENGTH} chars). Shorten the task description.`,
+            },
+          ],
+          details: undefined as unknown,
+        };
+      }
+
+      // Concurrency guard
+      if (concurrencyState.active >= MAX_CONCURRENT_SUBAGENTS) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error: maximum concurrent subagents (${MAX_CONCURRENT_SUBAGENTS}) reached. Wait for a running subagent to complete.`,
+            },
+          ],
+          details: undefined as unknown,
+        };
+      }
+
       const timeoutMs = Math.min(
         (timeout_seconds || DEFAULT_TIMEOUT_MS / 1000) * 1000,
         MAX_TIMEOUT_MS
       );
 
-      log(`[SubagentExtension] Spawning child for task: "${task.slice(0, 100)}..."`);
+      const subagentId = uuidv4();
+      log(`[SubagentExtension] Spawning child ${subagentId} for task: "${task.slice(0, 100)}..."`);
       const startTime = Date.now();
+
+      concurrencyState.active++;
+
+      safeSendEvent(
+        sendEvent,
+        buildProgressEvent(parentSessionId, subagentId, {
+          event: 'started',
+          task: task.slice(0, 200),
+        })
+      );
 
       try {
         const config = configStore.getAll();
@@ -150,7 +234,6 @@ function createSpawnSubagentTool(mcpManager: MCPManager | null): AgentRuntimeCus
           });
         }
 
-        // Filter allowed_tools if specified
         if (allowed_tools && allowed_tools.length > 0) {
           const allowSet = new Set(allowed_tools);
           mcpCustomTools = mcpCustomTools.filter((t) => allowSet.has(t.name));
@@ -181,6 +264,31 @@ function createSpawnSubagentTool(mcpManager: MCPManager | null): AgentRuntimeCus
           cwd,
         });
 
+        // Install permission gating on child session (mirrors parent behavior)
+        if (requestPermission) {
+          const piSession = childSession as unknown as {
+            setBeforeToolCall?: (
+              hook: (call: {
+                toolName: string;
+                args: unknown;
+              }) => Promise<{ block: boolean; reason?: string } | void>
+            ) => void;
+          };
+          if (typeof piSession.setBeforeToolCall === 'function') {
+            piSession.setBeforeToolCall(async (call) => {
+              const decision = await requestPermission(call.toolName, call.args);
+              if (decision === 'deny') {
+                return { block: true, reason: 'Permission denied by parent session policy' };
+              }
+              return undefined;
+            });
+          } else {
+            logError(
+              '[SubagentExtension] Child session does not support setBeforeToolCall — permission gating disabled'
+            );
+          }
+        }
+
         let finalText = '';
         const unsubscribe = childSession.subscribe((event) => {
           if (event.type === 'agent_end') {
@@ -196,22 +304,105 @@ function createSpawnSubagentTool(mcpManager: MCPManager | null): AgentRuntimeCus
               }
             }
           }
+
+          if (event.type === 'tool_execution_start') {
+            safeSendEvent(
+              sendEvent,
+              buildProgressEvent(parentSessionId, subagentId, {
+                event: 'tool_start',
+                toolName: (event as { toolName?: string }).toolName || 'unknown',
+              })
+            );
+          } else if (event.type === 'tool_execution_end') {
+            const e = event as { toolName?: string; isError?: boolean };
+            safeSendEvent(
+              sendEvent,
+              buildProgressEvent(parentSessionId, subagentId, {
+                event: 'tool_end',
+                toolName: e.toolName || 'unknown',
+                isError: e.isError || false,
+              })
+            );
+          } else if (event.type === 'message_update') {
+            const e = event as { message?: { content?: unknown[] } };
+            const content = e.message?.content;
+            if (Array.isArray(content)) {
+              const lastText = content
+                .filter((b): b is { type: 'text'; text: string } => {
+                  const block = b as { type?: string; text?: string };
+                  return block.type === 'text' && typeof block.text === 'string';
+                })
+                .pop();
+              if (lastText) {
+                safeSendEvent(
+                  sendEvent,
+                  buildProgressEvent(parentSessionId, subagentId, {
+                    event: 'text_delta',
+                    text: lastText.text,
+                  })
+                );
+              }
+            }
+          }
         });
 
         let timeoutId: NodeJS.Timeout | undefined;
+        const parentSignal = getParentAbortSignal();
+        let parentAbortHandler: (() => void) | undefined;
+
         try {
           const timeoutPromise = new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error(TIMEOUT_MESSAGE)), timeoutMs);
+            timeoutId = setTimeout(() => reject(new SubagentTimeoutError()), timeoutMs);
           });
-          await Promise.race([childSession.prompt(task), timeoutPromise]);
+
+          // Propagate parent cancellation
+          const parentAbortPromise = parentSignal
+            ? new Promise<never>((_, reject) => {
+                if (parentSignal.aborted) {
+                  reject(new ParentCancelledError());
+                  return;
+                }
+                parentAbortHandler = () => reject(new ParentCancelledError());
+                parentSignal.addEventListener('abort', parentAbortHandler);
+              })
+            : null;
+
+          const racers: Promise<unknown>[] = [childSession.prompt(task), timeoutPromise];
+          if (parentAbortPromise) racers.push(parentAbortPromise);
+
+          await Promise.race(racers);
         } finally {
           if (timeoutId) clearTimeout(timeoutId);
+          if (parentAbortHandler && parentSignal) {
+            parentSignal.removeEventListener('abort', parentAbortHandler);
+          }
           unsubscribe();
+          // Abort the child session to stop in-flight API calls and tool executions
+          try {
+            const abortable = childSession as unknown as { abort?: () => Promise<void> | void };
+            if (abortable.abort) {
+              const abortResult = abortable.abort();
+              if (abortResult && typeof abortResult === 'object' && 'then' in abortResult) {
+                const abortTimeout = new Promise<void>((r) => setTimeout(r, 5000));
+                await Promise.race([abortResult, abortTimeout]);
+              }
+            }
+          } catch {
+            // abort may throw if session already completed — safe to ignore
+          }
           childSession.dispose();
         }
 
         const durationMs = Date.now() - startTime;
-        log(`[SubagentExtension] Child completed in ${durationMs}ms`);
+        log(`[SubagentExtension] Child ${subagentId} completed in ${durationMs}ms`);
+
+        safeSendEvent(
+          sendEvent,
+          buildProgressEvent(parentSessionId, subagentId, {
+            event: 'completed',
+            durationMs,
+          })
+        );
 
         return {
           content: [
@@ -222,20 +413,35 @@ function createSpawnSubagentTool(mcpManager: MCPManager | null): AgentRuntimeCus
       } catch (err: unknown) {
         const durationMs = Date.now() - startTime;
         const message = err instanceof Error ? err.message : String(err);
-        logError(`[SubagentExtension] Child failed after ${durationMs}ms:`, message);
+        logError(`[SubagentExtension] Child ${subagentId} failed after ${durationMs}ms:`, message);
 
-        const isTimeout = message === TIMEOUT_MESSAGE;
+        const isTimeout = err instanceof SubagentTimeoutError;
+        const isCancelled = err instanceof ParentCancelledError;
+
+        safeSendEvent(
+          sendEvent,
+          buildProgressEvent(parentSessionId, subagentId, {
+            event: 'failed',
+            error: isTimeout ? 'timeout' : isCancelled ? 'cancelled' : message.slice(0, 200),
+            durationMs,
+          })
+        );
+
         return {
           content: [
             {
               type: 'text' as const,
               text: isTimeout
                 ? `Subagent timed out after ${Math.round(durationMs / 1000)}s. Consider simplifying the task or increasing timeout_seconds.`
-                : `Subagent error: ${message}`,
+                : isCancelled
+                  ? 'Subagent cancelled: parent session was stopped.'
+                  : `Subagent error: ${message}`,
             },
           ],
           details: undefined as unknown,
         };
+      } finally {
+        concurrencyState.active--;
       }
     },
   };
@@ -243,12 +449,27 @@ function createSpawnSubagentTool(mcpManager: MCPManager | null): AgentRuntimeCus
 
 export class SubagentExtension implements AgentRuntimeExtension {
   readonly name = 'subagent';
+  private concurrencyState = { active: 0 };
 
-  constructor(private readonly getMcpManager: () => MCPManager | null) {}
+  constructor(
+    private readonly getMcpManager: () => MCPManager | null,
+    private readonly sendEvent: SendEvent,
+    private readonly requestPermission: PermissionHandler | null = null,
+    private readonly getParentAbortSignal: () => AbortSignal | null = () => null
+  ) {}
 
-  async beforeSessionRun(): Promise<BeforeSessionRunResult> {
+  async beforeSessionRun(context: BeforeSessionRunContext): Promise<BeforeSessionRunResult> {
     return {
-      customTools: [createSpawnSubagentTool(this.getMcpManager())],
+      customTools: [
+        createSpawnSubagentTool(
+          this.getMcpManager(),
+          this.sendEvent,
+          context.session.id,
+          this.requestPermission,
+          this.getParentAbortSignal,
+          this.concurrencyState
+        ),
+      ],
     };
   }
 }
