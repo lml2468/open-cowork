@@ -34,6 +34,11 @@ import {
   type AppTheme,
   type CreateConfigSetPayload,
 } from './config/config-store';
+import {
+  startConfigFileWatcher,
+  stopConfigFileWatcher,
+  exportOnConfigChange,
+} from './config/config-file-watcher';
 import { runConfigApiTest } from './config/config-test-routing';
 import { listOllamaModels } from './config/ollama-api';
 import { setPermissionRules } from './config/permission-rules-store';
@@ -854,7 +859,8 @@ app
       // Apply dev logs setting
       setDevLogsEnabled(configStore.get('enableDevLogs'));
 
-      // Initialize core systems (same as GUI path, minus window/tray/menu/updater)
+      // Start config file watcher for bidirectional sync
+      startConfigFileWatcher();
       const db = initDatabase();
 
       pluginRuntimeService = new PluginRuntimeService(new PluginCatalogService());
@@ -947,6 +953,7 @@ app
       // Headless cleanup on exit signals
       const headlessCleanup = async () => {
         log('[Headless] Cleaning up...');
+        stopConfigFileWatcher();
         scheduledTaskManager?.stop();
         try {
           const mcpManager = sessionManager?.getMCPManager();
@@ -1107,6 +1114,9 @@ app
     // Apply dev logs setting from config
     const enableDevLogs = configStore.get('enableDevLogs');
     setDevLogsEnabled(enableDevLogs);
+
+    // Start config file watcher for bidirectional sync
+    startConfigFileWatcher();
 
     // Log environment variables for debugging
     log('=== Open Cowork Starting ===');
@@ -1346,6 +1356,7 @@ async function cleanupSandboxResources(): Promise<void> {
   isCleaningUp = true;
 
   stopNavServer();
+  stopConfigFileWatcher();
   skillsManager?.stopStorageMonitoring();
   scheduledTaskManager?.stop();
   tray?.destroy();
@@ -1767,6 +1778,10 @@ const syncConfigAfterMutation = async (previousConfig: AppConfig) => {
     },
   });
   log('[Config] Notified renderer of config update, isConfigured:', isConfigured);
+
+  // Sync plaintext config file with updated safe fields
+  exportOnConfigChange();
+
   return updatedConfig;
 };
 
@@ -1885,6 +1900,40 @@ ipcMain.handle('config.discover-local', async (_event, payload?: { baseUrl?: str
   } catch (error) {
     logError('[Config] Error discovering local services:', error);
     return [];
+  }
+});
+
+// Config file export/import IPC handlers
+ipcMain.handle('config.exportFile', () => {
+  try {
+    exportOnConfigChange();
+    return { success: true, path: configStore.getPublicConfigPath() };
+  } catch (error) {
+    logError('[Config] Error exporting config file:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('config.importFile', async () => {
+  try {
+    const previousConfig = configStore.getAll();
+    const imported = configStore.importSafeConfig();
+    if (imported) {
+      await syncConfigAfterMutation(previousConfig);
+    }
+    return { success: true, imported };
+  } catch (error) {
+    logError('[Config] Error importing config file:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('config.getPublicPath', () => {
+  try {
+    return configStore.getPublicConfigPath();
+  } catch (error) {
+    logError('[Config] Error getting public config path:', error);
+    return null;
   }
 });
 
