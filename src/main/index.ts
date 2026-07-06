@@ -134,6 +134,36 @@ let pluginRuntimeService: PluginRuntimeService | null = null;
 let memoryService: MemoryService | null = null;
 let scheduledTaskManager: ScheduledTaskManager | null = null;
 
+/**
+ * Tool names that a spawned subagent may never invoke, regardless of what
+ * `decidePermission` returns. Subagents run non-interactively — there is no
+ * user present to answer a permission prompt — so for tools whose whole
+ * purpose is to require interactive approval (like `config_write`, which
+ * mutates persisted app configuration), the only safe non-interactive
+ * decision is `deny`. This intentionally overrides even an explicit
+ * `'allow'` permission rule: config writes must always go through the
+ * interactive dialog in the top-level session, never through a background
+ * subagent.
+ */
+const SUBAGENT_ALWAYS_DENIED_TOOLS = new Set<string>(['config_write']);
+
+/**
+ * Resolve the allow/deny decision for a tool call made by a spawned
+ * subagent. Delegates to the shared `decidePermission` rules cache, but
+ * hard-denies tools in `SUBAGENT_ALWAYS_DENIED_TOOLS` first — see that
+ * constant's docstring for why.
+ */
+function resolveSubagentToolPermission(
+  toolName: string,
+  toolInput: Record<string, unknown>
+): 'allow' | 'deny' {
+  if (SUBAGENT_ALWAYS_DENIED_TOOLS.has(toolName)) {
+    return 'deny';
+  }
+  const decision = decidePermission('subagent', toolName, toolInput);
+  return decision === 'deny' ? 'deny' : 'allow';
+}
+
 function sanitizeDiagnosticBaseUrl(value: string | undefined): string | null {
   if (!value) {
     return null;
@@ -871,19 +901,15 @@ app
         new SubagentExtension(
           () => sessionManager?.getMCPManager() ?? null,
           sendToRenderer,
-          async (toolName, toolInput) => {
-            const decision = decidePermission(
-              'subagent',
-              toolName,
-              toolInput as Record<string, unknown>
-            );
-            return decision === 'deny' ? 'deny' : 'allow';
-          }
+          async (toolName, toolInput) =>
+            resolveSubagentToolPermission(toolName, toolInput as Record<string, unknown>)
         ),
       ]);
 
       // Build the JSONL sender with permission interception BEFORE constructing SessionManager
       const headlessSendToRenderer = createHeadlessSendToRenderer();
+      // Mutable interceptor: set in stdio mode to route events to StdioChannel
+      let stdioEventInterceptor: ((event: ServerEvent) => void) | null = null;
       const headlessSendWithPermission = (event: ServerEvent) => {
         if (event.type === 'permission.request') {
           const { toolUseId } = event.payload;
@@ -901,6 +927,12 @@ app
           setTimeout(() => {
             sessionManager?.handleSudoPasswordResponse(toolUseId, null);
           }, 0);
+        }
+        // Route to stdio channel if interceptor is set (must come before headlessSendToRenderer
+        // because headlessSendToRenderer writes JSONL to stdout which conflicts with stdio events)
+        if (stdioEventInterceptor) {
+          stdioEventInterceptor(event);
+          return;
         }
         headlessSendToRenderer(event);
       };
@@ -1074,6 +1106,103 @@ app
         });
 
         // Process stays alive until stdin closes or signal received
+      } else if (headlessArgs.mode === 'stdio') {
+        // ── Stdio channel mode: session-based RPC via RemoteManager ──
+        log('[Headless] Stdio channel mode');
+
+        if (!configStore.hasUsableCredentialsForActiveSet()) {
+          headlessSendWithPermission({
+            type: 'error',
+            payload: {
+              message: 'No usable API credentials configured. Run the GUI to set up API keys.',
+              code: 'CONFIG_REQUIRED_ACTIVE_SET',
+            },
+          });
+          await headlessCleanup();
+          process.exit(1);
+          return;
+        }
+
+        // Set up RemoteManager with StdioChannel
+        const stdioAgentExecutor: AgentExecutor = {
+          startSession: async (title, prompt, cwd) => {
+            if (!sessionManager) throw new Error('Session manager not initialized');
+            const unsupportedReason = getWorkspacePathUnsupportedReason(cwd);
+            if (unsupportedReason) {
+              throw new Error(unsupportedReason);
+            }
+            return sessionManager.startSession(title, prompt, cwd);
+          },
+          continueSession: async (sessionId, prompt, content) => {
+            if (!sessionManager) throw new Error('Session manager not initialized');
+            await sessionManager.continueSession(sessionId, prompt, content);
+          },
+          stopSession: async (sessionId) => {
+            if (!sessionManager) throw new Error('Session manager not initialized');
+            await sessionManager.stopSession(sessionId);
+          },
+          validateWorkingDirectory: (cwd) => {
+            return getWorkspacePathUnsupportedReason(cwd) || null;
+          },
+        };
+        remoteManager.setAgentExecutor(stdioAgentExecutor);
+        remoteManager.setRendererCallback(headlessSendWithPermission);
+
+        const stdioChannel = await remoteManager.startStdioMode(headlessArgs.cwd);
+
+        // Set the interceptor so ALL events from SM flow through stdio routing
+        // (fixes the dead-code issue: SM calls headlessSendWithPermission directly,
+        // which now checks stdioEventInterceptor before writing JSONL)
+        stdioEventInterceptor = (event: ServerEvent) => {
+          const payload =
+            'payload' in event
+              ? (event.payload as { sessionId?: string; [key: string]: unknown })
+              : undefined;
+          const sessionId = payload?.sessionId;
+
+          if (sessionId && remoteManager.isRemoteSession(sessionId)) {
+            if (event.type === 'stream.partial') {
+              stdioChannel.writeEvent({
+                type: 'agent.text_delta',
+                sessionId,
+                text: (payload.delta as string) || '',
+              });
+            } else if (event.type === 'trace.step') {
+              const step = payload.step as {
+                type?: string;
+                toolName?: string;
+                status?: string;
+                title?: string;
+                input?: unknown;
+                output?: string;
+              };
+              if (step?.type === 'tool_call' && step?.toolName) {
+                if (step.status === 'running') {
+                  stdioChannel.writeToolStart(sessionId, step.toolName, step.input || {});
+                } else if (step.status === 'completed' || step.status === 'error') {
+                  stdioChannel.writeToolEnd(sessionId, step.toolName, step.output || '');
+                }
+              }
+            } else if (event.type === 'session.status') {
+              const status = payload.status as string;
+              if (status === 'running') {
+                stdioChannel.writeSessionStarted(sessionId);
+              } else if (status === 'idle' || status === 'error') {
+                stdioChannel.writeSessionEnd(sessionId);
+                remoteManager.clearSessionBuffer(sessionId).catch(() => {});
+              }
+            }
+            // permission.request is already handled by headlessSendWithPermission above
+          }
+        };
+
+        // Notify that session.started events should come through the channel
+        // The StdioChannel's onMessage triggers the MessageRouter which calls
+        // remoteManager.executeAgent → sessionManager.startSession. When the session
+        // is created, the remoteManager will call back writeSessionStarted via
+        // its session mapping.
+
+        // Process stays alive until stdin closes or signal received
       } else {
         // No prompt and not RPC mode — try reading from stdin pipe
         log('[Headless] Attempting to read prompt from stdin');
@@ -1163,14 +1292,8 @@ app
       new SubagentExtension(
         () => sessionManager?.getMCPManager() ?? null,
         sendToRenderer,
-        async (toolName, toolInput) => {
-          const decision = decidePermission(
-            'subagent',
-            toolName,
-            toolInput as Record<string, unknown>
-          );
-          return decision === 'deny' ? 'deny' : 'allow';
-        }
+        async (toolName, toolInput) =>
+          resolveSubagentToolPermission(toolName, toolInput as Record<string, unknown>)
       ),
     ]);
 

@@ -10,6 +10,7 @@ import type {
   TraceStep,
   ContentBlock,
 } from '../types';
+import { handleSubagentProgressEvent } from './useSubagentProgress';
 import i18n from '../i18n/config';
 
 // Check if running in Electron
@@ -320,6 +321,26 @@ export function useIPC() {
               store.setShowSettings(true);
             }
             break;
+
+          case 'subagent.progress':
+            handleSubagentProgressEvent(event.payload);
+            break;
+
+          case 'compaction.result': {
+            const { sessionId, summary, tokensBefore, readFiles, modifiedFiles, isManual } =
+              event.payload;
+            store.addCompactionEvent(sessionId, {
+              id: `compact-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              timestamp: Date.now(),
+              tokensBefore,
+              tokensAfter: null,
+              summary,
+              readFiles,
+              modifiedFiles,
+              type: isManual ? 'manual' : 'auto',
+            });
+            break;
+          }
 
           default:
             console.log('[useIPC] Unknown server event:', event);
