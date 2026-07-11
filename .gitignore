@@ -51,10 +51,9 @@ coverage/
 *.pem
 *.p12
 
-# Claude 
+# Claude
 .claude/*
 !.claude/skills/
-CLAUDE.md
 
 
 # codex
