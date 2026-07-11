@@ -19,6 +19,7 @@ import type {
   GatewayConfig,
   FeishuChannelConfig,
   ChannelType,
+  RemoteMessage,
   RemoteSessionMapping,
   PairedUser,
   PairingRequest,
@@ -247,7 +248,7 @@ export class RemoteManager extends EventEmitter {
 
     // Wire channel messages directly to the message router (bypass gateway auth)
     stdioChannel.onMessage((message) => {
-      this.messageRouter.routeMessage(message);
+      this.routeMessage(message);
     });
     stdioChannel.onError((error) => {
       logError('[RemoteManager] StdioChannel error:', error);
@@ -494,6 +495,17 @@ export class RemoteManager extends EventEmitter {
    */
   getRemoteSessions(): RemoteSessionMapping[] {
     return this.messageRouter.getAllSessionMappings();
+  }
+
+  /**
+   * Route an inbound channel message through the agent pipeline.
+   *
+   * Public entry point used by channels (e.g. stdio) to hand a message to the
+   * internal MessageRouter. Exposed so callers and tests don't reach into the
+   * private router.
+   */
+  routeMessage(message: RemoteMessage): Promise<void> {
+    return this.messageRouter.routeMessage(message);
   }
 
   /**

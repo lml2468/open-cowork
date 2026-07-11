@@ -1152,7 +1152,8 @@ app
 
         // Shut down when stdin closes (controller disconnected), mirroring RPC
         // mode. Without this the process would stay alive indefinitely after the
-        // client goes away. Guard against re-entry via a local flag.
+        // client goes away. StdioChannel.handleClose() is idempotent so onClose
+        // fires once; the local flag is a cheap extra guard for the async body.
         let stdioClosing = false;
         stdioChannel.onClose(() => {
           if (stdioClosing) return;

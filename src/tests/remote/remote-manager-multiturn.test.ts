@@ -34,14 +34,9 @@ vi.mock('../../main/utils/logger', () => ({
 import { RemoteManager, type AgentExecutor } from '../../main/remote/remote-manager';
 import type { RemoteMessage } from '../../main/remote/types';
 
-/** Route a message the way channels do (via the internal MessageRouter). */
+/** Route a message the way channels do (via the public RemoteManager API). */
 function route(manager: RemoteManager, message: RemoteMessage): Promise<void> {
-  const router = (
-    manager as unknown as {
-      messageRouter: { routeMessage(m: RemoteMessage): Promise<void> };
-    }
-  ).messageRouter;
-  return router.routeMessage(message);
+  return manager.routeMessage(message);
 }
 
 function makeMessage(channelId: string, text: string): RemoteMessage {

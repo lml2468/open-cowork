@@ -63,6 +63,7 @@ export class StdioChannel extends ChannelBase {
   private rl: readline.Interface | null = null;
   private activeSessions: Set<string> = new Set();
   private closeHandler?: () => void;
+  private _closing = false;
 
   /**
    * Register a handler invoked when stdin closes (controller disconnected).
@@ -306,6 +307,12 @@ export class StdioChannel extends ChannelBase {
   }
 
   private handleClose(): void {
+    // Idempotent: stdin's natural close and an explicit stop() can both land
+    // here. Guard internally so the closeHandler (and the abort emissions) run
+    // exactly once, regardless of the caller.
+    if (this._closing) return;
+    this._closing = true;
+
     log('[StdioChannel] stdin closed');
     this._connected = false;
 
