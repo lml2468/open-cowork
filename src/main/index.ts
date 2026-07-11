@@ -2879,9 +2879,9 @@ ipcMain.handle('remote.getRemoteSessions', () => {
   }
 });
 
-ipcMain.handle('remote.clearRemoteSession', (_event, sessionId: string) => {
+ipcMain.handle('remote.clearRemoteSession', async (_event, sessionId: string) => {
   try {
-    const success = remoteManager.clearRemoteSession(sessionId);
+    const success = await remoteManager.clearRemoteSession(sessionId);
     return { success };
   } catch (error) {
     logError('[Remote] Error clearing remote session:', error);
