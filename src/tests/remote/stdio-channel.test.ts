@@ -467,5 +467,22 @@ describe('StdioChannel', () => {
 
       expect(channel.connected).toBe(false);
     });
+
+    it('invokes the onClose handler when stdin closes', async () => {
+      const mockStdin = createMockStdin();
+      Object.defineProperty(process, 'stdin', { value: mockStdin, writable: true });
+
+      const channel = await getStdioChannel();
+      const onClose = vi.fn();
+      channel.onClose(onClose);
+      await channel.start();
+
+      // Simulate stdin close (controller disconnected)
+      mockStdin.push(null);
+      await new Promise((r) => setTimeout(r, 10));
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(channel.connected).toBe(false);
+    });
   });
 });
