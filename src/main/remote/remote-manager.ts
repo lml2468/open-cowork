@@ -19,6 +19,7 @@ import type {
   GatewayConfig,
   FeishuChannelConfig,
   ChannelType,
+  RemoteMessage,
   RemoteSessionMapping,
   PairedUser,
   PairingRequest,
@@ -247,7 +248,7 @@ export class RemoteManager extends EventEmitter {
 
     // Wire channel messages directly to the message router (bypass gateway auth)
     stdioChannel.onMessage((message) => {
-      this.messageRouter.routeMessage(message);
+      this.routeMessage(message);
     });
     stdioChannel.onError((error) => {
       logError('[RemoteManager] StdioChannel error:', error);
@@ -497,9 +498,28 @@ export class RemoteManager extends EventEmitter {
   }
 
   /**
-   * Clear remote session
+   * Route an inbound channel message through the agent pipeline.
+   *
+   * Public entry point used by channels (e.g. stdio) to hand a message to the
+   * internal MessageRouter. Exposed so callers and tests don't reach into the
+   * private router.
    */
-  clearRemoteSession(sessionId: string): boolean {
+  routeMessage(message: RemoteMessage): Promise<void> {
+    return this.messageRouter.routeMessage(message);
+  }
+
+  /**
+   * Clear remote session
+   *
+   * Tears down both the router's queue/mapping and the RemoteManager's persistent
+   * session id mappings (so the session cannot be continued afterwards). The
+   * argument is the router-side remote session id (`remote-*`).
+   */
+  async clearRemoteSession(sessionId: string): Promise<boolean> {
+    const actualSessionId = this.reverseSessionIdMapping.get(sessionId);
+    if (actualSessionId) {
+      await this.removeRemoteSession(actualSessionId);
+    }
     return this.messageRouter.clearSession(sessionId);
   }
 
@@ -1088,7 +1108,15 @@ export class RemoteManager extends EventEmitter {
     // First flush any pending messages
     await this.flushResponseBuffer(actualSessionId);
 
-    // Then clear the buffer
+    // Then clear the ephemeral per-turn state only.
+    //
+    // IMPORTANT: This runs on every turn completion (session.status idle/error),
+    // so it must NOT tear down the persistent session id mappings. Doing so left
+    // `remoteSessionIds` (which is only ever added to) pointing at a session whose
+    // `reverseSessionIdMapping` entry had been deleted, so the next turn saw
+    // isNewSession === false but failed to resolve the actual session id and threw
+    // "No actual session ID found for remote session". Persistent mappings are torn
+    // down in removeRemoteSession(), on genuine session end. See issue #291.
     this.responseBuffers.delete(actualSessionId);
     this.sentMessageHashes.delete(actualSessionId);
     const timer = this.sendTimers.get(actualSessionId);
@@ -1096,19 +1124,28 @@ export class RemoteManager extends EventEmitter {
       clearTimeout(timer);
       this.sendTimers.delete(actualSessionId);
     }
+  }
 
-    // Clean up session mappings
-    const sessionId = this.sessionIdMapping.get(actualSessionId);
+  /**
+   * Tear down all persistent state for a remote session.
+   *
+   * Unlike clearSessionBuffer (per-turn), this removes the session id mappings so
+   * a remote id can no longer be continued. Call it on genuine session end
+   * (channel disconnect, explicit clear), not on turn completion. Keeps
+   * remoteSessionIds and the id mappings in lockstep to avoid the drift that
+   * caused issue #291.
+   */
+  async removeRemoteSession(actualSessionId: string): Promise<void> {
+    // Flush and clear any ephemeral state first.
+    await this.clearSessionBuffer(actualSessionId);
+
+    const remoteSessionId = this.sessionIdMapping.get(actualSessionId);
     this.sessionIdMapping.delete(actualSessionId);
-    if (sessionId) {
-      for (const [key, value] of this.reverseSessionIdMapping) {
-        if (value === actualSessionId) {
-          this.reverseSessionIdMapping.delete(key);
-          break;
-        }
-      }
-      this.sessionChannelMapping.delete(sessionId);
-      this.sessionOwnerMapping.delete(sessionId);
+    if (remoteSessionId) {
+      this.reverseSessionIdMapping.delete(remoteSessionId);
+      this.remoteSessionIds.delete(remoteSessionId);
+      this.sessionChannelMapping.delete(remoteSessionId);
+      this.sessionOwnerMapping.delete(remoteSessionId);
     }
   }
 

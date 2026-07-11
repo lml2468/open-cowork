@@ -62,6 +62,17 @@ export class StdioChannel extends ChannelBase {
 
   private rl: readline.Interface | null = null;
   private activeSessions: Set<string> = new Set();
+  private closeHandler?: () => void;
+  private _closing = false;
+
+  /**
+   * Register a handler invoked when stdin closes (controller disconnected).
+   * Used by the headless stdio entry point to clean up and exit, mirroring
+   * RPC mode — otherwise the process would hang alive after disconnect.
+   */
+  onClose(handler: () => void): void {
+    this.closeHandler = handler;
+  }
 
   async start(): Promise<void> {
     if (this._connected) return;
@@ -296,6 +307,12 @@ export class StdioChannel extends ChannelBase {
   }
 
   private handleClose(): void {
+    // Idempotent: stdin's natural close and an explicit stop() can both land
+    // here. Guard internally so the closeHandler (and the abort emissions) run
+    // exactly once, regardless of the caller.
+    if (this._closing) return;
+    this._closing = true;
+
     log('[StdioChannel] stdin closed');
     this._connected = false;
 
@@ -316,6 +333,12 @@ export class StdioChannel extends ChannelBase {
 
     if (this.rl) {
       this.rl = null;
+    }
+
+    // Notify the owner (headless entry point) so it can clean up and exit.
+    // Without this the process stays alive after the controller disconnects.
+    if (this.closeHandler) {
+      this.closeHandler();
     }
   }
 

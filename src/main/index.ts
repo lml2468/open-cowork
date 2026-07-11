@@ -1150,6 +1150,32 @@ app
 
         const stdioChannel = await remoteManager.startStdioMode(headlessArgs.cwd);
 
+        // Shut down when stdin closes (controller disconnected), mirroring RPC
+        // mode. Without this the process would stay alive indefinitely after the
+        // client goes away. StdioChannel.handleClose() is idempotent so onClose
+        // fires once; the local flag is a cheap extra guard for the async body.
+        let stdioClosing = false;
+        stdioChannel.onClose(() => {
+          if (stdioClosing) return;
+          stdioClosing = true;
+          void (async () => {
+            log('[Headless] stdio stdin closed, shutting down');
+            if (sessionManager) {
+              for (const s of sessionManager.listSessions()) {
+                if (s.status === 'running') {
+                  try {
+                    await sessionManager.stopSession(s.id);
+                  } catch {
+                    // Best effort
+                  }
+                }
+              }
+            }
+            await headlessCleanup();
+            process.exit(0);
+          })();
+        });
+
         // Set the interceptor so ALL events from SM flow through stdio routing
         // (fixes the dead-code issue: SM calls headlessSendWithPermission directly,
         // which now checks stdioEventInterceptor before writing JSONL)
@@ -2879,9 +2905,9 @@ ipcMain.handle('remote.getRemoteSessions', () => {
   }
 });
 
-ipcMain.handle('remote.clearRemoteSession', (_event, sessionId: string) => {
+ipcMain.handle('remote.clearRemoteSession', async (_event, sessionId: string) => {
   try {
-    const success = remoteManager.clearRemoteSession(sessionId);
+    const success = await remoteManager.clearRemoteSession(sessionId);
     return { success };
   } catch (error) {
     logError('[Remote] Error clearing remote session:', error);

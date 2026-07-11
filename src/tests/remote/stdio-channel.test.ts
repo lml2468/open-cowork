@@ -467,5 +467,41 @@ describe('StdioChannel', () => {
 
       expect(channel.connected).toBe(false);
     });
+
+    it('invokes the onClose handler when stdin closes', async () => {
+      const mockStdin = createMockStdin();
+      Object.defineProperty(process, 'stdin', { value: mockStdin, writable: true });
+
+      const channel = await getStdioChannel();
+      const onClose = vi.fn();
+      channel.onClose(onClose);
+      await channel.start();
+
+      // Simulate stdin close (controller disconnected)
+      mockStdin.push(null);
+      await new Promise((r) => setTimeout(r, 10));
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(channel.connected).toBe(false);
+    });
+
+    it('invokes the onClose handler at most once (idempotent close)', async () => {
+      const mockStdin = createMockStdin();
+      Object.defineProperty(process, 'stdin', { value: mockStdin, writable: true });
+
+      const channel = await getStdioChannel();
+      const onClose = vi.fn();
+      channel.onClose(onClose);
+      await channel.start();
+
+      // The close path can be reached from more than one source (stdin's
+      // natural close, an explicit stop()). Invoking it twice must fire
+      // onClose exactly once thanks to the internal _closing guard.
+      const handleClose = (channel as unknown as { handleClose: () => void }).handleClose;
+      handleClose.call(channel);
+      handleClose.call(channel);
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 });
