@@ -244,7 +244,7 @@ export function Sidebar() {
         <div className="flex-1 flex flex-col items-center justify-center px-3 py-4">
           <button
             onClick={toggleSidebar}
-            className="rounded-2xl px-2 py-3 text-[11px] leading-4 text-center text-text-muted hover:bg-surface-hover transition-colors"
+            className="rounded-2xl px-2 py-3 text-caption text-center text-text-muted hover:bg-surface-hover transition-colors"
             title={t('sidebar.expandToView')}
           >
             {t('sidebar.expandToView')}
@@ -442,11 +442,11 @@ export function Sidebar() {
               <div className="flex items-center justify-between px-1">
                 <button
                   onClick={toggleSelectAll}
-                  className="text-[12px] font-medium text-accent hover:text-accent/80 transition-colors"
+                  className="text-caption font-medium text-accent hover:text-accent/80 transition-colors"
                 >
                   {allVisibleSelected ? t('sidebar.deselectAll') : t('sidebar.selectAll')}
                 </button>
-                <span className="text-[12px] text-text-muted">
+                <span className="text-caption text-text-muted">
                   {t('sidebar.nSelected', { count: selectedIds.size })}
                 </span>
               </div>
@@ -481,7 +481,7 @@ export function Sidebar() {
                 <div className="text-body-sm font-medium text-text-primary">
                   {t('sidebar.settings')}
                 </div>
-                <div className="text-[11px] text-text-muted truncate">
+                <div className="text-caption text-text-muted truncate">
                   {isConfigured ? t('sidebar.apiConfigured') : t('sidebar.apiNotConfigured')}
                 </div>
               </div>
