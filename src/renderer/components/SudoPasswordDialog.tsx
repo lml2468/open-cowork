@@ -58,7 +58,7 @@ export function SudoPasswordDialog({ request }: SudoPasswordDialogProps) {
 
   return (
     <div className="overlay">
-      <div className="card w-full max-w-md p-6 m-4 shadow-elevated animate-slide-up">
+      <div className="card-elevated w-full max-w-md p-6 m-4 animate-slide-up">
         {/* Header */}
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-warning/10">
@@ -66,7 +66,7 @@ export function SudoPasswordDialog({ request }: SudoPasswordDialogProps) {
           </div>
 
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-text-primary">{t('sudo.title')}</h2>
+            <h2 className="text-heading font-semibold text-text-primary">{t('sudo.title')}</h2>
             <p className="text-sm text-text-secondary mt-1">{t('sudo.description')}</p>
           </div>
         </div>

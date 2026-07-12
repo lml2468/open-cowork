@@ -35,7 +35,7 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
 
   return (
     <div className="overlay">
-      <div className="card w-full max-w-md p-6 m-4 shadow-elevated animate-slide-up">
+      <div className="card-elevated w-full max-w-md p-6 m-4 animate-slide-up">
         {/* Header */}
         <div className="flex items-start gap-4">
           <div
@@ -51,7 +51,7 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
           </div>
 
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-text-primary">
+            <h2 className="text-heading font-semibold text-text-primary">
               {t('permission.permissionRequired')}
             </h2>
             <p className="text-sm text-text-secondary mt-1">

@@ -102,7 +102,9 @@ export function SandboxSetupDialog({ progress, onComplete }: Props) {
           <div className="flex items-center gap-3">
             <div className="text-3xl animate-pulse">{config.icon}</div>
             <div>
-              <h2 className="text-lg font-semibold text-text-primary">{t('sandbox.setupTitle')}</h2>
+              <h2 className="text-heading font-semibold text-text-primary">
+                {t('sandbox.setupTitle')}
+              </h2>
               <p className="text-sm text-text-secondary">{t('sandbox.setupSubtitle')}</p>
             </div>
           </div>

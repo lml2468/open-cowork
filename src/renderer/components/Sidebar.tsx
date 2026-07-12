@@ -344,7 +344,7 @@ export function Sidebar() {
         {groupedSessions.length === 0 ? (
           <div className="px-3 py-6">
             <p className="text-sm text-text-secondary">{t('sidebar.noTasks')}</p>
-            <p className="mt-1 text-xs leading-5 text-text-muted">{t('sidebar.noTasksHint')}</p>
+            <p className="mt-1 text-caption text-text-muted">{t('sidebar.noTasksHint')}</p>
           </div>
         ) : (
           <div className="space-y-3">

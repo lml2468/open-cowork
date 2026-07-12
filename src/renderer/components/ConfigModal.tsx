@@ -153,7 +153,7 @@ export function ConfigModal({
             </div>
             <div>
               <p className="text-label uppercase text-text-muted">{t('settings.title')}</p>
-              <h2 className="mt-1 text-[1.15rem] font-semibold tracking-[-0.02em] text-text-primary">
+              <h2 className="mt-1 text-title font-semibold text-text-primary">
                 {isFirstRun ? t('api.firstRunTitle') : t('api.settingsTitle')}
               </h2>
               <p className="text-sm text-text-secondary">

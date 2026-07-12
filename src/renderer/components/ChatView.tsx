@@ -681,7 +681,7 @@ export function ChatView() {
           {displayedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-text-muted space-y-3 text-center">
               <p className="text-label uppercase text-text-muted/80">Open Cowork</p>
-              <p className="text-base text-text-secondary">{t('chat.startConversation')}</p>
+              <p className="text-body text-text-secondary">{t('chat.startConversation')}</p>
             </div>
           ) : (
             displayedMessages.map((message) => {
@@ -830,7 +830,7 @@ export function ChatView() {
                   <button
                     type="button"
                     onClick={handleStop}
-                    className="w-9 h-9 rounded-2xl flex items-center justify-center bg-error/10 text-error hover:bg-error/20 transition-colors"
+                    className="w-9 h-9 rounded-2xl flex items-center justify-center bg-error/10 text-error hover:bg-error/20 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-opacity-50"
                     title={t('chat.stop')}
                   >
                     <Square className="w-4 h-4" />
@@ -845,7 +845,7 @@ export function ChatView() {
                       attachedFiles.length === 0) ||
                     isSubmitting
                   }
-                  className="w-9 h-9 rounded-2xl flex items-center justify-center bg-accent text-on-accent disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent-hover transition-colors"
+                  className="w-9 h-9 rounded-2xl flex items-center justify-center bg-accent text-on-accent disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   title={t('chat.sendMessage')}
                 >
                   <Send className="w-4 h-4" />
