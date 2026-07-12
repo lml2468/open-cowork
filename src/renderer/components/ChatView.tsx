@@ -681,7 +681,7 @@ export function ChatView() {
           {displayedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-text-muted space-y-3 text-center">
               <p className="text-label uppercase text-text-muted/80">Open Cowork</p>
-              <p className="text-base text-text-secondary">{t('chat.startConversation')}</p>
+              <p className="text-body text-text-secondary">{t('chat.startConversation')}</p>
             </div>
           ) : (
             displayedMessages.map((message) => {
