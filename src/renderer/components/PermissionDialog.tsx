@@ -145,7 +145,7 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
         ) : (
           <div className="mt-2 p-3 bg-warning/10 border border-warning/20 rounded-xl">
             <p className="text-sm text-warning mb-2">
-              {`Are you sure you want to always allow "${permission.toolName}"? This tool can modify your system.`}
+              {t('permission.alwaysAllowConfirm', { toolName: permission.toolName })}
             </p>
             <div className="flex gap-2">
               <button
