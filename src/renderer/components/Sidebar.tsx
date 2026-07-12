@@ -373,7 +373,7 @@ export function Sidebar() {
                           isSelectMode && isSelected
                             ? 'bg-accent-muted/20'
                             : isActive && !isSelectMode
-                              ? 'bg-surface-hover/80'
+                              ? 'bg-accent/10'
                               : 'hover:bg-surface-hover/60'
                         }`}
                       >
