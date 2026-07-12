@@ -186,7 +186,7 @@ export function SandboxSetupDialog({ progress, onComplete }: Props) {
 
           {/* Completion Message */}
           {isComplete && (
-            <div className="mt-4 p-3 bg-success/10 border border-green-500/30 rounded-xl">
+            <div className="mt-4 p-3 bg-success/10 border border-success/30 rounded-xl">
               <p className="text-sm text-success">
                 {progress.phase === 'ready'
                   ? t('sandbox.configuredSuccess')

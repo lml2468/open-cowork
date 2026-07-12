@@ -285,7 +285,7 @@ export function Sidebar() {
               className="w-10 h-10 rounded-2xl object-cover border border-border-subtle bg-background/60 flex-shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="text-[1.34rem] leading-none font-semibold tracking-[-0.035em] text-text-primary">
+              <h1 className="text-title leading-none font-semibold text-text-primary">
                 Open Cowork
               </h1>
             </div>
@@ -329,7 +329,7 @@ export function Sidebar() {
               }}
               className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
                 isSelectMode
-                  ? 'bg-accent text-white'
+                  ? 'bg-accent text-on-accent'
                   : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
               }`}
               title={t('sidebar.manage')}
@@ -350,7 +350,7 @@ export function Sidebar() {
           <div className="space-y-3">
             {groupedSessions.map((group) => (
               <section key={group.key}>
-                <div className="px-3 pb-2 text-[11px] font-medium tracking-[0.04em] text-text-muted">
+                <div className="px-3 pb-2 text-label font-medium uppercase text-text-muted">
                   {group.label}
                 </div>
                 <div className="space-y-0.5">
@@ -382,7 +382,7 @@ export function Sidebar() {
                             <div
                               className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
                                 isSelected
-                                  ? 'bg-accent text-white'
+                                  ? 'bg-accent text-on-accent'
                                   : 'border border-border-muted bg-background'
                               }`}
                             >

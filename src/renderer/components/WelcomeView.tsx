@@ -446,15 +446,15 @@ export function WelcomeView() {
             <img
               src={welcomeLogoSrc}
               alt={t('welcome.logoAlt')}
-              className="w-16 h-16 md:w-20 md:h-20 rounded-[1.4rem] object-cover border border-border-subtle bg-background/60 shadow-soft"
+              className="w-16 h-16 md:w-20 md:h-20 rounded-4xl object-cover border border-border-subtle bg-background/60 shadow-soft"
             />
             <div className="text-left">
-              <h1 className="text-[2.35rem] md:text-[3.1rem] leading-none font-semibold tracking-[-0.05em] text-text-primary">
+              <h1 className="text-display md:text-[3rem] font-semibold text-text-primary">
                 Open Cowork
               </h1>
             </div>
           </div>
-          <p className="heading-serif text-[1.15rem] md:text-[1.45rem] font-medium tracking-[-0.02em] text-text-secondary text-center">
+          <p className="heading-serif text-heading md:text-title font-medium text-text-secondary text-center">
             {t('welcome.title')}
           </p>
         </div>
@@ -483,10 +483,10 @@ export function WelcomeView() {
             <button
               key={tag.id}
               onClick={() => handleTagClick(tag.id, tag.prompt)}
-              className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors ${
+              className={`tag rounded-full ${
                 selectedTag === tag.id
-                  ? 'border-accent/30 bg-accent-muted text-accent'
-                  : 'border-border-subtle bg-background/65 text-text-secondary hover:bg-surface-hover hover:text-text-primary'
+                  ? 'border-accent/40 bg-accent-muted text-accent hover:bg-accent-muted'
+                  : 'text-text-secondary'
               } ${
                 ('requiresChrome' in tag && tag.requiresChrome) ||
                 ('requiresNotion' in tag && tag.requiresNotion)
@@ -518,7 +518,7 @@ export function WelcomeView() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`rounded-[1.9rem] border border-border-muted bg-background/85 shadow-soft px-5 py-5 space-y-4 transition-colors ${
+          className={`rounded-4xl border border-border-muted bg-background/85 shadow-soft px-5 py-5 space-y-4 transition-colors ${
             isDragging ? 'ring-2 ring-accent bg-accent/5' : ''
           }`}
         >

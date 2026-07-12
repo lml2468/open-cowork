@@ -406,9 +406,7 @@ export function SettingsAPI() {
             <div className="text-text-primary font-medium">{t('api.enableThinking')}</div>
             <div>{t('api.enableThinkingHint')}</div>
             {isOllamaMode && (
-              <div className="text-amber-500 dark:text-amber-400 text-xs mt-1">
-                {t('api.enableThinkingOllamaHint')}
-              </div>
+              <div className="text-warning text-xs mt-1">{t('api.enableThinkingOllamaHint')}</div>
             )}
           </label>
         </div>

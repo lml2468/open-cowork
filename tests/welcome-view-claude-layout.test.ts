@@ -11,15 +11,15 @@ describe('WelcomeView Claude-style layout', () => {
     expect(source).toContain('Open Cowork');
   });
 
-  it('uses a softer rounded composer shell instead of the previous generic card class', () => {
+  it('uses a softer rounded composer shell on the shared radius scale', () => {
     const source = fs.readFileSync(welcomeViewPath, 'utf8');
-    expect(source).toContain('rounded-[1.9rem]');
+    expect(source).toContain('rounded-4xl');
     expect(source).toContain('shadow-soft');
   });
 
   it('shows an inline API setup hint on the welcome screen when config is missing', () => {
     const source = fs.readFileSync(welcomeViewPath, 'utf8');
-    expect(source).toContain("!isConfigured && (");
+    expect(source).toContain('!isConfigured && (');
     expect(source).toContain("t('welcome.apiNotConfigured')");
     expect(source).toContain("setSettingsTab('api');");
     expect(source).toContain('setShowSettings(true);');

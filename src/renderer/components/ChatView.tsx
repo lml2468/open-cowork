@@ -636,9 +636,7 @@ export function ChatView() {
         ref={headerRef}
         className="relative h-12 border-b border-border-muted grid grid-cols-[1fr_auto_1fr] items-center px-4 lg:px-8 bg-background/88 backdrop-blur-md"
       >
-        <div className="text-[11px] font-medium tracking-[0.08em] uppercase text-text-muted">
-          Open Cowork
-        </div>
+        <div className="text-label font-medium uppercase text-text-muted">Open Cowork</div>
         <h2
           ref={titleRef}
           className="text-[15px] font-medium text-text-primary text-center truncate max-w-[40vw] lg:max-w-[32rem]"
@@ -784,7 +782,7 @@ export function ChatView() {
             )}
 
             <div
-              className={`flex items-end gap-2 p-3.5 rounded-[1.75rem] bg-background/88 border border-border-muted shadow-soft transition-colors ${
+              className={`flex items-end gap-2 p-3.5 rounded-4xl bg-background/88 border border-border-muted shadow-soft transition-colors ${
                 isDragging ? 'ring-2 ring-accent bg-accent/5' : ''
               }`}
             >
@@ -849,7 +847,7 @@ export function ChatView() {
                       attachedFiles.length === 0) ||
                     isSubmitting
                   }
-                  className="w-9 h-9 rounded-2xl flex items-center justify-center bg-accent text-background disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent-hover transition-colors"
+                  className="w-9 h-9 rounded-2xl flex items-center justify-center bg-accent text-on-accent disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent-hover transition-colors"
                   title={t('chat.sendMessage')}
                 >
                   <Send className="w-4 h-4" />

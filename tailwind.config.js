@@ -29,6 +29,8 @@ module.exports = {
           hover: 'var(--color-accent-hover)',
           muted: 'var(--color-accent-muted)',
         },
+        'on-accent': 'var(--color-on-accent)',
+        scrim: 'var(--color-scrim)',
         mcp: {
           DEFAULT: 'var(--color-mcp)',
         },
@@ -42,8 +44,18 @@ module.exports = {
         error: 'var(--color-error)',
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['Source Serif 4', 'Georgia', 'serif'],
         mono: ['JetBrains Mono', 'SF Mono', 'Menlo', 'monospace'],
+      },
+      fontSize: {
+        // Named type scale — [size, { lineHeight, letterSpacing }]
+        display: ['2.5rem', { lineHeight: '1.08', letterSpacing: '-0.03em' }],
+        title: ['1.375rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
+        heading: ['1.125rem', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
+        body: ['0.9375rem', { lineHeight: '1.55', letterSpacing: '-0.006em' }],
+        'body-sm': ['0.8125rem', { lineHeight: '1.5' }],
+        label: ['0.6875rem', { lineHeight: '1', letterSpacing: '0.06em' }],
       },
       boxShadow: {
         'soft': 'var(--shadow-soft)',
@@ -51,19 +63,17 @@ module.exports = {
         'elevated': 'var(--shadow-elevated)',
       },
       borderRadius: {
-        'lg': '8px',
-        'xl': '10px',
-        '2xl': '14px',
-        '3xl': '16px',
-      },
-      backgroundImage: {
-        'grid-pattern': `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4d2cc' fill-opacity='0.4'%3E%3Cpath d='M0 0h1v40H0V0zm39 0h1v40h-1V0z'/%3E%3Cpath d='M0 0h40v1H0V0zm0 39h40v1H0v-1z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        'sm': '6px',
+        'md': '8px',
+        'lg': '10px',
+        'xl': '12px',
+        '2xl': '16px',
+        '3xl': '20px',
+        '4xl': '26px',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-        'spin-slow': 'spin 2s linear infinite',
-        'expand': 'expand 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
       },
       keyframes: {
         fadeIn: {
@@ -73,10 +83,6 @@ module.exports = {
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        expand: {
-          '0%': { opacity: '0', maxHeight: '0' },
-          '100%': { opacity: '1', maxHeight: '500px' },
         },
       },
     },
