@@ -21,9 +21,9 @@ describe('ChatView Claude-style layout', () => {
     expect(source).toContain('border-border-muted');
   });
 
-  it('uses a softer rounded composer shell instead of the previous heavy input bar', () => {
+  it('uses a softer rounded composer shell on the shared radius scale', () => {
     const source = readChatView();
-    expect(source).toContain('rounded-[1.75rem]');
+    expect(source).toContain('rounded-4xl');
     expect(source).toContain('shadow-soft');
   });
 });

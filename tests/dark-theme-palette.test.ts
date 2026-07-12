@@ -5,16 +5,16 @@ import path from 'node:path';
 const stylesPath = path.resolve(process.cwd(), 'src/renderer/styles/globals.css');
 
 describe('dark theme palette', () => {
-  it('uses a warmer charcoal palette for the default theme', () => {
+  it('uses a cool graphite palette for the default theme', () => {
     const source = fs.readFileSync(stylesPath, 'utf8');
-    expect(source).toContain('--color-background: #171614;');
-    expect(source).toContain('--color-surface: #22201d;');
-    expect(source).toContain('--color-text-primary: #f1ece4;');
+    expect(source).toContain('--color-background: #0E0F11;');
+    expect(source).toContain('--color-surface: #17181B;');
+    expect(source).toContain('--color-text-primary: #ECEEF1;');
   });
 
-  it('keeps the accent within the warm orange family', () => {
+  it('keeps the accent within the cool indigo family', () => {
     const source = fs.readFileSync(stylesPath, 'utf8');
-    expect(source).toContain('--color-accent: #d67a52;');
-    expect(source).toContain('--color-accent-hover: #c56c46;');
+    expect(source).toContain('--color-accent: #6D8BFF;');
+    expect(source).toContain('--color-accent-hover: #8AA0FF;');
   });
 });
