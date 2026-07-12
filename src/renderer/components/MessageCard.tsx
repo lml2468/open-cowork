@@ -96,7 +96,7 @@ export const MessageCard = memo(function MessageCard({ message, isStreaming }: M
           </div>
           <button
             onClick={handleCopy}
-            className="mt-1 w-6 h-6 flex items-center justify-center rounded-md bg-surface-muted hover:bg-surface-active transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+            className="mt-1 w-6 h-6 flex items-center justify-center rounded-md bg-surface-muted hover:bg-surface-active transition-all opacity-0 group-hover:opacity-100 flex-shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50"
             title={t('messageCard.copyMessage')}
           >
             {copied ? (
