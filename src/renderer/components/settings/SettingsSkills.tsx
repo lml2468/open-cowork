@@ -531,10 +531,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
               <h3 className="text-lg font-semibold text-text-primary">
                 {t('skills.pluginListTitle')}
               </h3>
-              <button
-                onClick={() => setIsPluginModalOpen(false)}
-                className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
-              >
+              <button onClick={() => setIsPluginModalOpen(false)} className="icon-btn p-2">
                 <X className="w-5 h-5 text-text-secondary" />
               </button>
             </div>

@@ -680,9 +680,7 @@ export function ChatView() {
         >
           {displayedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-text-muted space-y-3 text-center">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-text-muted/80">
-                Open Cowork
-              </p>
+              <p className="text-label uppercase text-text-muted/80">Open Cowork</p>
               <p className="text-base text-text-secondary">{t('chat.startConversation')}</p>
             </div>
           ) : (
@@ -789,7 +787,7 @@ export function ChatView() {
               <button
                 type="button"
                 onClick={handleFileSelect}
-                className="w-9 h-9 rounded-2xl flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
+                className="icon-btn w-9 h-9"
                 title={t('welcome.attachFiles')}
               >
                 <Plus className="w-5 h-5" />

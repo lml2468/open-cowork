@@ -168,9 +168,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
       >
         {!compactSidebar && (
           <div className="px-4 pt-5 pb-4 border-b border-border-muted">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-text-muted">
-              {t('settings.title')}
-            </p>
+            <p className="text-label uppercase text-text-muted">{t('settings.title')}</p>
             <h2 className="mt-1 text-[1.24rem] font-semibold tracking-[-0.03em] text-text-primary">
               Open Cowork
             </h2>
@@ -224,9 +222,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <div className="flex items-center justify-between px-4 lg:px-8 py-4 border-b border-border-muted flex-shrink-0 bg-background/88 backdrop-blur-sm">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.14em] text-text-muted">
-              {t('settings.title')}
-            </p>
+            <p className="text-label uppercase text-text-muted">{t('settings.title')}</p>
             <h3 className="mt-1 text-[1.15rem] font-semibold tracking-[-0.02em] text-text-primary">
               {activeTabMeta?.label}
             </h3>
@@ -236,10 +232,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
               </p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
-          >
+          <button onClick={onClose} className="icon-btn p-2">
             <X className="w-5 h-5 text-text-secondary" />
           </button>
         </div>

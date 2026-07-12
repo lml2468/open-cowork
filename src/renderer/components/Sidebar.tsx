@@ -304,7 +304,7 @@ export function Sidebar() {
           className="mt-3 w-full flex items-center gap-2 rounded-xl bg-background/60 px-3 py-2 text-left text-text-primary hover:bg-surface-hover transition-colors"
         >
           <Plus className="w-4 h-4 text-text-secondary flex-shrink-0" />
-          <span className="text-[13px] font-medium">{t('sidebar.newTask')}</span>
+          <span className="text-body-sm font-medium">{t('sidebar.newTask')}</span>
         </button>
 
         {sessions.length > 0 && (
@@ -316,7 +316,7 @@ export function Sidebar() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('sidebar.search')}
-                className="w-full rounded-xl border border-transparent bg-background/50 pl-9 pr-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border focus:bg-background transition-colors"
+                className="w-full rounded-xl border border-transparent bg-background/50 pl-9 pr-3 py-2 text-body-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border focus:bg-background transition-colors"
               />
             </div>
             <button
@@ -390,7 +390,7 @@ export function Sidebar() {
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <div className="text-[13px] font-medium leading-5 text-text-primary truncate">
+                            <div className="text-body-sm font-medium leading-5 text-text-primary truncate">
                               {session.title}
                             </div>
                           </div>
@@ -419,19 +419,19 @@ export function Sidebar() {
         <div className="px-3 py-3 border-t border-border-muted">
           {showDeleteConfirm ? (
             <div className="border border-error/30 bg-error/10 rounded-lg px-3 py-3">
-              <p className="text-[13px] text-text-primary mb-3">
+              <p className="text-body-sm text-text-primary mb-3">
                 {t('sidebar.batchDeleteConfirm', { count: selectedIds.size })}
               </p>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-[13px] font-medium text-text-secondary hover:bg-surface-hover transition-colors"
+                  className="flex-1 px-3 py-1.5 rounded-lg text-body-sm font-medium text-text-secondary hover:bg-surface-hover transition-colors"
                 >
                   {t('sidebar.cancel')}
                 </button>
                 <button
                   onClick={handleBatchDelete}
-                  className="flex-1 px-3 py-1.5 rounded-lg text-[13px] font-medium bg-error text-white hover:bg-error/90 transition-colors"
+                  className="flex-1 px-3 py-1.5 rounded-lg text-body-sm font-medium bg-error text-white hover:bg-error/90 transition-colors"
                 >
                   {t('sidebar.confirmDelete')}
                 </button>
@@ -453,14 +453,14 @@ export function Sidebar() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={exitSelectMode}
-                  className="flex-1 px-3 py-2 rounded-xl text-[13px] font-medium text-text-secondary hover:bg-surface-hover transition-colors"
+                  className="flex-1 px-3 py-2 rounded-xl text-body-sm font-medium text-text-secondary hover:bg-surface-hover transition-colors"
                 >
                   {t('sidebar.cancel')}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={selectedIds.size === 0}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-medium bg-error text-white hover:bg-error/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-body-sm font-medium bg-error text-white hover:bg-error/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   {t('common.delete')}
@@ -478,7 +478,7 @@ export function Sidebar() {
             >
               <Settings className="w-4 h-4 flex-shrink-0" />
               <div className="min-w-0">
-                <div className="text-[13px] font-medium text-text-primary">
+                <div className="text-body-sm font-medium text-text-primary">
                   {t('sidebar.settings')}
                 </div>
                 <div className="text-[11px] text-text-muted truncate">

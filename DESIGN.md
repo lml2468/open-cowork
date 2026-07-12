@@ -61,7 +61,7 @@ typography:
     fontSize: '0.6875rem'
     fontWeight: 500
     lineHeight: '1'
-    letterSpacing: '0.06em'
+    letterSpacing: '0.1em'
   prose:
     fontFamily: 'Source Serif 4'
     fontSize: '1.0625rem'
@@ -81,6 +81,7 @@ rounded:
   2xl: '16px'
   3xl: '20px'
   4xl: '26px'
+  5xl: '32px'
   full: '9999px'
 spacing:
   xs: '4px'
@@ -209,7 +210,7 @@ per-dialog opacity guess.
 
 One radius scale, softening as elements grow: `sm 6` (chips/tiny) · `md 8` · `lg 10` · `xl 12`
 (buttons, inputs, tags) · `2xl 16` (cards) · `3xl 20` (message bubbles) · `4xl 26` (the composer and
-hero card) · `full` (pills, avatars). Never introduce arbitrary radii like `rounded-[1.75rem]`.
+hero card) · `5xl 32` (large framed panels / dialogs) · `full` (pills, avatars). Never introduce arbitrary radii like `rounded-[1.75rem]`.
 
 ## Components
 
@@ -218,6 +219,8 @@ Reusable primitives live in `globals.css @layer components` and should be prefer
 - **`.btn` + `.btn-primary` / `.btn-secondary` / `.btn-ghost`** — the primary variant is
   `primary` fill + `onAccent` text; all share the same focus ring (`ring-accent/50` + offset) and a
   subtle `active:scale-[0.98]` press.
+- **`.icon-btn`** — square, icon-only control (caller sets the size, e.g. `w-9 h-9`): muted icon,
+  `surfaceHover` on hover, shared focus-visible ring.
 - **`.input`** — `surface` fill, hairline border, `accent` focus ring. One recipe for every field.
 - **`.card`** / **`.card-elevated`** — panels and dialogs.
 - **`.tag`** — chips and quick actions.

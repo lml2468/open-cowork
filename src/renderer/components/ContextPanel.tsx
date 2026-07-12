@@ -283,7 +283,7 @@ export function ContextPanel() {
       <div className="w-10 bg-background border-l border-border-muted flex items-start justify-center pt-3">
         <button
           onClick={toggleContextPanel}
-          className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors"
+          className="icon-btn w-7 h-7"
           title={t('context.expandPanel')}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -298,7 +298,7 @@ export function ContextPanel() {
       <div className="px-3 h-10 flex items-center gap-2 border-b border-border-muted shrink-0">
         <button
           onClick={toggleContextPanel}
-          className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-surface-hover text-text-muted hover:text-text-primary transition-colors"
+          className="icon-btn w-6 h-6"
           title={t('context.collapsePanel')}
         >
           <ChevronRight className="w-3.5 h-3.5" />

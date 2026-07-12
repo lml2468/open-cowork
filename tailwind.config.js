@@ -55,7 +55,7 @@ module.exports = {
         heading: ['1.125rem', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
         body: ['0.9375rem', { lineHeight: '1.55', letterSpacing: '-0.006em' }],
         'body-sm': ['0.8125rem', { lineHeight: '1.5' }],
-        label: ['0.6875rem', { lineHeight: '1', letterSpacing: '0.06em' }],
+        label: ['0.6875rem', { lineHeight: '1', letterSpacing: '0.1em' }],
       },
       boxShadow: {
         'soft': 'var(--shadow-soft)',
@@ -70,6 +70,7 @@ module.exports = {
         '2xl': '16px',
         '3xl': '20px',
         '4xl': '26px',
+        '5xl': '32px',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
