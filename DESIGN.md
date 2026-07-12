@@ -206,12 +206,13 @@ shared `h-header` (3rem) so the main-column header and the side-panel header ali
 ## Elevation & Depth
 
 On a near-black canvas, heavy drop-shadows read as grime, so depth is expressed as a **layer stack**:
-a lighter `surface`, a hairline `border`/`borderSubtle`, and — for the topmost layer only — a subtle
-`shadow-elevated` that pairs a soft ambient shadow with a 1px light ring. Three levels:
+a lighter `surface`, a single hairline `border`/`borderSubtle`, and a soft ambient `shadow`. Each layer
+does one job — the border is the only hairline (shadows carry no `0 0 0 1px` ring, so edges never
+double up). Three levels:
 
 - **soft** — resting controls (composer, inline buttons).
-- **card** — panels and cards (ambient shadow + hairline ring).
-- **elevated** — dialogs, popovers, toasts (the only place a real shadow appears).
+- **card** — panels and cards (border hairline + soft ambient shadow).
+- **elevated** — dialogs, popovers, toasts (border hairline + a larger soft ambient shadow).
 
 Backdrops for modals use the shared `scrim` + `backdrop-blur-sm` (the `.overlay` primitive), not a
 per-dialog opacity guess.

@@ -1,5 +1,6 @@
 // Tool use card — collapsible, merges matching tool_result from same/other messages
 import { useState, memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight, Loader2, XCircle, CheckCircle2 } from 'lucide-react';
 import { useAppStore } from '../../store';
 import {
@@ -26,6 +27,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
   allBlocks,
   message,
 }: ToolUseBlockProps) {
+  const { t } = useTranslation();
   const traceSteps = useAppStore((s) =>
     message?.sessionId ? (s.sessionStates[message.sessionId]?.traceSteps ?? []) : []
   );
@@ -81,10 +83,10 @@ export const ToolUseBlock = memo(function ToolUseBlock({
       const firstLine = content.split(/\r?\n/)[0];
       return firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
     }
-    if (shouldUseScreenshotSummary(block.name, content)) return 'Screenshot captured';
+    if (shouldUseScreenshotSummary(block.name, content)) return t('toolUse.screenshotCaptured');
     if (content.length < 60) return content.trim();
     const lines = content.trim().split(/\r?\n/);
-    return `${lines.length} lines`;
+    return t('toolUse.linesCount', { count: lines.length });
   };
 
   const summary = getSummary();
@@ -191,7 +193,9 @@ export const ToolUseBlock = memo(function ToolUseBlock({
         <div className="border-t border-border/50 animate-fade-in bg-background/35">
           {/* Input section */}
           <div className="px-3 py-2.5">
-            <div className="text-label uppercase text-text-muted font-medium mb-1.5">Input</div>
+            <div className="text-label uppercase text-text-muted font-medium mb-1.5">
+              {t('toolUse.input')}
+            </div>
             <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all bg-surface-muted rounded-lg p-2.5 border border-border-subtle">
               {JSON.stringify(block.input, null, 2)}
             </pre>
@@ -200,7 +204,9 @@ export const ToolUseBlock = memo(function ToolUseBlock({
           {/* Output section */}
           {toolResult && (
             <div className="px-3 py-2.5 border-t border-border/50">
-              <div className="text-label uppercase text-text-muted font-medium mb-1.5">Output</div>
+              <div className="text-label uppercase text-text-muted font-medium mb-1.5">
+                {t('toolUse.output')}
+              </div>
               {preferImageOutput &&
                 validImages.map((image, index) => (
                   <div key={index} className="mt-2 border border-border rounded-lg overflow-hidden">

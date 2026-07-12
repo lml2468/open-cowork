@@ -349,7 +349,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm text-text-primary">{preset.name}</span>
                         {requiresConfig && !isAdded && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-warning/10 text-warning border border-warning/20">
+                          <span className="px-1.5 py-0.5 text-caption font-medium rounded bg-warning/10 text-warning border border-warning/20">
                             {t('mcp.requiresToken')}
                           </span>
                         )}

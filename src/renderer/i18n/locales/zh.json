@@ -889,6 +889,12 @@
   "time": {
     "now": "刚刚"
   },
+  "toolUse": {
+    "input": "输入",
+    "output": "输出",
+    "screenshotCaptured": "已截图",
+    "linesCount": "{{count}} 行"
+  },
   "permission": {
     "permissionRequired": "需要权限",
     "tool": "工具：",
@@ -897,6 +903,7 @@
     "deny": "拒绝",
     "allow": "允许",
     "alwaysAllow": "始终允许此工具",
+    "alwaysAllowConfirm": "始终允许「{{toolName}}」？此工具可以修改你的系统。",
     "useTool": "使用 {{toolName}} 工具",
     "toolDescriptions": {
       "write": "写入系统文件",

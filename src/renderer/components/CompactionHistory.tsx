@@ -103,7 +103,7 @@ export function CompactionHistory() {
         <span className="flex items-center gap-1.5 text-xs font-medium text-text-muted uppercase tracking-wider">
           <History className="w-3.5 h-3.5" />
           {t('compaction.history')}
-          <span className="ml-1 px-1.5 py-0.5 rounded-full bg-surface-muted text-text-muted text-[10px]">
+          <span className="ml-1 px-1.5 py-0.5 rounded-full bg-surface-muted text-text-muted text-caption">
             {history.length}
           </span>
         </span>

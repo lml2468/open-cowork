@@ -889,6 +889,12 @@
   "time": {
     "now": "now"
   },
+  "toolUse": {
+    "input": "Input",
+    "output": "Output",
+    "screenshotCaptured": "Screenshot captured",
+    "linesCount": "{{count}} lines"
+  },
   "permission": {
     "permissionRequired": "Permission Required",
     "tool": "Tool:",
@@ -897,6 +903,7 @@
     "deny": "Deny",
     "allow": "Allow",
     "alwaysAllow": "Always allow this tool",
+    "alwaysAllowConfirm": "Always allow \"{{toolName}}\"? This tool can modify your system.",
     "useTool": "Use the {{toolName}} tool",
     "toolDescriptions": {
       "write": "Write to files on your system",
