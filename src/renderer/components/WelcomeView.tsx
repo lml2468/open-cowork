@@ -440,7 +440,7 @@ export function WelcomeView() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 md:px-8 md:py-14">
-      <div className="max-w-[840px] w-full space-y-7 animate-fade-in">
+      <div className="max-w-content-narrow w-full space-y-7 animate-fade-in">
         <div className="space-y-4 text-center">
           <div className="flex items-center justify-center gap-4">
             <img

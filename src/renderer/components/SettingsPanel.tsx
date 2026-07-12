@@ -237,7 +237,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
           </button>
         </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 lg:px-8 lg:py-8">
-          <div className="max-w-[860px] w-full min-w-0 mx-auto">
+          <div className="max-w-content-narrow w-full min-w-0 mx-auto">
             <div className="">
               <div className={activeTab === 'api' ? '' : 'hidden'}>
                 {viewedTabs.has('api') && (

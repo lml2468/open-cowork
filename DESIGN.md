@@ -189,9 +189,11 @@ sizes like `text-[13px]`; the scale carries the correct line-height and letter-s
 ## Layout & Spacing
 
 Spacing follows a 4/8 rhythm (`xs 4 · sm 8 · md 16 · lg 24 · xl 32`). Primary reading columns are
-width-capped and centered (chat content and composer sit at `max-w-[920px]`) so lines stay readable
-on wide monitors. The shell is a fixed titlebar, a collapsible sidebar (`4.5rem` collapsed /
-`17.5rem` expanded), a flexible main column, and an optional context panel that appears only at `xl+`.
+width-capped and centered via shared tokens: **`max-w-content` (920px)** for the main column (chat
+messages + composer + context bar) and **`max-w-content-narrow` (860px)** for the calmer columns
+(settings content, the welcome landing) — never hardcode a `max-w-[…px]` reading width. The shell is
+a fixed titlebar, a collapsible sidebar (`4.5rem` collapsed / `17.5rem` expanded), a flexible main
+column, and an optional context panel that appears only at `xl+`.
 
 ## Elevation & Depth
 

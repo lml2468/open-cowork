@@ -676,7 +676,7 @@ export function ChatView() {
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         <div
           ref={messagesContainerRef}
-          className="w-full max-w-[920px] mx-auto py-8 px-5 lg:px-8 space-y-5"
+          className="w-full max-w-content mx-auto py-8 px-5 lg:px-8 space-y-5"
         >
           {displayedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-text-muted space-y-3 text-center">
@@ -726,7 +726,7 @@ export function ChatView() {
 
       {/* Input */}
       <div className="border-t border-border-muted bg-background/92 backdrop-blur-md">
-        <div className="max-w-[920px] mx-auto px-5 lg:px-8 py-5">
+        <div className="max-w-content mx-auto px-5 lg:px-8 py-5">
           <form
             onSubmit={handleSubmit}
             onDragOver={handleDragOver}

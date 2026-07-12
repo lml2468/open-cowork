@@ -72,6 +72,11 @@ module.exports = {
         '4xl': '26px',
         '5xl': '32px',
       },
+      maxWidth: {
+        // Shared reading-column widths
+        'content': '920px',
+        'content-narrow': '860px',
+      },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
