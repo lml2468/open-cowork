@@ -61,7 +61,7 @@ typography:
     fontSize: '0.6875rem'
     fontWeight: 500
     lineHeight: '1'
-    letterSpacing: '0.06em'
+    letterSpacing: '0.1em'
   prose:
     fontFamily: 'Source Serif 4'
     fontSize: '1.0625rem'

@@ -152,9 +152,7 @@ export function ConfigModal({
               <Key className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-[0.14em] text-text-muted">
-                {t('settings.title')}
-              </p>
+              <p className="text-label uppercase text-text-muted">{t('settings.title')}</p>
               <h2 className="mt-1 text-[1.15rem] font-semibold tracking-[-0.02em] text-text-primary">
                 {isFirstRun ? t('api.firstRunTitle') : t('api.settingsTitle')}
               </h2>
