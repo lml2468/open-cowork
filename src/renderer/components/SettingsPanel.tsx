@@ -169,10 +169,8 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
         {!compactSidebar && (
           <div className="px-4 pt-5 pb-4 border-b border-border-muted">
             <p className="text-label uppercase text-text-muted">{t('settings.title')}</p>
-            <h2 className="mt-1 text-[1.24rem] font-semibold tracking-[-0.03em] text-text-primary">
-              Open Cowork
-            </h2>
-            <p className="mt-1 text-[11px] leading-4 text-text-muted">{t('settings.panelDesc')}</p>
+            <h2 className="mt-1 text-heading font-semibold text-text-primary">Open Cowork</h2>
+            <p className="mt-1 text-caption text-text-muted">{t('settings.panelDesc')}</p>
           </div>
         )}
         <div className={`flex-1 ${compactSidebar ? 'p-1.5 space-y-1' : 'p-3 space-y-1.5'}`}>
@@ -181,9 +179,9 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               title={compactSidebar ? tab.label : undefined}
-              className={`w-full flex items-center ${compactSidebar ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-3'} rounded-lg text-left transition-colors active:scale-[0.98] ${
+              className={`w-full flex items-center ${compactSidebar ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-3'} rounded-lg text-left transition-colors active:scale-[0.98] border-l-2 border-transparent ${
                 activeTab === tab.id
-                  ? 'bg-accent/10 text-text-primary font-medium border-l-2 border-accent'
+                  ? 'bg-accent/10 text-text-primary font-medium border-accent'
                   : 'hover:bg-surface-hover text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -191,7 +189,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
               {!compactSidebar && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{tab.label}</p>
-                  <p className="text-[11px] leading-4 text-text-muted line-clamp-2 mt-0.5">
+                  <p className="text-caption text-text-muted line-clamp-2 mt-0.5">
                     {tab.description}
                   </p>
                 </div>
@@ -211,7 +209,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
             {compactSidebar ? <X className="w-4 h-4 mx-auto" /> : t('common.close')}
           </button>
           {!compactSidebar && (
-            <p className="text-[10px] text-text-muted text-center mt-2 select-text">
+            <p className="text-caption text-text-muted text-center mt-2 select-text">
               v{appVersion}
             </p>
           )}
@@ -223,7 +221,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
         <div className="flex items-center justify-between gutter-x py-4 border-b border-border-muted flex-shrink-0 bg-background/88 backdrop-blur-sm">
           <div>
             <p className="text-label uppercase text-text-muted">{t('settings.title')}</p>
-            <h3 className="mt-1 text-[1.15rem] font-semibold tracking-[-0.02em] text-text-primary">
+            <h3 className="mt-1 text-title font-semibold text-text-primary">
               {activeTabMeta?.label}
             </h3>
             {activeTabMeta?.description && (
@@ -238,44 +236,40 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
         </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden gutter-x py-6 lg:py-8">
           <div className="max-w-content-narrow w-full min-w-0 mx-auto">
-            <div className="">
-              <div className={activeTab === 'api' ? '' : 'hidden'}>
-                {viewedTabs.has('api') && (
-                  <>
-                    <SettingsAPI />
-                  </>
-                )}
-              </div>
-              <div className={activeTab === 'sandbox' ? '' : 'hidden'}>
-                {viewedTabs.has('sandbox') && <SettingsSandbox />}
-              </div>
-              <div className={activeTab === 'connectors' ? '' : 'hidden'}>
-                {viewedTabs.has('connectors') && (
-                  <SettingsConnectors isActive={activeTab === 'connectors'} />
-                )}
-              </div>
-              <div className={activeTab === 'skills' ? '' : 'hidden'}>
-                {viewedTabs.has('skills') && <SettingsSkills isActive={activeTab === 'skills'} />}
-              </div>
-              <div className={activeTab === 'memory' ? '' : 'hidden'}>
-                {viewedTabs.has('memory') && <SettingsMemory />}
-              </div>
-              <div className={activeTab === 'schedule' ? '' : 'hidden'}>
-                {viewedTabs.has('schedule') && (
-                  <SettingsSchedule isActive={activeTab === 'schedule'} />
-                )}
-              </div>
-              <div className={activeTab === 'remote' ? '' : 'hidden'}>
-                {viewedTabs.has('remote') && (
-                  <RemoteControlPanel isActive={activeTab === 'remote'} />
-                )}
-              </div>
-              <div className={activeTab === 'logs' ? '' : 'hidden'}>
-                {viewedTabs.has('logs') && <SettingsLogs isActive={activeTab === 'logs'} />}
-              </div>
-              <div className={activeTab === 'general' ? '' : 'hidden'}>
-                {viewedTabs.has('general') && <SettingsGeneral />}
-              </div>
+            <div className={activeTab === 'api' ? '' : 'hidden'}>
+              {viewedTabs.has('api') && (
+                <>
+                  <SettingsAPI />
+                </>
+              )}
+            </div>
+            <div className={activeTab === 'sandbox' ? '' : 'hidden'}>
+              {viewedTabs.has('sandbox') && <SettingsSandbox />}
+            </div>
+            <div className={activeTab === 'connectors' ? '' : 'hidden'}>
+              {viewedTabs.has('connectors') && (
+                <SettingsConnectors isActive={activeTab === 'connectors'} />
+              )}
+            </div>
+            <div className={activeTab === 'skills' ? '' : 'hidden'}>
+              {viewedTabs.has('skills') && <SettingsSkills isActive={activeTab === 'skills'} />}
+            </div>
+            <div className={activeTab === 'memory' ? '' : 'hidden'}>
+              {viewedTabs.has('memory') && <SettingsMemory />}
+            </div>
+            <div className={activeTab === 'schedule' ? '' : 'hidden'}>
+              {viewedTabs.has('schedule') && (
+                <SettingsSchedule isActive={activeTab === 'schedule'} />
+              )}
+            </div>
+            <div className={activeTab === 'remote' ? '' : 'hidden'}>
+              {viewedTabs.has('remote') && <RemoteControlPanel isActive={activeTab === 'remote'} />}
+            </div>
+            <div className={activeTab === 'logs' ? '' : 'hidden'}>
+              {viewedTabs.has('logs') && <SettingsLogs isActive={activeTab === 'logs'} />}
+            </div>
+            <div className={activeTab === 'general' ? '' : 'hidden'}>
+              {viewedTabs.has('general') && <SettingsGeneral />}
             </div>
           </div>
         </div>

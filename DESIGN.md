@@ -62,6 +62,11 @@ typography:
     fontWeight: 500
     lineHeight: '1'
     letterSpacing: '0.1em'
+  caption:
+    fontFamily: 'Inter'
+    fontSize: '0.6875rem'
+    fontWeight: 400
+    lineHeight: '1.45'
   prose:
     fontFamily: 'Source Serif 4'
     fontSize: '1.0625rem'
@@ -178,7 +183,7 @@ Three families, each with one job:
 - **Inter** — all UI chrome. Loaded with `cv05`/`cv11`/`ss01` and optical sizing for a refined,
   neutral-modern grotesk. Sizes come from the scale: `display` (hero), `title` (view/sidebar
   titles), `heading`, `body` (default 15px), `bodySmall` (13px, dense UI), `label` (11px, uppercase,
-  tracked — section headers and eyebrows).
+  tracked — section headers and eyebrows), `caption` (11px, normal — meta/hints/versions).
 - **Source Serif 4** — assistant _prose_ only (`.prose-chat`). The serif gives the agent's output an
   editorial, human texture that sets it apart from the tool chrome. Do not use it for UI controls.
 - **JetBrains Mono** — code blocks and inline code.
