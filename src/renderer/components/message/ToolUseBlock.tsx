@@ -129,7 +129,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
       {/* Header — always visible */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-surface-hover/50 transition-colors"
+        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left hover:bg-surface-hover/50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent focus-visible:ring-opacity-50"
       >
         {/* Status icon */}
         <div
@@ -156,24 +156,24 @@ export const ToolUseBlock = memo(function ToolUseBlock({
 
         {/* MCP badge */}
         {isMCPTool && mcpServerName && (
-          <span className="px-1.5 py-0.5 text-[10px] rounded-md bg-mcp/15 text-mcp flex-shrink-0 font-medium">
+          <span className="px-1.5 py-0.5 text-caption rounded-md bg-mcp/15 text-mcp flex-shrink-0 font-medium">
             {mcpServerName}
           </span>
         )}
 
         {/* Summary / duration */}
         {isSuccess && summary && !expanded && (
-          <span className="text-[11px] text-text-muted truncate max-w-[180px] flex-shrink-0">
+          <span className="text-caption text-text-muted truncate max-w-[180px] flex-shrink-0">
             {summary}
           </span>
         )}
         {validImages.length > 0 && (
-          <span className="text-[11px] text-text-muted flex-shrink-0">
+          <span className="text-caption text-text-muted flex-shrink-0">
             +{validImages.length} img
           </span>
         )}
         {duration !== undefined && (
-          <span className="text-[10px] text-text-muted flex-shrink-0 tabular-nums">
+          <span className="text-caption text-text-muted flex-shrink-0 tabular-nums">
             {duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(1)}s`}
           </span>
         )}
@@ -191,9 +191,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
         <div className="border-t border-border/50 animate-fade-in bg-background/35">
           {/* Input section */}
           <div className="px-3 py-2">
-            <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-1">
-              Input
-            </div>
+            <div className="text-label uppercase text-text-muted font-medium mb-1">Input</div>
             <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all bg-surface-muted rounded-lg p-2.5 border border-border-subtle">
               {JSON.stringify(block.input, null, 2)}
             </pre>
@@ -202,9 +200,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
           {/* Output section */}
           {toolResult && (
             <div className="px-3 py-2 border-t border-border/50">
-              <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium mb-1">
-                Output
-              </div>
+              <div className="text-label uppercase text-text-muted font-medium mb-1">Output</div>
               {preferImageOutput &&
                 validImages.map((image, index) => (
                   <div key={index} className="mt-2 border border-border rounded-lg overflow-hidden">

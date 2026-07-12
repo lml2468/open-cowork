@@ -107,7 +107,7 @@ export const ToolResultBlock = memo(function ToolResultBlock({
     >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-hover/50 transition-colors"
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-hover/50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent focus-visible:ring-opacity-50"
       >
         {block.isError ? (
           <XCircle className="w-3.5 h-3.5 text-error flex-shrink-0" />
@@ -119,9 +119,9 @@ export const ToolResultBlock = memo(function ToolResultBlock({
         >
           {displayName}
         </span>
-        <span className="text-[11px] text-text-muted truncate flex-1">{getSummary()}</span>
+        <span className="text-caption text-text-muted truncate flex-1">{getSummary()}</span>
         {hasImages && (
-          <span className="text-[11px] text-text-muted flex-shrink-0">
+          <span className="text-caption text-text-muted flex-shrink-0">
             +{block.images?.length ?? 0} img
           </span>
         )}
