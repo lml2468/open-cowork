@@ -306,7 +306,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                   (key: string) => !presetEnvValues[key]?.trim()
                 )
               }
-              className="px-4 py-1.5 rounded-md bg-accent text-on-accent text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
+              className="btn btn-primary py-1.5 text-sm disabled:opacity-50"
             >
               {t('common.add')}
             </button>
@@ -369,7 +369,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                       <button
                         onClick={() => handleAddPreset(key)}
                         disabled={isLoading}
-                        className="px-3 py-1.5 rounded-md bg-accent text-on-accent text-xs font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                        className="btn btn-primary px-3 py-1.5 text-xs gap-1 whitespace-nowrap disabled:opacity-50"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         {requiresConfig ? t('mcp.configure') : t('common.add')}
@@ -826,7 +826,7 @@ function ServerForm({
                         type="button"
                         onClick={handleSaveNewEnvVar}
                         disabled={!newEnvKey.trim()}
-                        className="flex-1 py-1 px-3 rounded bg-accent text-on-accent text-xs hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="btn btn-primary flex-1 px-3 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t('common.save')}
                       </button>
@@ -886,7 +886,7 @@ function ServerForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 py-2 px-4 rounded-lg bg-accent text-on-accent hover:bg-accent-hover disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          className="btn btn-primary flex-1 disabled:opacity-50"
         >
           {isLoading ? (
             <>
