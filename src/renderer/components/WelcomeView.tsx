@@ -604,7 +604,7 @@ export function WelcomeView() {
               <button
                 type="button"
                 onClick={handleSelectFolder}
-                className={`flex items-center gap-2 text-sm transition-colors ${
+                className={`flex items-center gap-2 text-sm transition-colors rounded outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50 ${
                   workingDir
                     ? 'text-text-secondary hover:text-text-primary'
                     : 'text-accent hover:text-accent-hover'
@@ -621,7 +621,7 @@ export function WelcomeView() {
                 <button
                   type="button"
                   onClick={handleFileSelect}
-                  className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+                  className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors rounded outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50"
                 >
                   <Paperclip className="w-4 h-4" />
                   <span>{t('welcome.attachFiles')}</span>
