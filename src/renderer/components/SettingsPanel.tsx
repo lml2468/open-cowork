@@ -223,7 +223,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
         <div className="flex items-center justify-between gutter-x py-4 border-b border-border-muted flex-shrink-0 bg-background/88 backdrop-blur-sm">
           <div>
             <p className="text-label uppercase text-text-muted">{t('settings.title')}</p>
-            <h3 className="mt-1 text-[1.15rem] font-semibold tracking-[-0.02em] text-text-primary">
+            <h3 className="mt-1 text-title font-semibold text-text-primary">
               {activeTabMeta?.label}
             </h3>
             {activeTabMeta?.description && (
@@ -238,44 +238,40 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
         </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden gutter-x py-6 lg:py-8">
           <div className="max-w-content-narrow w-full min-w-0 mx-auto">
-            <div className="">
-              <div className={activeTab === 'api' ? '' : 'hidden'}>
-                {viewedTabs.has('api') && (
-                  <>
-                    <SettingsAPI />
-                  </>
-                )}
-              </div>
-              <div className={activeTab === 'sandbox' ? '' : 'hidden'}>
-                {viewedTabs.has('sandbox') && <SettingsSandbox />}
-              </div>
-              <div className={activeTab === 'connectors' ? '' : 'hidden'}>
-                {viewedTabs.has('connectors') && (
-                  <SettingsConnectors isActive={activeTab === 'connectors'} />
-                )}
-              </div>
-              <div className={activeTab === 'skills' ? '' : 'hidden'}>
-                {viewedTabs.has('skills') && <SettingsSkills isActive={activeTab === 'skills'} />}
-              </div>
-              <div className={activeTab === 'memory' ? '' : 'hidden'}>
-                {viewedTabs.has('memory') && <SettingsMemory />}
-              </div>
-              <div className={activeTab === 'schedule' ? '' : 'hidden'}>
-                {viewedTabs.has('schedule') && (
-                  <SettingsSchedule isActive={activeTab === 'schedule'} />
-                )}
-              </div>
-              <div className={activeTab === 'remote' ? '' : 'hidden'}>
-                {viewedTabs.has('remote') && (
-                  <RemoteControlPanel isActive={activeTab === 'remote'} />
-                )}
-              </div>
-              <div className={activeTab === 'logs' ? '' : 'hidden'}>
-                {viewedTabs.has('logs') && <SettingsLogs isActive={activeTab === 'logs'} />}
-              </div>
-              <div className={activeTab === 'general' ? '' : 'hidden'}>
-                {viewedTabs.has('general') && <SettingsGeneral />}
-              </div>
+            <div className={activeTab === 'api' ? '' : 'hidden'}>
+              {viewedTabs.has('api') && (
+                <>
+                  <SettingsAPI />
+                </>
+              )}
+            </div>
+            <div className={activeTab === 'sandbox' ? '' : 'hidden'}>
+              {viewedTabs.has('sandbox') && <SettingsSandbox />}
+            </div>
+            <div className={activeTab === 'connectors' ? '' : 'hidden'}>
+              {viewedTabs.has('connectors') && (
+                <SettingsConnectors isActive={activeTab === 'connectors'} />
+              )}
+            </div>
+            <div className={activeTab === 'skills' ? '' : 'hidden'}>
+              {viewedTabs.has('skills') && <SettingsSkills isActive={activeTab === 'skills'} />}
+            </div>
+            <div className={activeTab === 'memory' ? '' : 'hidden'}>
+              {viewedTabs.has('memory') && <SettingsMemory />}
+            </div>
+            <div className={activeTab === 'schedule' ? '' : 'hidden'}>
+              {viewedTabs.has('schedule') && (
+                <SettingsSchedule isActive={activeTab === 'schedule'} />
+              )}
+            </div>
+            <div className={activeTab === 'remote' ? '' : 'hidden'}>
+              {viewedTabs.has('remote') && <RemoteControlPanel isActive={activeTab === 'remote'} />}
+            </div>
+            <div className={activeTab === 'logs' ? '' : 'hidden'}>
+              {viewedTabs.has('logs') && <SettingsLogs isActive={activeTab === 'logs'} />}
+            </div>
+            <div className={activeTab === 'general' ? '' : 'hidden'}>
+              {viewedTabs.has('general') && <SettingsGeneral />}
             </div>
           </div>
         </div>
