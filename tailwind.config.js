@@ -77,6 +77,12 @@ module.exports = {
         'content': '920px',
         'content-narrow': '860px',
       },
+      width: {
+        // Shell rail widths
+        'sidebar': '17.5rem',
+        'sidebar-collapsed': '4.5rem',
+        'context': '18rem',
+      },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',

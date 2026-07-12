@@ -193,7 +193,9 @@ width-capped and centered via shared tokens: **`max-w-content` (920px)** for the
 messages + composer + context bar) and **`max-w-content-narrow` (860px)** for the calmer columns
 (settings content, the welcome landing) — never hardcode a `max-w-[…px]` reading width. The shell is
 a fixed titlebar, a collapsible sidebar (`4.5rem` collapsed / `17.5rem` expanded), a flexible main
-column, and an optional context panel that appears only at `xl+`.
+column, and an optional context panel that appears only at `xl+`. Shell rails use width tokens:
+`w-sidebar` (17.5rem) / `w-sidebar-collapsed` (4.5rem) and `w-context` (18rem) — the context panel and
+its loading fallback share `w-context` so there's no width jump on load.
 
 ## Elevation & Depth
 
