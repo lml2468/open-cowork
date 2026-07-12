@@ -63,7 +63,7 @@ export const ThinkingBlock = memo(function ThinkingBlock({ block }: ThinkingBloc
           {t('messageCard.thinking')}
         </span>
         {!expanded && (
-          <span className="text-[11px] text-text-muted/60 truncate flex-1 min-w-0 italic">
+          <span className="text-caption text-text-muted/60 truncate flex-1 min-w-0 italic">
             {previewNodes}
           </span>
         )}

@@ -119,9 +119,9 @@ export const ToolResultBlock = memo(function ToolResultBlock({
         >
           {displayName}
         </span>
-        <span className="text-[11px] text-text-muted truncate flex-1">{getSummary()}</span>
+        <span className="text-caption text-text-muted truncate flex-1">{getSummary()}</span>
         {hasImages && (
-          <span className="text-[11px] text-text-muted flex-shrink-0">
+          <span className="text-caption text-text-muted flex-shrink-0">
             +{block.images?.length ?? 0} img
           </span>
         )}
