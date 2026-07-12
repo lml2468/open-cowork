@@ -676,7 +676,7 @@ export function ChatView() {
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         <div
           ref={messagesContainerRef}
-          className="w-full max-w-content mx-auto py-8 gutter-x space-y-5"
+          className="w-full max-w-content mx-auto py-6 gutter-x space-y-4"
         >
           {displayedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-text-muted space-y-3 text-center">

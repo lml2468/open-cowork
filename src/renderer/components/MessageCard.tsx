@@ -68,13 +68,13 @@ export const MessageCard = memo(function MessageCard({ message, isStreaming }: M
             } ${isCancelled ? 'opacity-60' : ''}`}
           >
             {isQueued && (
-              <div className="mb-1 flex items-center gap-1 text-[11px] text-text-muted">
+              <div className="mb-1 flex items-center gap-1 text-caption text-text-muted">
                 <Clock className="w-3 h-3" />
                 <span>{t('messageCard.queued')}</span>
               </div>
             )}
             {isCancelled && (
-              <div className="mb-1 flex items-center gap-1 text-[11px] text-text-muted">
+              <div className="mb-1 flex items-center gap-1 text-caption text-text-muted">
                 <XCircle className="w-3 h-3" />
                 <span>{t('messageCard.cancelled')}</span>
               </div>
