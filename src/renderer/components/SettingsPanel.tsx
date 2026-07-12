@@ -232,10 +232,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
               </p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
-          >
+          <button onClick={onClose} className="icon-btn p-2">
             <X className="w-5 h-5 text-text-secondary" />
           </button>
         </div>
