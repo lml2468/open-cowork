@@ -887,7 +887,7 @@ export function SettingsMemory() {
                 >
                   <p className="text-sm font-medium text-text-primary">{file.label}</p>
                   <p className="mt-1 text-xs text-text-muted">{file.filePath}</p>
-                  <p className="mt-2 text-[11px] text-text-muted">
+                  <p className="mt-2 text-caption text-text-muted">
                     {file.sizeBytes} bytes
                     {typeof file.sessionCount === 'number'
                       ? ` · ${file.sessionCount} sessions`
@@ -1082,12 +1082,12 @@ function ResultGroup({
               <p className="text-sm font-medium text-text-primary">{item.title}</p>
               <p className="mt-1 text-xs leading-5 text-text-muted">{item.contentPreview}</p>
               {(item.sourceWorkspace || item.sourceSessionTitle) && (
-                <p className="mt-2 text-[11px] text-text-muted">
+                <p className="mt-2 text-caption text-text-muted">
                   {[item.sourceWorkspace, item.sourceSessionTitle].filter(Boolean).join(' · ')}
                 </p>
               )}
               {item.sourceFile && (
-                <p className="mt-2 text-[11px] text-text-muted">{item.sourceFile}</p>
+                <p className="mt-2 text-caption text-text-muted">{item.sourceFile}</p>
               )}
             </button>
           ))}

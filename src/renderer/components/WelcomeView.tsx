@@ -499,12 +499,12 @@ export function WelcomeView() {
               />
               <span>{tag.label}</span>
               {'requiresChrome' in tag && tag.requiresChrome && (
-                <span className="ml-1 px-1.5 py-px text-[9px] rounded bg-surface-active text-text-muted">
+                <span className="ml-1 px-1.5 py-px text-caption rounded bg-surface-active text-text-muted">
                   {t('welcome.chromeRequired')}
                 </span>
               )}
               {'requiresNotion' in tag && tag.requiresNotion && (
-                <span className="ml-1 px-1.5 py-px text-[9px] rounded bg-surface-active text-text-muted">
+                <span className="ml-1 px-1.5 py-px text-caption rounded bg-surface-active text-text-muted">
                   {t('welcome.notionRequired')}
                 </span>
               )}

@@ -639,7 +639,7 @@ export function ChatView() {
         <div className="text-label font-medium uppercase text-text-muted">Open Cowork</div>
         <h2
           ref={titleRef}
-          className="text-[15px] font-medium text-text-primary text-center truncate max-w-[40vw] lg:max-w-[32rem]"
+          className="text-body font-medium text-text-primary text-center truncate max-w-[40vw] lg:max-w-[32rem]"
         >
           {activeSession.title}
         </h2>
@@ -710,7 +710,7 @@ export function ChatView() {
 
           {/* Real-time execution timer */}
           {liveElapsed > 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] text-text-muted mt-1 ml-0.5">
+            <div className="flex items-center gap-1.5 text-caption text-text-muted mt-1 ml-0.5">
               <Clock className="w-3 h-3" />
               <span>
                 {timerActive
@@ -817,7 +817,7 @@ export function ChatView() {
                 placeholder={t('chat.typeMessage')}
                 disabled={isSubmitting}
                 rows={1}
-                className="flex-1 resize-none bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-[15px] py-2"
+                className="flex-1 resize-none bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-body py-2"
               />
 
               <div className="flex items-center gap-2">
@@ -853,7 +853,7 @@ export function ChatView() {
               </div>
             </div>
 
-            <p className="text-[11px] text-text-muted/60 text-center mt-2.5">
+            <p className="text-caption text-text-muted/60 text-center mt-2.5">
               {t('chat.disclaimer')}
             </p>
           </form>

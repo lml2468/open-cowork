@@ -84,17 +84,17 @@ export function CommonProviderSetupsCard({ setups, onApplySetup }: CommonProvide
                   <div className="flex items-center gap-2">
                     <span>{setup.name}</span>
                     {setup.isDetected && (
-                      <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-accent">
+                      <span className="rounded-full bg-accent/10 px-2 py-0.5 text-caption uppercase tracking-[0.08em] text-accent">
                         {t('api.guidance.detectedBadge')}
                       </span>
                     )}
                   </div>
                 </td>
                 <td className="px-2 py-3">{setup.protocolLabel}</td>
-                <td className="px-2 py-3 font-mono text-[11px] text-text-secondary">
+                <td className="px-2 py-3 font-mono text-caption text-text-secondary">
                   {setup.baseUrl}
                 </td>
-                <td className="px-2 py-3 font-mono text-[11px] text-text-secondary">
+                <td className="px-2 py-3 font-mono text-caption text-text-secondary">
                   {setup.exampleModel}
                 </td>
                 <td className="px-2 py-3 leading-5">{setup.notes}</td>

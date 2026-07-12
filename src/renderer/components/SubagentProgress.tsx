@@ -77,14 +77,14 @@ export const SubagentProgress = memo(function SubagentProgress({ state }: Subage
 
         {/* Duration */}
         {state.durationMs != null && (
-          <span className="text-[10px] text-text-muted flex-shrink-0 tabular-nums">
+          <span className="text-caption text-text-muted flex-shrink-0 tabular-nums">
             {formatDuration(state.durationMs)}
           </span>
         )}
 
         {/* Error preview in collapsed mode */}
         {isFailed && !expanded && state.error && (
-          <span className="text-[11px] text-error truncate max-w-[180px] flex-shrink-0">
+          <span className="text-caption text-error truncate max-w-[180px] flex-shrink-0">
             {state.error.length > 40 ? state.error.substring(0, 37) + '...' : state.error}
           </span>
         )}
@@ -180,7 +180,7 @@ function ToolActivityRow({ tool }: { tool: SubagentToolActivity }) {
       <Wrench className="w-3 h-3 flex-shrink-0" />
       <span className="font-mono truncate">{tool.toolName}</span>
       {tool.durationMs != null && (
-        <span className="text-[10px] tabular-nums flex-shrink-0">
+        <span className="text-caption tabular-nums flex-shrink-0">
           ({formatDuration(tool.durationMs)})
         </span>
       )}

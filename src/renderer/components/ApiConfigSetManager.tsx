@@ -93,7 +93,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
         <Layers className="w-4 h-4" />
         {t('api.configSet')}
         {hasUnsavedChanges && (
-          <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] text-warning">
+          <span className="rounded-full bg-warning/15 px-2 py-0.5 text-caption text-warning">
             {t('api.unsavedBadge')}
           </span>
         )}
@@ -139,7 +139,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
           </select>
         )}
         {isInlineRenaming && (
-          <p className="text-[11px] text-text-muted">{t('api.renameInlineHint')}</p>
+          <p className="text-caption text-text-muted">{t('api.renameInlineHint')}</p>
         )}
         <div className="flex items-center gap-2">
           <button

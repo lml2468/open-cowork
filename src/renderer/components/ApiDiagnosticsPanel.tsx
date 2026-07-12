@@ -158,13 +158,13 @@ function PipelineNode({ step }: { step: DiagnosticStep }) {
       </div>
 
       {/* Label */}
-      <span className={`text-[10px] font-medium leading-tight ${colors.text}`}>{label}</span>
+      <span className={`text-caption font-medium leading-tight ${colors.text}`}>{label}</span>
 
       {/* Latency */}
       {step.latencyMs !== undefined && step.status !== 'pending' ? (
-        <span className="text-[10px] text-text-muted leading-tight">{step.latencyMs}ms</span>
+        <span className="text-caption text-text-muted leading-tight">{step.latencyMs}ms</span>
       ) : (
-        <span className="text-[10px] text-transparent leading-tight select-none">-</span>
+        <span className="text-caption text-transparent leading-tight select-none">-</span>
       )}
     </div>
   );
