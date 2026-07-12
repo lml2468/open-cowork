@@ -190,8 +190,8 @@ export const ToolUseBlock = memo(function ToolUseBlock({
       {expanded && (
         <div className="border-t border-border/50 animate-fade-in bg-background/35">
           {/* Input section */}
-          <div className="px-3 py-2">
-            <div className="text-label uppercase text-text-muted font-medium mb-1">Input</div>
+          <div className="px-3 py-2.5">
+            <div className="text-label uppercase text-text-muted font-medium mb-1.5">Input</div>
             <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all bg-surface-muted rounded-lg p-2.5 border border-border-subtle">
               {JSON.stringify(block.input, null, 2)}
             </pre>
@@ -199,8 +199,8 @@ export const ToolUseBlock = memo(function ToolUseBlock({
 
           {/* Output section */}
           {toolResult && (
-            <div className="px-3 py-2 border-t border-border/50">
-              <div className="text-label uppercase text-text-muted font-medium mb-1">Output</div>
+            <div className="px-3 py-2.5 border-t border-border/50">
+              <div className="text-label uppercase text-text-muted font-medium mb-1.5">Output</div>
               {preferImageOutput &&
                 validImages.map((image, index) => (
                   <div key={index} className="mt-2 border border-border rounded-lg overflow-hidden">
