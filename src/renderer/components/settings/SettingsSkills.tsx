@@ -45,6 +45,16 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
   const pluginToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const componentOrder: PluginComponentKind[] = ['skills', 'commands', 'agents', 'hooks', 'mcp'];
 
+  // Close the plugin modal on Escape.
+  useEffect(() => {
+    if (!isPluginModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsPluginModalOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isPluginModalOpen]);
+
   function normalizePluginLookupKey(value: string | undefined): string {
     if (!value) {
       return '';
@@ -525,10 +535,19 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
       </SettingsContentSection>
 
       {isPluginModalOpen && (
-        <div className="fixed inset-0 z-[60] bg-scrim backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-lg border border-border bg-surface shadow-elevated">
+        <div
+          className="fixed inset-0 z-[60] bg-scrim backdrop-blur-sm flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setIsPluginModalOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-lg border border-border bg-surface shadow-elevated"
+          >
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h3 className="text-lg font-semibold text-text-primary">
+              <h3 className="text-heading font-semibold text-text-primary">
                 {t('skills.pluginListTitle')}
               </h3>
               <button onClick={() => setIsPluginModalOpen(false)} className="icon-btn p-2">
