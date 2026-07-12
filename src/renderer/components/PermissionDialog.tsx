@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIPC } from '../hooks/useIPC';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { PermissionRequest } from '../types';
 import { Shield, X, Check, AlertTriangle } from 'lucide-react';
 
@@ -12,6 +13,7 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
   const { t } = useTranslation();
   const { respondToPermission } = useIPC();
   const [pendingAlwaysAllow, setPendingAlwaysAllow] = useState(false);
+  const dialogRef = useFocusTrap<HTMLDivElement>(true);
 
   // Dismissing a permission prompt maps to the safe default: deny.
   const handleDeny = useCallback(
@@ -55,6 +57,7 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         className="card-elevated w-full max-w-md p-6 m-4 animate-slide-up"

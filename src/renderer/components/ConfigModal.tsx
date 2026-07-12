@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import {
   X,
   Key,
@@ -45,6 +46,7 @@ export function ConfigModal({
   isFirstRun,
 }: ConfigModalProps) {
   const { t } = useTranslation();
+  const dialogRef = useFocusTrap<HTMLDivElement>(isOpen);
   const {
     provider,
     customProtocol,
@@ -160,6 +162,7 @@ export function ConfigModal({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         className="bg-background rounded-5xl shadow-elevated w-full max-w-[880px] mx-4 max-h-[88vh] overflow-hidden border border-border-subtle flex flex-col"
