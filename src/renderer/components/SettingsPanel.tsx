@@ -169,10 +169,8 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
         {!compactSidebar && (
           <div className="px-4 pt-5 pb-4 border-b border-border-muted">
             <p className="text-label uppercase text-text-muted">{t('settings.title')}</p>
-            <h2 className="mt-1 text-[1.24rem] font-semibold tracking-[-0.03em] text-text-primary">
-              Open Cowork
-            </h2>
-            <p className="mt-1 text-[11px] leading-4 text-text-muted">{t('settings.panelDesc')}</p>
+            <h2 className="mt-1 text-heading font-semibold text-text-primary">Open Cowork</h2>
+            <p className="mt-1 text-caption text-text-muted">{t('settings.panelDesc')}</p>
           </div>
         )}
         <div className={`flex-1 ${compactSidebar ? 'p-1.5 space-y-1' : 'p-3 space-y-1.5'}`}>
@@ -191,7 +189,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
               {!compactSidebar && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{tab.label}</p>
-                  <p className="text-[11px] leading-4 text-text-muted line-clamp-2 mt-0.5">
+                  <p className="text-caption text-text-muted line-clamp-2 mt-0.5">
                     {tab.description}
                   </p>
                 </div>
@@ -211,7 +209,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
             {compactSidebar ? <X className="w-4 h-4 mx-auto" /> : t('common.close')}
           </button>
           {!compactSidebar && (
-            <p className="text-[10px] text-text-muted text-center mt-2 select-text">
+            <p className="text-caption text-text-muted text-center mt-2 select-text">
               v{appVersion}
             </p>
           )}
