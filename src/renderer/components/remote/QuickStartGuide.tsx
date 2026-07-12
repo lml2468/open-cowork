@@ -46,10 +46,10 @@ export function QuickStartGuide({ permissionScopes, permissionSeparator }: Props
   return (
     <div className="p-5 rounded-5xl border border-border-subtle bg-background/55">
       <h4 className="font-medium text-text-primary mb-3">{t('remote.quickStart')}</h4>
-      <ol className="space-y-2 text-sm text-text-secondary">
+      <ol className="space-y-2 text-body-sm text-text-secondary">
         {steps.map((step) => (
           <li key={step.key} className="flex items-start gap-2">
-            <span className="w-5 h-5 rounded-full bg-accent/10 text-accent text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="w-5 h-5 rounded-full bg-accent/10 text-accent text-caption flex items-center justify-center flex-shrink-0 mt-0.5">
               {step.key}
             </span>
             {step.content}

@@ -46,12 +46,12 @@ export function FeishuConfigStep({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium text-text-primary mb-1">{t('remote.feishuTitle')}</h3>
-        <p className="text-sm text-text-secondary">{t('remote.feishuDesc')}</p>
+        <p className="text-body-sm text-text-secondary">{t('remote.feishuDesc')}</p>
       </div>
 
       <div className="grid gap-4">
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">App ID</label>
+          <label className="block text-body-sm font-medium text-text-secondary mb-2">App ID</label>
           <input
             type="text"
             value={feishuAppId}
@@ -62,7 +62,9 @@ export function FeishuConfigStep({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">App Secret</label>
+          <label className="block text-body-sm font-medium text-text-secondary mb-2">
+            App Secret
+          </label>
           <input
             type="password"
             value={feishuAppSecret}
@@ -73,7 +75,7 @@ export function FeishuConfigStep({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
+          <label className="block text-body-sm font-medium text-text-secondary mb-2">
             {t('remote.dmPolicy')}
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -87,8 +89,8 @@ export function FeishuConfigStep({
                     : 'border-border hover:border-accent/50'
                 }`}
               >
-                <div className="font-medium text-text-primary text-sm">{option.label}</div>
-                <div className="text-xs text-text-muted mt-0.5">{option.desc}</div>
+                <div className="font-medium text-text-primary text-body-sm">{option.label}</div>
+                <div className="text-caption text-text-muted mt-0.5">{option.desc}</div>
               </button>
             ))}
           </div>
@@ -99,7 +101,7 @@ export function FeishuConfigStep({
         href="https://open.feishu.cn/app"
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-sm text-accent hover:underline"
+        className="inline-flex items-center gap-2 text-body-sm text-accent hover:underline"
       >
         <ExternalLink className="w-4 h-4" />
         {t('remote.openFeishu')}

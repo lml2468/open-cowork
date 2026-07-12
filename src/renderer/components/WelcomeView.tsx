@@ -461,7 +461,7 @@ export function WelcomeView() {
 
         {/* API Not Configured Hint */}
         {!isConfigured && (
-          <p className="text-sm text-text-muted text-center">
+          <p className="text-body-sm text-text-muted text-center">
             {t('welcome.apiNotConfigured')}{' '}
             <button
               type="button"
@@ -553,7 +553,7 @@ export function WelcomeView() {
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-muted border border-border group"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary truncate">{file.name}</p>
+                    <p className="text-body-sm text-text-primary truncate">{file.name}</p>
                   </div>
                   <button
                     type="button"
@@ -604,7 +604,7 @@ export function WelcomeView() {
               <button
                 type="button"
                 onClick={handleSelectFolder}
-                className={`flex items-center gap-2 text-sm transition-colors rounded outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50 ${
+                className={`flex items-center gap-2 text-body-sm transition-colors rounded outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50 ${
                   workingDir
                     ? 'text-text-secondary hover:text-text-primary'
                     : 'text-accent hover:text-accent-hover'
@@ -621,7 +621,7 @@ export function WelcomeView() {
                 <button
                   type="button"
                   onClick={handleFileSelect}
-                  className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors rounded outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50"
+                  className="flex items-center gap-2 text-body-sm text-text-secondary hover:text-text-primary transition-colors rounded outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50"
                 >
                   <Paperclip className="w-4 h-4" />
                   <span>{t('welcome.attachFiles')}</span>

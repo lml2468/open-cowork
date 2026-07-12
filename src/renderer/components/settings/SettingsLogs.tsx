@@ -146,13 +146,13 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
     <div className="space-y-4">
       {/* Error/Success Messages */}
       {error && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-body-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-body-sm">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           {success}
         </div>
@@ -162,8 +162,12 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
       <section className="rounded-lg border border-border-subtle bg-background px-4 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h4 className="text-sm font-semibold text-text-primary">{t('logs.enableDevLogs')}</h4>
-            <p className="mt-1 text-xs leading-5 text-text-muted">{t('logs.enableDevLogsDesc')}</p>
+            <h4 className="text-body-sm font-semibold text-text-primary">
+              {t('logs.enableDevLogs')}
+            </h4>
+            <p className="mt-1 text-caption leading-5 text-text-muted">
+              {t('logs.enableDevLogsDesc')}
+            </p>
           </div>
           <button
             onClick={handleToggleDevLogs}
@@ -189,11 +193,11 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="p-4 rounded-lg bg-background border border-border-subtle">
             <div className="text-2xl font-bold text-text-primary">{logFiles.length}</div>
-            <div className="text-sm text-text-muted">{t('logs.logFiles')}</div>
+            <div className="text-body-sm text-text-muted">{t('logs.logFiles')}</div>
           </div>
           <div className="p-4 rounded-lg bg-background border border-border-subtle">
             <div className="text-2xl font-bold text-text-primary">{formatFileSize(totalSize)}</div>
-            <div className="text-sm text-text-muted">{t('logs.totalSize')}</div>
+            <div className="text-body-sm text-text-muted">{t('logs.totalSize')}</div>
           </div>
         </div>
       </SettingsContentSection>
@@ -214,8 +218,10 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="font-mono text-sm text-text-primary truncate">{file.name}</div>
-                    <div className="text-xs text-text-muted mt-1">
+                    <div className="font-mono text-body-sm text-text-primary truncate">
+                      {file.name}
+                    </div>
+                    <div className="text-caption text-text-muted mt-1">
                       {formatFileSize(file.size)} • {formatDate(file.mtime)}
                     </div>
                   </div>
@@ -233,10 +239,10 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
           description={t('logs.directoryDescription')}
         >
           <div className="p-3 rounded-lg bg-background border border-border-subtle">
-            <div className="text-xs text-text-muted mb-1">{t('logs.logsDirectory')}</div>
+            <div className="text-caption text-text-muted mb-1">{t('logs.logsDirectory')}</div>
             <div className="flex items-start gap-2">
               <button
-                className="font-mono text-xs text-text-secondary break-all text-left hover:text-accent hover:underline cursor-pointer bg-transparent border-none p-0"
+                className="font-mono text-caption text-text-secondary break-all text-left hover:text-accent hover:underline cursor-pointer bg-transparent border-none p-0"
                 onClick={() => window.electronAPI.logs.open()}
                 title={t('logs.openFolder')}
               >
@@ -270,7 +276,7 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            <span className="text-sm">{t('logs.exportZip')}</span>
+            <span className="text-body-sm">{t('logs.exportZip')}</span>
           </button>
           <button
             onClick={handleOpen}
@@ -278,7 +284,7 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
             className="py-3 px-4 rounded-lg bg-background border border-border-subtle text-text-primary font-medium hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <Globe className="w-4 h-4" />
-            <span className="text-sm">{t('logs.openFolder')}</span>
+            <span className="text-body-sm">{t('logs.openFolder')}</span>
           </button>
           <button
             onClick={handleClear}
@@ -286,13 +292,13 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
             className="py-3 px-4 rounded-lg bg-error/10 text-error font-medium hover:bg-error/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
-            <span className="text-sm">{t('logs.clearAll')}</span>
+            <span className="text-body-sm">{t('logs.clearAll')}</span>
           </button>
         </div>
       </SettingsContentSection>
 
       {/* Help Text */}
-      <div className="text-xs text-text-muted text-center space-y-1">
+      <div className="text-caption text-text-muted text-center space-y-1">
         <p>{t('logs.helpText1')}</p>
         <p>{t('logs.helpText2')}</p>
       </div>

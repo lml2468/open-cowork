@@ -122,11 +122,11 @@ export function SettingsAPI() {
 
       {/* Provider Selection */}
       <div className="space-y-3 py-5 border-b border-border-muted">
-        <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+        <label className="flex items-center gap-2 text-body-sm font-medium text-text-primary">
           <Server className="w-4 h-4" />
           {t('api.provider')}
         </label>
-        <p className="text-xs leading-5 text-text-muted">{t('api.providerDescription')}</p>
+        <p className="text-caption leading-5 text-text-muted">{t('api.providerDescription')}</p>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
           {(['openrouter', 'anthropic', 'openai', 'gemini', 'ollama', 'custom'] as const).map(
             (p) => (
@@ -134,7 +134,7 @@ export function SettingsAPI() {
                 key={p}
                 onClick={() => changeProvider(p)}
                 disabled={isLoadingConfig}
-                className={`px-3 py-2 rounded-lg text-sm transition-colors border ${
+                className={`px-3 py-2 rounded-lg text-body-sm transition-colors border ${
                   provider === p
                     ? 'border-accent bg-accent/10 text-accent font-medium'
                     : 'border-border-muted text-text-secondary hover:border-border hover:text-text-primary disabled:opacity-50'
@@ -151,12 +151,12 @@ export function SettingsAPI() {
       <div className="space-y-3 py-5 border-b border-border-muted">
         <label
           htmlFor="api-key-input"
-          className="flex items-center gap-2 text-sm font-medium text-text-primary"
+          className="flex items-center gap-2 text-body-sm font-medium text-text-primary"
         >
           <Key className="w-4 h-4" />
           {t('api.apiKey')}
         </label>
-        <p className="text-xs leading-5 text-text-muted">{t('api.apiKeyDescription')}</p>
+        <p className="text-caption leading-5 text-text-muted">{t('api.apiKeyDescription')}</p>
         <input
           id="api-key-input"
           type="password"
@@ -166,7 +166,7 @@ export function SettingsAPI() {
           className="input"
         />
         {currentPreset?.keyHint && (
-          <p className="text-xs text-text-muted">{currentPreset.keyHint}</p>
+          <p className="text-caption text-text-muted">{currentPreset.keyHint}</p>
         )}
       </div>
 
@@ -175,7 +175,7 @@ export function SettingsAPI() {
         <div className="space-y-3 py-5 border-b border-border-muted">
           <label
             id="api-protocol-label"
-            className="flex items-center gap-2 text-sm font-medium text-text-primary"
+            className="flex items-center gap-2 text-body-sm font-medium text-text-primary"
           >
             <Server className="w-4 h-4" />
             {t('api.protocol')}
@@ -191,7 +191,7 @@ export function SettingsAPI() {
               <button
                 key={mode.id}
                 onClick={() => changeProtocol(mode.id)}
-                className={`px-3 py-2 rounded-lg text-sm transition-colors border ${
+                className={`px-3 py-2 rounded-lg text-body-sm transition-colors border ${
                   customProtocol === mode.id
                     ? 'border-accent bg-accent/10 text-accent font-medium'
                     : 'border-border-muted text-text-secondary hover:border-border hover:text-text-primary'
@@ -201,7 +201,7 @@ export function SettingsAPI() {
               </button>
             ))}
           </div>
-          <p className="text-xs text-text-muted">{t('api.selectProtocol')}</p>
+          <p className="text-caption text-text-muted">{t('api.selectProtocol')}</p>
           <GuidanceInlineHint text={protocolGuidanceText} tone={protocolGuidanceTone} />
         </div>
       )}
@@ -211,7 +211,7 @@ export function SettingsAPI() {
           <div className="flex items-center justify-between gap-2">
             <label
               htmlFor="api-base-url-input"
-              className="flex items-center gap-2 text-sm font-medium text-text-primary"
+              className="flex items-center gap-2 text-body-sm font-medium text-text-primary"
             >
               <Server className="w-4 h-4" />
               {t('api.baseUrl')}
@@ -223,7 +223,7 @@ export function SettingsAPI() {
                   void discoverLocalOllama();
                 }}
                 disabled={isDiscoveringLocalOllama}
-                className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors active:scale-95 bg-accent-muted text-accent hover:bg-accent-muted/80 disabled:opacity-50"
+                className="flex items-center gap-1 text-caption px-2 py-1 rounded-md transition-colors active:scale-95 bg-accent-muted text-accent hover:bg-accent-muted/80 disabled:opacity-50"
               >
                 <Plug className="w-3 h-3" />
                 {isDiscoveringLocalOllama
@@ -248,7 +248,7 @@ export function SettingsAPI() {
             }
             className="input"
           />
-          <p className="text-xs text-text-muted">
+          <p className="text-caption text-text-muted">
             {provider === 'ollama'
               ? t('api.enterOllamaUrl')
               : customProtocol === 'openai'
@@ -258,7 +258,7 @@ export function SettingsAPI() {
                   : t('api.enterAnthropicUrl')}
           </p>
           {isOllamaMode && (
-            <p className="text-xs text-text-muted">{t('api.discoverLocalOllamaHint')}</p>
+            <p className="text-caption text-text-muted">{t('api.discoverLocalOllamaHint')}</p>
           )}
           {provider === 'custom' && <GuidanceInlineHint text={baseUrlGuidanceText} />}
         </div>
@@ -269,7 +269,7 @@ export function SettingsAPI() {
         <div className="flex items-center justify-between">
           <label
             htmlFor="api-model-input"
-            className="flex items-center gap-2 text-sm font-medium text-text-primary"
+            className="flex items-center gap-2 text-body-sm font-medium text-text-primary"
           >
             <Cpu className="w-4 h-4" />
             {t('api.model')}
@@ -282,7 +282,7 @@ export function SettingsAPI() {
                   void refreshModelOptions();
                 }}
                 disabled={isRefreshingModels}
-                className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors active:scale-95 bg-surface-hover text-text-secondary hover:bg-surface-active disabled:opacity-50"
+                className="flex items-center gap-1 text-caption px-2 py-1 rounded-md transition-colors active:scale-95 bg-surface-hover text-text-secondary hover:bg-surface-active disabled:opacity-50"
               >
                 <RefreshCw className={`w-3 h-3 ${isRefreshingModels ? 'animate-spin' : ''}`} />
                 {isRefreshingModels ? t('api.refreshingModels') : t('api.refreshModels')}
@@ -292,7 +292,7 @@ export function SettingsAPI() {
               <button
                 type="button"
                 onClick={toggleCustomModel}
-                className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors active:scale-95 ${
+                className={`flex items-center gap-1 text-caption px-2 py-1 rounded-md transition-colors active:scale-95 ${
                   useCustomModel
                     ? 'bg-accent-muted text-accent'
                     : 'border border-border-muted bg-background text-text-secondary hover:bg-surface-hover'
@@ -339,7 +339,7 @@ export function SettingsAPI() {
             )}
           </select>
         )}
-        {useCustomModel && <p className="text-xs text-text-muted">{modelInputHint}</p>}
+        {useCustomModel && <p className="text-caption text-text-muted">{modelInputHint}</p>}
 
         {/* Context Window & Max Tokens — only for non-registry providers */}
         {(provider === 'ollama' || provider === 'custom') && (
@@ -347,7 +347,7 @@ export function SettingsAPI() {
             <div>
               <label
                 htmlFor="api-context-window-input"
-                className="block text-xs font-medium text-text-secondary mb-1"
+                className="block text-caption font-medium text-text-secondary mb-1"
               >
                 {t('api.contextWindow')}
               </label>
@@ -359,13 +359,13 @@ export function SettingsAPI() {
                 placeholder={t('api.contextWindowPlaceholder')}
                 min={1024}
                 step={1024}
-                className="input text-sm px-3 py-2"
+                className="input text-body-sm px-3 py-2"
               />
             </div>
             <div>
               <label
                 htmlFor="api-max-tokens-input"
-                className="block text-xs font-medium text-text-secondary mb-1"
+                className="block text-caption font-medium text-text-secondary mb-1"
               >
                 {t('api.maxOutputTokens')}
               </label>
@@ -377,10 +377,10 @@ export function SettingsAPI() {
                 placeholder={t('api.maxOutputTokensPlaceholder')}
                 min={256}
                 step={256}
-                className="input text-sm px-3 py-2"
+                className="input text-body-sm px-3 py-2"
               />
             </div>
-            <p className="col-span-2 text-xs text-text-muted">{t('api.contextWindowHint')}</p>
+            <p className="col-span-2 text-caption text-text-muted">{t('api.contextWindowHint')}</p>
           </div>
         )}
       </div>
@@ -394,7 +394,7 @@ export function SettingsAPI() {
 
       {/* Enable Thinking Mode */}
       <div className="space-y-3 py-5 border-b border-border-muted">
-        <div className="flex items-start gap-2 text-xs text-text-muted">
+        <div className="flex items-start gap-2 text-caption text-text-muted">
           <input
             type="checkbox"
             id="enable-thinking"
@@ -406,7 +406,9 @@ export function SettingsAPI() {
             <div className="text-text-primary font-medium">{t('api.enableThinking')}</div>
             <div>{t('api.enableThinkingHint')}</div>
             {isOllamaMode && (
-              <div className="text-warning text-xs mt-1">{t('api.enableThinkingOllamaHint')}</div>
+              <div className="text-warning text-caption mt-1">
+                {t('api.enableThinkingOllamaHint')}
+              </div>
             )}
           </label>
         </div>
@@ -414,13 +416,13 @@ export function SettingsAPI() {
 
       {/* Error/Success Messages */}
       {error && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-body-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
       {successMessage && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-body-sm">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           {successMessage}
         </div>

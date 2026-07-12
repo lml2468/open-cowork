@@ -356,27 +356,27 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-body-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {renderLocalizedBannerMessage(error, t)}
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-body-sm">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           {renderLocalizedBannerMessage(success, t)}
         </div>
       )}
 
       <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
-        <h4 className="text-sm font-medium text-text-primary">
+        <h4 className="text-body-sm font-medium text-text-primary">
           {editingId ? t('schedule.editTitle') : t('schedule.createTitle')}
         </h4>
         <div className="rounded-lg border border-border bg-background px-3 py-2">
-          <div className="text-xs text-text-muted mb-1">{t('schedule.autoTitleLabel')}</div>
-          <div className="text-sm text-text-primary break-all">{previewTitle}</div>
+          <div className="text-caption text-text-muted mb-1">{t('schedule.autoTitleLabel')}</div>
+          <div className="text-body-sm text-text-primary break-all">{previewTitle}</div>
           {editingId && (
-            <div className="text-xs text-text-muted mt-2">
+            <div className="text-caption text-text-muted mt-2">
               {promptChangedWhileEditing
                 ? t('schedule.autoTitleChangedHint')
                 : t('schedule.autoTitleUnchangedHint')}
@@ -388,23 +388,23 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={t('schedule.promptPlaceholder')}
           rows={3}
-          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm"
+          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-body-sm"
         />
         <input
           value={cwd}
           onChange={(e) => setCwd(e.target.value)}
           placeholder={t('schedule.cwdPlaceholder')}
-          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm"
+          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-body-sm"
         />
         <div className="rounded-lg border border-border bg-background p-3 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-sm font-medium text-text-primary">
+              <div className="text-body-sm font-medium text-text-primary">
                 {t('schedule.executionTime')}
               </div>
-              <div className="text-xs text-text-muted">{t('schedule.executionTimeHint')}</div>
+              <div className="text-caption text-text-muted">{t('schedule.executionTimeHint')}</div>
             </div>
-            <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm text-text-secondary">
+            <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-body-sm text-text-secondary">
               <input
                 type="checkbox"
                 checked={enabled}
@@ -448,13 +448,13 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
             )}
           </div>
           {scheduleMode === 'legacy-interval' && (
-            <div className="rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <div className="rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-caption text-warning">
               {t('schedule.legacyIntervalNotice')}
             </div>
           )}
           {(scheduleMode === 'once' || scheduleMode === 'legacy-interval') && (
             <div className="space-y-2">
-              <div className="text-xs text-text-muted">
+              <div className="text-caption text-text-muted">
                 {scheduleMode === 'once'
                   ? t('schedule.onceTimeLabel')
                   : t('schedule.legacyStartTimeLabel')}
@@ -463,7 +463,7 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
                 type="datetime-local"
                 value={runAt}
                 onChange={(e) => setRunAt(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-sm"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-body-sm"
               />
             </div>
           )}
@@ -474,12 +474,12 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
                 min={1}
                 value={repeatEvery}
                 onChange={(e) => setRepeatEvery(Math.max(1, Number(e.target.value) || 1))}
-                className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-sm"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-body-sm"
               />
               <select
                 value={repeatUnit}
                 onChange={(e) => setRepeatUnit(e.target.value as ScheduleRepeatUnit)}
-                className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-sm"
+                className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-body-sm"
               >
                 <option value="minute">{t('schedule.repeatUnitMinute')}</option>
                 <option value="hour">{t('schedule.repeatUnitHour')}</option>
@@ -488,18 +488,18 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
             </div>
           )}
           {scheduleMode === 'daily' && (
-            <div className="text-xs text-text-muted">{t('schedule.dailyHint')}</div>
+            <div className="text-caption text-text-muted">{t('schedule.dailyHint')}</div>
           )}
           {scheduleMode === 'weekly' && (
-            <div className="text-xs text-text-muted">{t('schedule.weeklyHint')}</div>
+            <div className="text-caption text-text-muted">{t('schedule.weeklyHint')}</div>
           )}
-          <div className="text-xs text-text-muted">{schedulePreview}</div>
+          <div className="text-caption text-text-muted">{schedulePreview}</div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={submitTask}
             disabled={isLoading}
-            className="btn btn-primary px-3 py-2 text-sm disabled:opacity-50"
+            className="btn btn-primary px-3 py-2 text-body-sm disabled:opacity-50"
           >
             {editingId ? t('schedule.saveChanges') : t('schedule.createTask')}
           </button>
@@ -507,7 +507,7 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
             <button
               onClick={clearForm}
               disabled={isLoading}
-              className="px-3 py-2 rounded-lg bg-surface-hover text-text-secondary text-sm disabled:opacity-50"
+              className="px-3 py-2 rounded-lg bg-surface-hover text-text-secondary text-body-sm disabled:opacity-50"
             >
               {t('schedule.cancelEdit')}
             </button>
@@ -516,9 +516,9 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs text-text-muted">{t('schedule.listHint')}</div>
+        <div className="text-caption text-text-muted">{t('schedule.listHint')}</div>
         {tasks.length === 0 ? (
-          <div className="text-sm text-text-muted text-center py-6 border border-dashed border-border rounded-lg">
+          <div className="text-body-sm text-text-muted text-center py-6 border border-dashed border-border rounded-lg">
             {t('schedule.empty')}
           </div>
         ) : (
@@ -540,45 +540,45 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
                   <>
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="font-medium text-sm text-text-primary truncate">
+                        <div className="font-medium text-body-sm text-text-primary truncate">
                           {task.title}
                         </div>
-                        <div className="text-xs text-text-muted truncate">{task.prompt}</div>
+                        <div className="text-caption text-text-muted truncate">{task.prompt}</div>
                       </div>
                       <span
-                        className={`text-xs px-2 py-1 rounded ${task.enabled ? 'bg-success/10 text-success' : 'bg-surface-hover text-text-muted'}`}
+                        className={`text-caption px-2 py-1 rounded ${task.enabled ? 'bg-success/10 text-success' : 'bg-surface-hover text-text-muted'}`}
                       >
                         {task.enabled ? t('schedule.taskEnabled') : t('schedule.taskDisabled')}
                       </span>
                     </div>
-                    <div className="text-xs text-text-muted">
+                    <div className="text-caption text-text-muted">
                       {task.nextRunAt === null
                         ? t('schedule.nextRunNone')
                         : t('schedule.nextRun', { value: formatTime(task.nextRunAt) })}
                     </div>
-                    <div className="text-xs text-text-muted">
+                    <div className="text-caption text-text-muted">
                       {t('schedule.strategy', {
                         value: formatScheduleRule(task, t, weekdayOptions),
                       })}
                     </div>
-                    <div className="text-xs text-text-muted">
+                    <div className="text-caption text-text-muted">
                       {task.lastRunAt === null
                         ? t('schedule.lastRunNever')
                         : t('schedule.lastRun', { value: formatTime(task.lastRunAt) })}
                     </div>
                     {task.lastRunSessionId && (
-                      <div className="text-xs text-text-muted break-all">
+                      <div className="text-caption text-text-muted break-all">
                         {t('schedule.recentSession', { value: task.lastRunSessionId })}
                       </div>
                     )}
-                    <div className="text-xs text-text-muted">
+                    <div className="text-caption text-text-muted">
                       {t('schedule.sessionStatus', { value: lastRunStatusLabel })}
                     </div>
-                    <div className="text-xs text-text-muted truncate" title={task.cwd}>
+                    <div className="text-caption text-text-muted truncate" title={task.cwd}>
                       {t('schedule.cwd', { value: task.cwd })}
                     </div>
                     {task.lastError && (
-                      <div className="text-xs text-error break-all">
+                      <div className="text-caption text-error break-all">
                         {t('schedule.lastError', { value: task.lastError })}
                       </div>
                     )}
@@ -586,14 +586,14 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
                       <button
                         onClick={() => toggleTask(task)}
                         disabled={isLoading}
-                        className="px-2 py-1 rounded bg-surface-hover text-xs text-text-secondary disabled:opacity-50"
+                        className="px-2 py-1 rounded bg-surface-hover text-caption text-text-secondary disabled:opacity-50"
                       >
                         {task.enabled ? t('schedule.disable') : t('schedule.enable')}
                       </button>
                       <button
                         onClick={() => runNow(task)}
                         disabled={isLoading}
-                        className="px-2 py-1 rounded bg-surface-hover text-xs text-text-secondary disabled:opacity-50"
+                        className="px-2 py-1 rounded bg-surface-hover text-caption text-text-secondary disabled:opacity-50"
                       >
                         {t('schedule.runNow')}
                       </button>
@@ -605,7 +605,7 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
                             ? t('schedule.stopRunTitleActive')
                             : t('schedule.stopRunTitleIdle')
                         }
-                        className={`px-2 py-1 rounded text-xs disabled:opacity-50 ${
+                        className={`px-2 py-1 rounded text-caption disabled:opacity-50 ${
                           isTaskRunning
                             ? 'bg-warning/10 text-warning'
                             : 'bg-surface-hover text-text-muted'
@@ -616,14 +616,14 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
                       <button
                         onClick={() => editTask(task)}
                         disabled={isLoading}
-                        className="px-2 py-1 rounded bg-surface-hover text-xs text-text-secondary disabled:opacity-50"
+                        className="px-2 py-1 rounded bg-surface-hover text-caption text-text-secondary disabled:opacity-50"
                       >
                         {t('schedule.edit')}
                       </button>
                       <button
                         onClick={() => deleteTask(task)}
                         disabled={isLoading}
-                        className="px-2 py-1 rounded bg-error/10 text-xs text-error disabled:opacity-50"
+                        className="px-2 py-1 rounded bg-error/10 text-caption text-error disabled:opacity-50"
                       >
                         {t('schedule.delete')}
                       </button>
@@ -891,11 +891,11 @@ function ScheduleSelectMenu(props: {
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="mb-1 text-xs text-text-muted">{label}</div>
+      <div className="mb-1 text-caption text-text-muted">{label}</div>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-body-sm transition-colors ${
           open
             ? 'border-accent bg-surface text-text-primary'
             : 'border-border bg-surface text-text-secondary hover:bg-surface-hover'
@@ -922,7 +922,7 @@ function ScheduleSelectMenu(props: {
                   onChange?.(option.value);
                   setOpen(false);
                 }}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-body-sm transition-colors ${
                   selected
                     ? 'bg-accent/10 text-accent'
                     : 'text-text-secondary hover:bg-surface-hover'
@@ -1008,11 +1008,11 @@ function TimeMultiSelectMenu(props: {
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="mb-1 text-xs text-text-muted">{label}</div>
+      <div className="mb-1 text-caption text-text-muted">{label}</div>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-body-sm transition-colors ${
           open
             ? 'border-accent bg-surface text-text-primary'
             : 'border-border bg-surface text-text-secondary hover:bg-surface-hover'
@@ -1033,13 +1033,13 @@ function TimeMultiSelectMenu(props: {
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className="text-sm font-medium text-text-primary">
+                  <div className="text-body-sm font-medium text-text-primary">
                     {t('schedule.pickerEditTimes')}
                   </div>
-                  <div className="text-xs text-text-muted">{t('schedule.pickerAnyHHmm')}</div>
+                  <div className="text-caption text-text-muted">{t('schedule.pickerAnyHHmm')}</div>
                 </div>
                 {values.length > 0 && (
-                  <div className="text-xs text-text-muted">
+                  <div className="text-caption text-text-muted">
                     {t('schedule.pickerSelectedCount', { count: values.length })}
                   </div>
                 )}
@@ -1050,13 +1050,13 @@ function TimeMultiSelectMenu(props: {
                   step={60}
                   value={draftTime}
                   onChange={(event) => setDraftTime(event.target.value)}
-                  className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary"
+                  className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-body-sm text-text-primary"
                 />
                 <button
                   type="button"
                   onClick={addDraftTime}
                   disabled={!isValidTimeValue(draftTime)}
-                  className="btn btn-primary min-w-[92px] flex-shrink-0 gap-1 whitespace-nowrap px-3 py-2 text-sm disabled:opacity-50"
+                  className="btn btn-primary min-w-[92px] flex-shrink-0 gap-1 whitespace-nowrap px-3 py-2 text-body-sm disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" />
                   {t('schedule.pickerAdd')}
@@ -1064,7 +1064,9 @@ function TimeMultiSelectMenu(props: {
               </div>
             </div>
             <div className="space-y-2">
-              <div className="text-xs text-text-muted">{t('schedule.pickerSelectedTimes')}</div>
+              <div className="text-caption text-text-muted">
+                {t('schedule.pickerSelectedTimes')}
+              </div>
               {values.length > 0 ? (
                 <div className="flex flex-wrap gap-2 rounded-lg bg-background p-2">
                   {values.map((time) => (
@@ -1072,7 +1074,7 @@ function TimeMultiSelectMenu(props: {
                       key={time}
                       type="button"
                       onClick={() => onRemove(time)}
-                      className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-surface px-3 py-1 text-sm text-accent shadow-soft"
+                      className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-surface px-3 py-1 text-body-sm text-accent shadow-soft"
                     >
                       <span>{time}</span>
                       <X className="h-3 w-3" />
@@ -1080,13 +1082,13 @@ function TimeMultiSelectMenu(props: {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg bg-background px-3 py-2 text-xs text-text-muted">
+                <div className="rounded-lg bg-background px-3 py-2 text-caption text-text-muted">
                   {t('schedule.pickerNone')}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <div className="text-xs text-text-muted">{t('schedule.pickerSuggestions')}</div>
+              <div className="text-caption text-text-muted">{t('schedule.pickerSuggestions')}</div>
               <div className="flex flex-wrap gap-2">
                 {SCHEDULE_TIME_SUGGESTIONS.map((time) => {
                   const selected = values.includes(time);
@@ -1101,7 +1103,7 @@ function TimeMultiSelectMenu(props: {
                         }
                         onAdd(time);
                       }}
-                      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                      className={`rounded-full border px-3 py-1.5 text-body-sm transition-colors ${
                         selected
                           ? 'border-accent bg-accent/10 text-accent'
                           : 'border-border bg-background text-text-secondary hover:bg-surface-hover'

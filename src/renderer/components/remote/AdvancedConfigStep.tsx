@@ -27,12 +27,12 @@ export function AdvancedConfigStep({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium text-text-primary mb-1">{t('remote.advancedTitle')}</h3>
-        <p className="text-sm text-text-secondary">{t('remote.advancedDesc')}</p>
+        <p className="text-body-sm text-text-secondary">{t('remote.advancedDesc')}</p>
       </div>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
+          <label className="block text-body-sm font-medium text-text-secondary mb-2">
             {t('remote.defaultWorkingDirectory')}
           </label>
           <input
@@ -42,13 +42,13 @@ export function AdvancedConfigStep({
             className="w-full px-4 py-3 bg-surface-hover border border-border rounded-xl text-text-primary focus:border-accent focus:outline-none"
             placeholder={t('remote.defaultWorkingDirectoryPlaceholder')}
           />
-          <p className="text-xs text-text-muted mt-1">
+          <p className="text-caption text-text-muted mt-1">
             {t('remote.defaultWorkingDirectoryHint')}
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
+          <label className="block text-body-sm font-medium text-text-secondary mb-2">
             {t('remote.gatewayPort')}
           </label>
           <input
@@ -62,10 +62,10 @@ export function AdvancedConfigStep({
 
         <div className="flex items-center justify-between p-4 rounded-xl bg-surface-hover">
           <div>
-            <div className="font-medium text-text-primary text-sm">
+            <div className="font-medium text-text-primary text-body-sm">
               {t('remote.autoApproveSafeTools')}
             </div>
-            <p className="text-xs text-text-muted mt-0.5">
+            <p className="text-caption text-text-muted mt-0.5">
               {t('remote.autoApproveSafeToolsDesc')}
             </p>
           </div>

@@ -193,7 +193,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-body-sm">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
@@ -219,7 +219,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
             <div className="rounded-lg border border-border-subtle bg-background text-center py-8 text-text-muted">
               <Plug className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p>{t('mcp.noConnectors')}</p>
-              <p className="text-sm mt-1">{t('mcp.addConnector')}</p>
+              <p className="text-body-sm mt-1">{t('mcp.addConnector')}</p>
             </div>
           ) : (
             servers.map((server) => {
@@ -248,7 +248,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
       {configuringPreset && (
         <div className="p-4 rounded-lg border border-accent/30 bg-accent/5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-primary">
+            <h3 className="text-body-sm font-medium text-text-primary">
               {t('mcp.configure')} {configuringPreset.preset.name}
             </h3>
             <button
@@ -261,13 +261,13 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
               <X className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-xs text-text-muted">
+          <p className="text-caption text-text-muted">
             This connector requires configuration before it can be added.
           </p>
           <div className="space-y-3">
             {configuringPreset.preset.requiresEnv?.map((envKey: string) => (
               <div key={envKey}>
-                <label className="block text-xs font-medium text-text-secondary mb-1">
+                <label className="block text-caption font-medium text-text-secondary mb-1">
                   {configuringPreset.preset.envDescription?.[envKey] || envKey}
                 </label>
                 <input
@@ -277,7 +277,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                     setPresetEnvValues((prev) => ({ ...prev, [envKey]: e.target.value }))
                   }
                   placeholder={`Enter ${envKey}`}
-                  className="input px-3 py-2 text-sm"
+                  className="input px-3 py-2 text-body-sm"
                 />
               </div>
             ))}
@@ -288,7 +288,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                 setConfiguringPreset(null);
                 setPresetEnvValues({});
               }}
-              className="px-3 py-1.5 rounded-md text-sm text-text-secondary hover:text-text-primary transition-colors"
+              className="px-3 py-1.5 rounded-md text-body-sm text-text-secondary hover:text-text-primary transition-colors"
             >
               {t('common.cancel')}
             </button>
@@ -306,7 +306,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                   (key: string) => !presetEnvValues[key]?.trim()
                 )
               }
-              className="btn btn-primary py-1.5 text-sm disabled:opacity-50"
+              className="btn btn-primary py-1.5 text-body-sm disabled:opacity-50"
             >
               {t('common.add')}
             </button>
@@ -321,9 +321,11 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
             onClick={() => setShowPresets(!showPresets)}
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-surface-muted hover:bg-surface transition-colors"
           >
-            <h3 className="text-sm font-medium text-text-primary">{t('mcp.quickAddPresets')}</h3>
+            <h3 className="text-body-sm font-medium text-text-primary">
+              {t('mcp.quickAddPresets')}
+            </h3>
             <div className="flex items-center gap-1.5 text-text-muted">
-              <span className="text-xs">{showPresets ? t('mcp.hide') : t('mcp.show')}</span>
+              <span className="text-caption">{showPresets ? t('mcp.hide') : t('mcp.show')}</span>
               <ChevronDown
                 className={`w-4 h-4 transition-transform ${showPresets ? 'rotate-180' : ''}`}
               />
@@ -347,21 +349,23 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-text-primary">{preset.name}</span>
+                        <span className="font-medium text-body-sm text-text-primary">
+                          {preset.name}
+                        </span>
                         {requiresConfig && !isAdded && (
                           <span className="px-1.5 py-0.5 text-caption font-medium rounded bg-warning/10 text-warning border border-warning/20">
                             {t('mcp.requiresToken')}
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-text-muted mt-0.5 truncate">
+                      <div className="text-caption text-text-muted mt-0.5 truncate">
                         {preset.type === 'stdio'
                           ? `${preset.command} ${preset.args?.join(' ') || ''}`
                           : preset.url || 'Remote server'}
                       </div>
                     </div>
                     {isAdded ? (
-                      <div className="flex items-center gap-1 text-success text-xs whitespace-nowrap">
+                      <div className="flex items-center gap-1 text-success text-caption whitespace-nowrap">
                         <CheckCircle className="w-4 h-4" />
                         <span>{t('mcp.added')}</span>
                       </div>
@@ -369,7 +373,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                       <button
                         onClick={() => handleAddPreset(key)}
                         disabled={isLoading}
-                        className="btn btn-primary px-3 py-1.5 text-xs gap-1 whitespace-nowrap disabled:opacity-50"
+                        className="btn btn-primary px-3 py-1.5 text-caption gap-1 whitespace-nowrap disabled:opacity-50"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         {requiresConfig ? t('mcp.configure') : t('common.add')}
@@ -395,7 +399,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
       )}
 
       {/* Footer info */}
-      <div className="text-sm text-text-muted text-center pt-2">
+      <div className="text-body-sm text-text-muted text-center pt-2">
         {t('mcp.toolsAvailable', { count: tools.length })}
       </div>
     </div>
@@ -444,32 +448,32 @@ function ServerCard({
                 }`}
               />
               <h3 className="font-medium text-text-primary">{server.name}</h3>
-              <span className="px-2 py-0.5 text-xs rounded bg-surface-muted text-text-muted">
+              <span className="px-2 py-0.5 text-caption rounded bg-surface-muted text-text-muted">
                 {server.type.toUpperCase()}
               </span>
             </div>
-            <div className="text-sm text-text-muted space-y-1 ml-6 min-w-0">
+            <div className="text-body-sm text-text-muted space-y-1 ml-6 min-w-0">
               {server.type === 'stdio' && (
                 <div
-                  className="font-mono text-xs truncate"
+                  className="font-mono text-caption truncate"
                   title={`${server.command} ${server.args?.join(' ') || ''}`}
                 >
                   {server.command} {server.args?.join(' ') || ''}
                 </div>
               )}
               {server.type === 'sse' && (
-                <div className="font-mono text-xs truncate" title={server.url}>
+                <div className="font-mono text-caption truncate" title={server.url}>
                   {server.url}
                 </div>
               )}
               {server.type === 'streamable-http' && (
-                <div className="font-mono text-xs truncate" title={server.url}>
+                <div className="font-mono text-caption truncate" title={server.url}>
                   {server.url}
                 </div>
               )}
               {/* Status hint — consistent for all servers */}
               <div
-                className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md w-fit ${
+                className={`inline-flex items-center gap-1 text-caption px-2 py-1 rounded-md w-fit ${
                   serverStatus === 'connected'
                     ? 'bg-success/10 text-success'
                     : serverStatus === 'failed'
@@ -505,7 +509,7 @@ function ServerCard({
               {/* Tools List */}
               {showTools && tools.length > 0 && (
                 <div className="mt-3 p-3 rounded-lg bg-surface-muted border border-border">
-                  <div className="text-xs font-medium text-text-primary mb-2">
+                  <div className="text-caption font-medium text-text-primary mb-2">
                     {t('mcp.toolsAvailable', { count: tools.length }).split(' ').slice(1).join(' ')}
                     :
                   </div>
@@ -517,7 +521,7 @@ function ServerCard({
                       return (
                         <div
                           key={idx}
-                          className="px-2 py-1.5 rounded bg-background border border-border text-xs text-text-secondary"
+                          className="px-2 py-1.5 rounded bg-background border border-border text-caption text-text-secondary"
                           title={tool.description || tool.name}
                         >
                           <div className="font-mono text-accent break-words whitespace-normal">
@@ -535,7 +539,7 @@ function ServerCard({
                 </div>
               )}
               {showTools && tools.length === 0 && (
-                <div className="mt-3 p-3 rounded-lg bg-surface-muted text-xs text-text-muted">
+                <div className="mt-3 p-3 rounded-lg bg-surface-muted text-caption text-text-muted">
                   {t('mcp.notConnected')}
                 </div>
               )}
@@ -679,7 +683,9 @@ function ServerForm({
       </h3>
 
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-2">{t('mcp.name')}</label>
+        <label className="block text-body-sm font-medium text-text-primary mb-2">
+          {t('mcp.name')}
+        </label>
         <input
           type="text"
           value={name}
@@ -691,12 +697,14 @@ function ServerForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-2">{t('mcp.type')}</label>
+        <label className="block text-body-sm font-medium text-text-primary mb-2">
+          {t('mcp.type')}
+        </label>
         <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={() => setType('stdio')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-lg text-body-sm font-medium transition-all ${
               type === 'stdio'
                 ? 'bg-accent text-on-accent'
                 : 'bg-surface-muted text-text-secondary hover:bg-surface-active'
@@ -707,7 +715,7 @@ function ServerForm({
           <button
             type="button"
             onClick={() => setType('sse')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-lg text-body-sm font-medium transition-all ${
               type === 'sse'
                 ? 'bg-accent text-on-accent'
                 : 'bg-surface-muted text-text-secondary hover:bg-surface-active'
@@ -718,7 +726,7 @@ function ServerForm({
           <button
             type="button"
             onClick={() => setType('streamable-http')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-lg text-body-sm font-medium transition-all ${
               type === 'streamable-http'
                 ? 'bg-accent text-on-accent'
                 : 'bg-surface-muted text-text-secondary hover:bg-surface-active'
@@ -732,7 +740,7 @@ function ServerForm({
       {type === 'stdio' ? (
         <>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-body-sm font-medium text-text-primary mb-2">
               {t('mcp.command')}
             </label>
             <input
@@ -740,12 +748,12 @@ function ServerForm({
               value={command}
               onChange={(e) => setCommand(e.target.value)}
               placeholder={t('mcp.commandPlaceholder')}
-              className="input py-2 font-mono text-sm"
+              className="input py-2 font-mono text-body-sm"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-body-sm font-medium text-text-primary mb-2">
               {t('mcp.arguments')}
             </label>
             <input
@@ -753,21 +761,21 @@ function ServerForm({
               value={args}
               onChange={(e) => setArgs(e.target.value)}
               placeholder={t('mcp.argumentsPlaceholder')}
-              className="input py-2 font-mono text-sm"
+              className="input py-2 font-mono text-body-sm"
             />
-            <p className="text-xs text-text-muted mt-1">{t('mcp.spaceSeparated')}</p>
+            <p className="text-caption text-text-muted mt-1">{t('mcp.spaceSeparated')}</p>
           </div>
 
           {/* Environment Variables Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-text-primary">
+              <label className="text-body-sm font-medium text-text-primary">
                 {t('credentials.envVars')}
               </label>
               <button
                 type="button"
                 onClick={() => setShowEnvSection(!showEnvSection)}
-                className="text-xs text-accent hover:text-accent-hover"
+                className="text-caption text-accent hover:text-accent-hover"
               >
                 {showEnvSection ? t('mcp.hide') : t('mcp.show')}
               </button>
@@ -777,7 +785,7 @@ function ServerForm({
                 {Object.entries(envVars).map(([key, value]) => (
                   <div key={key} className="flex items-center gap-2">
                     <span
-                      className="text-xs font-mono text-text-secondary w-32 truncate"
+                      className="text-caption font-mono text-text-secondary w-32 truncate"
                       title={key}
                     >
                       {key}
@@ -787,7 +795,7 @@ function ServerForm({
                       value={value}
                       onChange={(e) => handleEnvChange(key, e.target.value)}
                       placeholder={`${t('mcp.envValuePlaceholder')}: ${key}`}
-                      className="input flex-1 px-3 py-1.5 text-sm font-mono"
+                      className="input flex-1 px-3 py-1.5 text-body-sm font-mono"
                     />
                     <button
                       type="button"
@@ -800,7 +808,7 @@ function ServerForm({
                   </div>
                 ))}
                 {Object.keys(envVars).length === 0 && !isAddingEnvVar && (
-                  <p className="text-xs text-text-muted text-center py-2">
+                  <p className="text-caption text-text-muted text-center py-2">
                     {t('credentials.noEnvVars')}
                   </p>
                 )}
@@ -811,7 +819,7 @@ function ServerForm({
                       value={newEnvKey}
                       onChange={(e) => setNewEnvKey(e.target.value)}
                       placeholder="NOTION_TOKEN"
-                      className="input px-3 py-1.5 text-sm font-mono"
+                      className="input px-3 py-1.5 text-body-sm font-mono"
                       autoFocus
                     />
                     <input
@@ -819,21 +827,21 @@ function ServerForm({
                       value={newEnvValue}
                       onChange={(e) => setNewEnvValue(e.target.value)}
                       placeholder={t('mcp.envValuePlaceholder')}
-                      className="input px-3 py-1.5 text-sm font-mono"
+                      className="input px-3 py-1.5 text-body-sm font-mono"
                     />
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={handleSaveNewEnvVar}
                         disabled={!newEnvKey.trim()}
-                        className="btn btn-primary flex-1 px-3 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="btn btn-primary flex-1 px-3 py-1 text-caption disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t('common.save')}
                       </button>
                       <button
                         type="button"
                         onClick={handleCancelNewEnvVar}
-                        className="flex-1 py-1 px-3 rounded bg-surface-muted text-text-secondary text-xs hover:bg-surface-active transition-colors"
+                        className="flex-1 py-1 px-3 rounded bg-surface-muted text-text-secondary text-caption hover:bg-surface-active transition-colors"
                       >
                         {t('common.cancel')}
                       </button>
@@ -844,7 +852,7 @@ function ServerForm({
                   <button
                     type="button"
                     onClick={handleAddEnvVar}
-                    className="w-full mt-2 py-1.5 px-3 rounded border border-dashed border-border hover:border-accent hover:bg-accent/5 text-xs text-text-secondary hover:text-accent transition-colors flex items-center justify-center gap-1"
+                    className="w-full mt-2 py-1.5 px-3 rounded border border-dashed border-border hover:border-accent hover:bg-accent/5 text-caption text-text-secondary hover:text-accent transition-colors flex items-center justify-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     {t('credentials.envVars')}
@@ -852,18 +860,20 @@ function ServerForm({
                 )}
               </div>
             )}
-            <p className="text-xs text-text-muted">{t('credentials.usedForTokens')}</p>
+            <p className="text-caption text-text-muted">{t('credentials.usedForTokens')}</p>
           </div>
         </>
       ) : (
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">{t('mcp.url')}</label>
+          <label className="block text-body-sm font-medium text-text-primary mb-2">
+            {t('mcp.url')}
+          </label>
           <input
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com/mcp"
-            className="input py-2 font-mono text-sm"
+            className="input py-2 font-mono text-body-sm"
             required
           />
         </div>
@@ -877,7 +887,7 @@ function ServerForm({
           onChange={(e) => setEnabled(e.target.checked)}
           className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
         />
-        <label htmlFor="enabled" className="text-sm text-text-primary">
+        <label htmlFor="enabled" className="text-body-sm text-text-primary">
           {t('mcp.enableConnector')}
         </label>
       </div>

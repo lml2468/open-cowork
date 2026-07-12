@@ -35,12 +35,12 @@ function CompactionEntry({ event }: { event: CompactionEvent }) {
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted">{formatTime(event.timestamp)}</span>
-            <span className="text-xs text-text-primary font-medium">
+            <span className="text-caption text-text-muted">{formatTime(event.timestamp)}</span>
+            <span className="text-caption text-text-primary font-medium">
               {event.type === 'auto' ? t('compaction.autoCompact') : t('compaction.manualCompact')}
             </span>
           </div>
-          <p className="text-xs text-text-muted mt-0.5">
+          <p className="text-caption text-text-muted mt-0.5">
             {formatTokens(event.tokensBefore)} → {afterLabel} {t('compaction.tokens')}
           </p>
         </div>
@@ -55,25 +55,25 @@ function CompactionEntry({ event }: { event: CompactionEvent }) {
         <div className="px-3 pb-2 pl-8 space-y-1.5">
           {event.summary && (
             <div>
-              <p className="text-xs text-text-muted font-medium">{t('compaction.summary')}:</p>
-              <p className="text-xs text-text-secondary mt-0.5 whitespace-pre-wrap line-clamp-4">
+              <p className="text-caption text-text-muted font-medium">{t('compaction.summary')}:</p>
+              <p className="text-caption text-text-secondary mt-0.5 whitespace-pre-wrap line-clamp-4">
                 {event.summary}
               </p>
             </div>
           )}
           {event.readFiles.length > 0 && (
             <div>
-              <p className="text-xs text-text-muted font-medium">
+              <p className="text-caption text-text-muted font-medium">
                 {t('compaction.filesReferenced')}:
               </p>
               <ul className="mt-0.5 space-y-0.5">
                 {event.readFiles.slice(0, 5).map((file) => (
-                  <li key={file} className="text-xs text-text-secondary truncate">
+                  <li key={file} className="text-caption text-text-secondary truncate">
                     {file}
                   </li>
                 ))}
                 {event.readFiles.length > 5 && (
-                  <li className="text-xs text-text-muted">
+                  <li className="text-caption text-text-muted">
                     +{event.readFiles.length - 5} {t('compaction.more')}
                   </li>
                 )}
@@ -100,7 +100,7 @@ export function CompactionHistory() {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-surface-hover transition-colors"
       >
-        <span className="flex items-center gap-1.5 text-xs font-medium text-text-muted uppercase tracking-wider">
+        <span className="flex items-center gap-1.5 text-caption font-medium text-text-muted uppercase tracking-wider">
           <History className="w-3.5 h-3.5" />
           {t('compaction.history')}
           <span className="ml-1 px-1.5 py-0.5 rounded-full bg-surface-muted text-text-muted text-caption">

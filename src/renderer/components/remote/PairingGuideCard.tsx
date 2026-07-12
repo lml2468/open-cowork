@@ -42,10 +42,10 @@ export function PairingGuideCard() {
         <Link2 className="w-5 h-5" />
         {t('remote.pairingGuideTitle')}
       </h3>
-      <ol className="space-y-2 text-sm text-text-secondary">
+      <ol className="space-y-2 text-body-sm text-text-secondary">
         {steps.map((step, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="w-5 h-5 rounded-full bg-accent/10 text-accent text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="w-5 h-5 rounded-full bg-accent/10 text-accent text-caption flex items-center justify-center flex-shrink-0 mt-0.5">
               {i + 1}
             </span>
             <span>{step}</span>

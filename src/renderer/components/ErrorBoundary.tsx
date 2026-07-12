@@ -54,21 +54,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
           {/* Heading & description */}
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-text-primary">
-              {t('errorBoundary.title')}
-            </h2>
-            <p className="text-sm text-text-secondary">
-              {t('errorBoundary.description')}
-            </p>
+            <h2 className="text-xl font-semibold text-text-primary">{t('errorBoundary.title')}</h2>
+            <p className="text-body-sm text-text-secondary">{t('errorBoundary.description')}</p>
           </div>
 
           {/* Error detail (collapsed, non-critical) */}
           {this.state.error && (
             <details className="text-left rounded-xl border border-border-subtle bg-surface-muted px-4 py-3">
-              <summary className="cursor-pointer text-xs text-text-muted select-none">
+              <summary className="cursor-pointer text-caption text-text-muted select-none">
                 {t('errorBoundary.details')}
               </summary>
-              <pre className="mt-2 text-xs text-error/80 whitespace-pre-wrap break-all font-mono">
+              <pre className="mt-2 text-caption text-error/80 whitespace-pre-wrap break-all font-mono">
                 {this.state.error.message}
               </pre>
             </details>

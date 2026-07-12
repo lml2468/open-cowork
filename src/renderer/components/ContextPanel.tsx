@@ -293,7 +293,7 @@ export function ContextPanel() {
   }
 
   return (
-    <div className="w-context bg-background border-l border-border-muted flex flex-col overflow-hidden text-sm">
+    <div className="w-context bg-background border-l border-border-muted flex flex-col overflow-hidden text-body-sm">
       {/* Header */}
       <div className="px-3 h-header flex items-center gap-2 border-b border-border-muted shrink-0">
         <button
@@ -303,7 +303,7 @@ export function ContextPanel() {
         >
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
-        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
+        <span className="text-caption font-medium text-text-muted uppercase tracking-wider">
           {t('context.context')}
         </span>
       </div>
@@ -315,7 +315,7 @@ export function ContextPanel() {
             <Cpu className="w-3.5 h-3.5 text-text-muted shrink-0" />
             <span className="truncate">{modelName}</span>
           </div>
-          <div className="flex items-center gap-3 text-xs text-text-muted pl-5">
+          <div className="flex items-center gap-3 text-caption text-text-muted pl-5">
             <span className="flex items-center gap-1">
               <MessageSquare className="w-3 h-3" />
               {messageCount}
@@ -338,11 +338,11 @@ export function ContextPanel() {
       {activeSession && contextUsage && (
         <div className="px-4 py-2.5 border-b border-border-muted space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
+            <span className="text-caption font-medium text-text-muted uppercase tracking-wider">
               {t('context.contextUsage')}
             </span>
             <span
-              className={`text-xs font-medium ${
+              className={`text-caption font-medium ${
                 contextUsage.percentage > 95
                   ? 'text-error'
                   : contextUsage.percentage > 80
@@ -365,7 +365,7 @@ export function ContextPanel() {
               style={{ width: `${contextUsage.percentage}%` }}
             />
           </div>
-          <p className="text-xs text-text-muted">
+          <p className="text-caption text-text-muted">
             {t('context.contextUsageLabel', {
               used: formatTokenCount(contextUsage.used),
               total: formatTokenCount(contextUsage.total),
@@ -383,7 +383,7 @@ export function ContextPanel() {
           onClick={() => setArtifactsOpen(!artifactsOpen)}
           className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-surface-hover transition-colors"
         >
-          <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
+          <span className="text-caption font-medium text-text-muted uppercase tracking-wider">
             {t('context.artifacts')}
           </span>
           {artifactsOpen ? (
@@ -396,7 +396,7 @@ export function ContextPanel() {
         {artifactsOpen && (
           <div className="pb-2 max-h-64 overflow-y-auto">
             {displayArtifacts.length === 0 ? (
-              <div className="flex items-center gap-2 px-4 py-2 text-xs text-text-muted">
+              <div className="flex items-center gap-2 px-4 py-2 text-caption text-text-muted">
                 <Layers className="w-3.5 h-3.5 shrink-0" />
                 <span>{t('context.noArtifactsYet')}</span>
               </div>
@@ -449,7 +449,7 @@ export function ContextPanel() {
                       title={artifactPath || undefined}
                     >
                       <IconComponent className="w-3.5 h-3.5 text-text-muted shrink-0" />
-                      <span className="text-xs text-text-primary truncate">{label}</span>
+                      <span className="text-caption text-text-primary truncate">{label}</span>
                     </div>
                   );
                 })}
@@ -462,13 +462,13 @@ export function ContextPanel() {
       {/* Working Directory */}
       <div className="border-b border-border-muted">
         <div className="px-4 py-2.5">
-          <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
+          <p className="text-caption font-medium text-text-muted uppercase tracking-wider mb-2">
             {t('context.workingDirectory')}
           </p>
           <div className="flex items-center gap-1.5 min-w-0">
             <FolderOpen className="w-3.5 h-3.5 text-text-muted shrink-0" />
             <span
-              className={`text-xs truncate flex-1 ${currentWorkingDir ? 'text-text-primary cursor-pointer hover:text-accent-primary transition-colors' : 'text-text-muted'}`}
+              className={`text-caption truncate flex-1 ${currentWorkingDir ? 'text-text-primary cursor-pointer hover:text-accent-primary transition-colors' : 'text-text-muted'}`}
               title={currentWorkingDir ? t('context.openInFileManager') : ''}
               onClick={() =>
                 currentWorkingDir && window.electronAPI?.showItemInFolder(currentWorkingDir)
@@ -534,11 +534,11 @@ export function ContextPanel() {
       {/* MCP Connectors */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-2.5">
-          <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">
+          <p className="text-caption font-medium text-text-muted uppercase tracking-wider mb-2">
             {t('context.mcpConnectors')}
           </p>
           {mcpServers.length === 0 ? (
-            <div className="flex items-center gap-2 text-xs text-text-muted py-1">
+            <div className="flex items-center gap-2 text-caption text-text-muted py-1">
               <Plug className="w-3.5 h-3.5 shrink-0" />
               <span>{t('mcp.noConnectors')}</span>
             </div>
@@ -619,13 +619,15 @@ function ConnectorItem({
         </div>
         <div className="flex-1 text-left min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-text-primary truncate">{server.name}</span>
+            <span className="text-body-sm font-medium text-text-primary truncate">
+              {server.name}
+            </span>
             {!server.connected && (
-              <span className="text-xs text-text-muted">({t('mcp.notConnected')})</span>
+              <span className="text-caption text-text-muted">({t('mcp.notConnected')})</span>
             )}
           </div>
           {server.connected && (
-            <p className="text-xs text-text-muted">
+            <p className="text-caption text-text-muted">
               {t('mcp.toolCount', { count: server.toolCount })}
               {usageCount > 0 && ` • ${t('mcp.callCount', { count: usageCount })}`}
             </p>
@@ -643,7 +645,9 @@ function ConnectorItem({
         <div className="px-3 pb-2 space-y-1 bg-surface">
           {mcpToolsUsed.length > 0 ? (
             <>
-              <p className="text-xs text-text-muted px-2 py-1">{t('context.toolsUsedLabel')}</p>
+              <p className="text-caption text-text-muted px-2 py-1">
+                {t('context.toolsUsedLabel')}
+              </p>
               {mcpToolsUsed.map((toolName, index) => {
                 const count = steps.filter((s) => s.toolName === toolName).length;
                 const readableName =
@@ -655,14 +659,14 @@ function ConnectorItem({
                     className="flex items-center gap-2 px-2 py-1.5 rounded bg-mcp/5 hover:bg-mcp/10 transition-colors"
                   >
                     <Wrench className="w-3.5 h-3.5 text-mcp" />
-                    <span className="text-xs text-text-primary flex-1">{readableName}</span>
-                    <span className="text-xs text-text-muted">{count}x</span>
+                    <span className="text-caption text-text-primary flex-1">{readableName}</span>
+                    <span className="text-caption text-text-muted">{count}x</span>
                   </div>
                 );
               })}
             </>
           ) : (
-            <p className="text-xs text-text-muted px-2 py-1">{t('context.noToolsUsedYet')}</p>
+            <p className="text-caption text-text-muted px-2 py-1">{t('context.noToolsUsedYet')}</p>
           )}
         </div>
       )}

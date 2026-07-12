@@ -59,7 +59,7 @@ export const ThinkingBlock = memo(function ThinkingBlock({ block }: ThinkingBloc
         className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-hover/50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent focus-visible:ring-opacity-50"
       >
         <Brain className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
-        <span className="text-xs font-medium text-text-muted flex-shrink-0">
+        <span className="text-caption font-medium text-text-muted flex-shrink-0">
           {t('messageCard.thinking')}
         </span>
         {!expanded && (
@@ -76,7 +76,7 @@ export const ThinkingBlock = memo(function ThinkingBlock({ block }: ThinkingBloc
 
       {expanded && (
         <div className="border-t border-border/50 px-4 py-3 animate-fade-in">
-          <div className="text-sm text-text-secondary leading-relaxed prose-chat max-w-none">
+          <div className="text-body-sm text-text-secondary leading-relaxed prose-chat max-w-none">
             <PanelErrorBoundary
               name="ThinkingMarkdown"
               fallback={<div className="whitespace-pre-wrap">{text}</div>}

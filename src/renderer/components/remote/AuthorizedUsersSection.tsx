@@ -34,10 +34,12 @@ export function AuthorizedUsersSection({ pairedUsers, onRevoke }: Props) {
                 <Users className="w-4 h-4 text-accent" />
               </div>
               <div>
-                <div className="font-medium text-text-primary text-sm">
+                <div className="font-medium text-text-primary text-body-sm">
                   {user.userName || user.userId.slice(0, 12) + '...'}
                 </div>
-                <div className="text-xs text-text-muted">{formatAppDate(user.lastActiveAt)}</div>
+                <div className="text-caption text-text-muted">
+                  {formatAppDate(user.lastActiveAt)}
+                </div>
               </div>
             </div>
             <button

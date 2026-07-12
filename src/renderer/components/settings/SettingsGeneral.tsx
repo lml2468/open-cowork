@@ -33,13 +33,13 @@ export function SettingsGeneral() {
     <div className="space-y-6">
       {/* Theme */}
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-text-primary">{t('general.appearance')}</h4>
+        <h4 className="text-body-sm font-medium text-text-primary">{t('general.appearance')}</h4>
         <div className="flex gap-2">
           {themeOptions.map((opt) => (
             <button
               key={opt.value}
               onClick={() => updateSettings({ theme: opt.value })}
-              className={`flex-1 px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+              className={`flex-1 px-4 py-2.5 rounded-lg border-2 text-body-sm font-medium transition-all ${
                 settings.theme === opt.value
                   ? 'border-accent bg-accent/5 text-text-primary'
                   : 'border-border bg-surface hover:border-accent/50 text-text-secondary'
@@ -53,13 +53,13 @@ export function SettingsGeneral() {
 
       {/* Language */}
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-text-primary">{t('general.language')}</h4>
+        <h4 className="text-body-sm font-medium text-text-primary">{t('general.language')}</h4>
         <div className="flex gap-2">
           {languages.map((lang) => (
             <button
               key={lang.code}
               onClick={() => i18n.changeLanguage(lang.code)}
-              className={`flex-1 px-4 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+              className={`flex-1 px-4 py-2.5 rounded-lg border-2 text-body-sm font-medium transition-all ${
                 currentLang === lang.code
                   ? 'border-accent bg-accent/5 text-text-primary'
                   : 'border-border bg-surface hover:border-accent/50 text-text-secondary'
@@ -74,7 +74,7 @@ export function SettingsGeneral() {
       {/* About */}
       {appVer && (
         <div className="pt-4 border-t border-border">
-          <p className="text-xs text-text-muted">Open Cowork v{appVer}</p>
+          <p className="text-caption text-text-muted">Open Cowork v{appVer}</p>
         </div>
       )}
     </div>

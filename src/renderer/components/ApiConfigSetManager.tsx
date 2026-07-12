@@ -89,7 +89,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
 
   return (
     <div className="space-y-3 py-5 border-b border-border-muted px-4">
-      <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+      <label className="flex items-center gap-2 text-body-sm font-medium text-text-primary">
         <Layers className="w-4 h-4" />
         {t('api.configSet')}
         {hasUnsavedChanges && (
@@ -148,7 +148,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
               void onSaveCurrentSet();
             }}
             disabled={isMutatingConfigSet || hasDialogOpen || isInlineRenaming}
-            className="px-3 py-2 rounded-lg border border-border-muted bg-background hover:bg-surface-hover text-text-secondary text-xs hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            className="px-3 py-2 rounded-lg border border-border-muted bg-background hover:bg-surface-hover text-text-secondary text-caption hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
           >
             <Save className="w-3.5 h-3.5" />
             {t('common.save')}
@@ -159,7 +159,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
               void onRequestCreateBlankSet();
             }}
             disabled={isMutatingConfigSet || hasDialogOpen || isInlineRenaming}
-            className="px-3 py-2 rounded-lg border border-border-muted bg-background hover:bg-surface-hover text-text-secondary text-xs hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            className="px-3 py-2 rounded-lg border border-border-muted bg-background hover:bg-surface-hover text-text-secondary text-caption hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
             {t('api.newSet')}
@@ -176,7 +176,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
             disabled={
               isMutatingConfigSet || !canRenameCurrentConfigSet || hasDialogOpen || isInlineRenaming
             }
-            className="px-3 py-2 rounded-lg border border-border-muted bg-background hover:bg-surface-hover text-text-secondary text-xs hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            className="px-3 py-2 rounded-lg border border-border-muted bg-background hover:bg-surface-hover text-text-secondary text-caption hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
           >
             <Pencil className="w-3.5 h-3.5" />
             {t('api.renameSet')}
@@ -188,17 +188,17 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
             disabled={
               isMutatingConfigSet || !canDeleteCurrentConfigSet || hasDialogOpen || isInlineRenaming
             }
-            className="px-2.5 py-2 rounded-lg text-text-muted text-xs hover:text-error hover:bg-error/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            className="px-2.5 py-2 rounded-lg text-text-muted text-caption hover:text-error hover:bg-error/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
-      <p className="text-xs text-text-muted">{t('api.currentSetSavingHint')}</p>
+      <p className="text-caption text-text-muted">{t('api.currentSetSavingHint')}</p>
 
       {activeLocalDialog === 'delete' && currentConfigSet && (
         <div className="space-y-3 rounded-lg border border-error/30 bg-error/10 px-3 py-3">
-          <p className="text-xs text-text-primary">
+          <p className="text-caption text-text-primary">
             {t('api.configSetDeleteConfirm', { name: currentConfigSet.name })}
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -206,7 +206,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
               type="button"
               onClick={() => setActiveLocalDialog('none')}
               disabled={isMutatingConfigSet}
-              className="px-2 py-2 rounded-lg border border-border bg-surface text-text-secondary text-xs font-medium hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-2 rounded-lg border border-border bg-surface text-text-secondary text-caption font-medium hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {t('common.cancel')}
             </button>
@@ -222,7 +222,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
                 }
               }}
               disabled={isMutatingConfigSet}
-              className="px-2 py-2 rounded-lg bg-error text-white text-xs font-medium hover:bg-error/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-2 rounded-lg bg-error text-white text-caption font-medium hover:bg-error/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {t('api.deleteSet')}
             </button>
@@ -232,7 +232,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
 
       {pendingConfigSetAction && (
         <div className="space-y-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-3">
-          <p className="text-xs text-text-primary">{pendingActionMessage}</p>
+          <p className="text-caption text-text-primary">{pendingActionMessage}</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               type="button"
@@ -240,7 +240,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
                 void onSaveAndContinuePendingAction();
               }}
               disabled={isMutatingConfigSet || isSaving}
-              className="px-2 py-2 rounded-lg bg-accent text-on-accent text-xs font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-2 rounded-lg bg-accent text-on-accent text-caption font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {t('api.saveAndContinue')}
             </button>
@@ -250,7 +250,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
                 void onDiscardAndContinuePendingAction();
               }}
               disabled={isMutatingConfigSet || isSaving}
-              className="px-2 py-2 rounded-lg bg-surface-hover text-text-secondary text-xs font-medium hover:bg-surface-active disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-2 rounded-lg bg-surface-hover text-text-secondary text-caption font-medium hover:bg-surface-active disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {t('api.discardAndContinue')}
             </button>
@@ -258,7 +258,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
               type="button"
               onClick={onCancelPendingAction}
               disabled={isMutatingConfigSet || isSaving}
-              className="px-2 py-2 rounded-lg border border-border bg-surface text-text-secondary text-xs font-medium hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-2 py-2 rounded-lg border border-border bg-surface text-text-secondary text-caption font-medium hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {t('common.cancel')}
             </button>
@@ -267,7 +267,7 @@ export function ApiConfigSetManager(props: ApiConfigSetManagerProps) {
       )}
 
       {hasUnsavedChanges && !pendingConfigSetAction && (
-        <p className="text-xs text-warning">{t('api.unsavedCurrentSetHint')}</p>
+        <p className="text-caption text-warning">{t('api.unsavedCurrentSetHint')}</p>
       )}
     </div>
   );

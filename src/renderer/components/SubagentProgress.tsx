@@ -71,7 +71,7 @@ export const SubagentProgress = memo(function SubagentProgress({ state }: Subage
         <Bot className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
 
         {/* Label */}
-        <span className="text-xs font-medium text-text-secondary truncate flex-1 min-w-0">
+        <span className="text-caption font-medium text-text-secondary truncate flex-1 min-w-0">
           {t('subagent.label')}: &ldquo;{expanded ? state.task : taskPreview}&rdquo;
         </span>
 
@@ -108,7 +108,7 @@ export const SubagentProgress = memo(function SubagentProgress({ state }: Subage
               ))}
               {/* Currently running tool indicator */}
               {state.activeToolName && (
-                <div className="flex items-center gap-2 text-xs text-text-muted">
+                <div className="flex items-center gap-2 text-caption text-text-muted">
                   <Loader2 className="w-3 h-3 animate-spin text-accent" />
                   <Wrench className="w-3 h-3" />
                   <span className="font-mono">{state.activeToolName}</span>
@@ -120,14 +120,14 @@ export const SubagentProgress = memo(function SubagentProgress({ state }: Subage
           {/* Error display */}
           {isFailed && state.error && (
             <div className="px-3 py-2 border-t border-border/50">
-              <p className="text-xs text-error">{state.error}</p>
+              <p className="text-caption text-error">{state.error}</p>
             </div>
           )}
 
           {/* Completion status */}
           {isCompleted && (
             <div className="px-3 py-2 border-t border-border/50">
-              <div className="flex items-center gap-2 text-xs text-success">
+              <div className="flex items-center gap-2 text-caption text-success">
                 <CheckCircle2 className="w-3 h-3" />
                 <span>
                   {t('subagent.completed')}
@@ -146,7 +146,7 @@ export const SubagentProgress = memo(function SubagentProgress({ state }: Subage
                   e.stopPropagation();
                   setShowResult(!showResult);
                 }}
-                className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
+                className="flex items-center gap-1.5 text-caption text-text-muted hover:text-text-secondary transition-colors"
               >
                 {showResult ? (
                   <ChevronDown className="w-3 h-3" />
@@ -156,7 +156,7 @@ export const SubagentProgress = memo(function SubagentProgress({ state }: Subage
                 <span>{t('subagent.showResult')}</span>
               </button>
               {showResult && (
-                <pre className="mt-2 text-xs font-mono text-text-secondary whitespace-pre-wrap break-all bg-surface-muted rounded-lg p-2.5 border border-border-subtle max-h-[200px] overflow-y-auto">
+                <pre className="mt-2 text-caption font-mono text-text-secondary whitespace-pre-wrap break-all bg-surface-muted rounded-lg p-2.5 border border-border-subtle max-h-[200px] overflow-y-auto">
                   {state.accumulatedText}
                 </pre>
               )}
@@ -171,7 +171,7 @@ export const SubagentProgress = memo(function SubagentProgress({ state }: Subage
 // Sub-component: a single tool activity row
 function ToolActivityRow({ tool }: { tool: SubagentToolActivity }) {
   return (
-    <div className="flex items-center gap-2 text-xs text-text-muted">
+    <div className="flex items-center gap-2 text-caption text-text-muted">
       {tool.isError ? (
         <XCircle className="w-3 h-3 text-error flex-shrink-0" />
       ) : (
