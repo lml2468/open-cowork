@@ -155,6 +155,12 @@
     @apply focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50;
   }
 
+  /* Shared horizontal gutter for content columns and their headers/bars —
+     keeps header content aligned with the body at every breakpoint */
+  .gutter-x {
+    @apply px-5 lg:px-8;
+  }
+
   /* Input styles */
   .input {
     @apply w-full px-4 py-3 rounded-xl bg-surface border border-border;

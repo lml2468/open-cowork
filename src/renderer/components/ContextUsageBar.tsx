@@ -72,7 +72,7 @@ export function ContextUsageBar() {
   const textColor = percent > 80 ? 'text-error' : percent > 50 ? 'text-warning' : 'text-text-muted';
 
   return (
-    <div className="relative px-5 lg:px-8 py-1.5 border-b border-border-muted bg-background/60">
+    <div className="relative gutter-x py-1.5 border-b border-border-muted bg-background/60">
       <div className="max-w-content mx-auto flex items-center gap-3">
         {isUrgent ? (
           <AlertTriangle className="w-3.5 h-3.5 text-error shrink-0" />
@@ -127,7 +127,7 @@ export function ContextUsageBar() {
             }}
           >
             <div
-              className="absolute top-12 left-0 right-0 px-5 lg:px-8 py-3 bg-background border-b border-border-muted shadow-lg"
+              className="absolute top-12 left-0 right-0 gutter-x py-3 bg-background border-b border-border-muted shadow-lg"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="max-w-content mx-auto flex items-center justify-between gap-4">

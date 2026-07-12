@@ -228,6 +228,8 @@ Reusable primitives live in `globals.css @layer components` and should be prefer
 - **`.tag`** — chips and quick actions.
 - **`.badge`** — status/count pills.
 - **`.overlay`** — the single modal scrim wrapper.
+- **`.gutter-x`** — the shared horizontal content gutter (`px-5` → `lg:px-8`); use it on a view's
+  header/bars and its body so they stay aligned at every breakpoint.
 - **`.message-user`** — the right-aligned user bubble (`surface`, `3xl`).
 
 ## Do's and Don'ts
