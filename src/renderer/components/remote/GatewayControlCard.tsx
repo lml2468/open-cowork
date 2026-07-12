@@ -52,7 +52,7 @@ export function GatewayControlCard({
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
               status?.running
                 ? 'bg-error hover:bg-error/90 text-white'
-                : 'bg-accent hover:bg-accent/90 text-white'
+                : 'bg-accent hover:bg-accent-hover text-on-accent'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isTogglingGateway ? (

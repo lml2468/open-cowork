@@ -143,7 +143,7 @@ export function ConfigModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md">
+    <div className="overlay">
       <div className="bg-background rounded-[2rem] shadow-elevated w-full max-w-[880px] mx-4 max-h-[88vh] overflow-hidden border border-border-subtle flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border-muted bg-background/88">
@@ -208,7 +208,7 @@ export function ConfigModal({
                     onClick={() => changeProvider(p)}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       provider === p
-                        ? 'bg-accent text-white'
+                        ? 'bg-accent text-on-accent'
                         : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
                     }`}
                   >
@@ -232,7 +232,7 @@ export function ConfigModal({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={currentPreset?.keyPlaceholder || t('api.enterApiKey')}
-              className="w-full px-4 py-3 rounded-xl bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+              className="input"
             />
             {currentPreset?.keyHint && (
               <p className="text-xs text-text-muted">{currentPreset.keyHint}</p>
@@ -259,7 +259,7 @@ export function ConfigModal({
                     onClick={() => changeProtocol(mode.id)}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       customProtocol === mode.id
-                        ? 'bg-accent text-white'
+                        ? 'bg-accent text-on-accent'
                         : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
                     }`}
                   >
@@ -309,7 +309,7 @@ export function ConfigModal({
                         ? 'https://generativelanguage.googleapis.com'
                         : currentPreset?.baseUrl || 'https://api.anthropic.com'
                 }
-                className="w-full px-4 py-3 rounded-xl bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+                className="input"
               />
               <p className="text-xs text-text-muted">
                 {provider === 'ollama'
@@ -360,8 +360,12 @@ export function ConfigModal({
                   >
                     <Edit3 className="w-3 h-3" />
                     {isOllamaMode
-                      ? (useCustomModel ? t('api.useDetectedModels') : t('api.manualModel'))
-                      : (useCustomModel ? t('api.usePreset') : t('api.custom'))}
+                      ? useCustomModel
+                        ? t('api.useDetectedModels')
+                        : t('api.manualModel')
+                      : useCustomModel
+                        ? t('api.usePreset')
+                        : t('api.custom')}
                   </button>
                 )}
               </div>
@@ -372,13 +376,13 @@ export function ConfigModal({
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
                 placeholder={modelInputPlaceholder}
-                className="w-full px-4 py-3 rounded-xl bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+                className="input"
               />
             ) : (
               <select
                 value={modelOptions.length ? model : ''}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all appearance-none cursor-pointer"
+                className="input appearance-none cursor-pointer"
               >
                 {modelOptions.length ? (
                   modelOptions.map((m) => (
@@ -453,7 +457,7 @@ export function ConfigModal({
             <button
               onClick={handleTest}
               disabled={isTesting || (requiresApiKey && !apiKey.trim())}
-              className="w-full py-3 px-4 rounded-xl border border-border bg-surface text-text-primary font-medium hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              className="btn btn-secondary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isTesting ? (
                 <>
@@ -472,7 +476,7 @@ export function ConfigModal({
                 void handleSave();
               }}
               disabled={isSaving || (requiresApiKey && !apiKey.trim())}
-              className="w-full py-3 px-4 rounded-xl bg-accent text-white font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              className="btn btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? (
                 <>

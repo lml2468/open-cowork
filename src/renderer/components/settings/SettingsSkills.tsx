@@ -525,7 +525,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
       </SettingsContentSection>
 
       {isPluginModalOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-scrim backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-lg border border-border bg-surface shadow-elevated">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h3 className="text-lg font-semibold text-text-primary">
@@ -630,7 +630,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                               <button
                                 onClick={() => handleInstallPlugin(plugin)}
                                 disabled={!isInstallable || pluginActionKey !== null}
-                                className="px-3 py-2 rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                className="px-3 py-2 rounded-lg bg-accent text-on-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                               >
                                 {isInstalling ? (
                                   <span className="inline-flex items-center gap-1">

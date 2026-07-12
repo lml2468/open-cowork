@@ -537,7 +537,7 @@ export function SettingsSandbox() {
         <button
           onClick={handleRetrySetup}
           disabled={isInstalling !== null}
-          className="w-full py-3 px-4 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
+          className="btn btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isInstalling === 'setup' ? (
             <>
@@ -606,7 +606,7 @@ function StatusItem({
           className={`px-2.5 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
             action.variant === 'secondary'
               ? 'bg-surface-muted text-text-secondary hover:bg-surface-active'
-              : 'bg-accent text-white hover:bg-accent-hover'
+              : 'bg-accent text-on-accent hover:bg-accent-hover'
           }`}
         >
           {action.loading && <Loader2 className="w-3 h-3 animate-spin" />}

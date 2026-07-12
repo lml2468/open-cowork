@@ -499,7 +499,7 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
           <button
             onClick={submitTask}
             disabled={isLoading}
-            className="px-3 py-2 rounded-lg bg-accent text-white text-sm disabled:opacity-50"
+            className="btn btn-primary px-3 py-2 text-sm disabled:opacity-50"
           >
             {editingId ? t('schedule.saveChanges') : t('schedule.createTask')}
           </button>
@@ -1056,7 +1056,7 @@ function TimeMultiSelectMenu(props: {
                   type="button"
                   onClick={addDraftTime}
                   disabled={!isValidTimeValue(draftTime)}
-                  className="inline-flex min-w-[92px] flex-shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-accent px-3 py-2 text-sm text-white disabled:opacity-50"
+                  className="btn btn-primary min-w-[92px] flex-shrink-0 gap-1 whitespace-nowrap px-3 py-2 text-sm disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" />
                   {t('schedule.pickerAdd')}
