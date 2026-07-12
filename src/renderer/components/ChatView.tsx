@@ -787,7 +787,7 @@ export function ChatView() {
               <button
                 type="button"
                 onClick={handleFileSelect}
-                className="w-9 h-9 rounded-2xl flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
+                className="icon-btn w-9 h-9"
                 title={t('welcome.attachFiles')}
               >
                 <Plus className="w-5 h-5" />

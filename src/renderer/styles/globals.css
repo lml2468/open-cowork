@@ -147,6 +147,14 @@
     @apply bg-transparent hover:bg-surface-active text-text-secondary hover:text-text-primary;
   }
 
+  /* Icon button — square, icon-only control (size set by caller, e.g. w-9 h-9) */
+  .icon-btn {
+    @apply inline-flex items-center justify-center rounded-xl;
+    @apply text-text-muted hover:text-text-primary hover:bg-surface-hover;
+    @apply transition-colors duration-150 outline-none;
+    @apply focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50;
+  }
+
   /* Input styles */
   .input {
     @apply w-full px-4 py-3 rounded-xl bg-surface border border-border;

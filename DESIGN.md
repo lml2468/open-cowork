@@ -219,6 +219,8 @@ Reusable primitives live in `globals.css @layer components` and should be prefer
 - **`.btn` + `.btn-primary` / `.btn-secondary` / `.btn-ghost`** — the primary variant is
   `primary` fill + `onAccent` text; all share the same focus ring (`ring-accent/50` + offset) and a
   subtle `active:scale-[0.98]` press.
+- **`.icon-btn`** — square, icon-only control (caller sets the size, e.g. `w-9 h-9`): muted icon,
+  `surfaceHover` on hover, shared focus-visible ring.
 - **`.input`** — `surface` fill, hairline border, `accent` focus ring. One recipe for every field.
 - **`.card`** / **`.card-elevated`** — panels and dialogs.
 - **`.tag`** — chips and quick actions.
