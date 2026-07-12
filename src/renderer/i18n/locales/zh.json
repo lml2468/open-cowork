@@ -891,7 +891,9 @@
   },
   "toolUse": {
     "input": "输入",
-    "output": "输出"
+    "output": "输出",
+    "screenshotCaptured": "已截图",
+    "linesCount": "{{count}} 行"
   },
   "permission": {
     "permissionRequired": "需要权限",

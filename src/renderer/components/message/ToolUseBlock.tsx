@@ -83,10 +83,10 @@ export const ToolUseBlock = memo(function ToolUseBlock({
       const firstLine = content.split(/\r?\n/)[0];
       return firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
     }
-    if (shouldUseScreenshotSummary(block.name, content)) return 'Screenshot captured';
+    if (shouldUseScreenshotSummary(block.name, content)) return t('toolUse.screenshotCaptured');
     if (content.length < 60) return content.trim();
     const lines = content.trim().split(/\r?\n/);
-    return `${lines.length} lines`;
+    return t('toolUse.linesCount', { count: lines.length });
   };
 
   const summary = getSummary();

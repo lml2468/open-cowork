@@ -891,7 +891,9 @@
   },
   "toolUse": {
     "input": "Input",
-    "output": "Output"
+    "output": "Output",
+    "screenshotCaptured": "Screenshot captured",
+    "linesCount": "{{count}} lines"
   },
   "permission": {
     "permissionRequired": "Permission Required",
