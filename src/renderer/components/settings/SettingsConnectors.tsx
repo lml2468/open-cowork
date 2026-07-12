@@ -277,7 +277,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                     setPresetEnvValues((prev) => ({ ...prev, [envKey]: e.target.value }))
                   }
                   placeholder={`Enter ${envKey}`}
-                  className="w-full px-3 py-2 rounded-lg bg-surface border border-border text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
+                  className="input px-3 py-2 text-sm"
                 />
               </div>
             ))}
@@ -685,7 +685,7 @@ function ServerForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t('mcp.namePlaceholder')}
-          className="w-full px-4 py-2 rounded-lg bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+          className="input py-2"
           required
         />
       </div>
@@ -740,7 +740,7 @@ function ServerForm({
               value={command}
               onChange={(e) => setCommand(e.target.value)}
               placeholder={t('mcp.commandPlaceholder')}
-              className="w-full px-4 py-2 rounded-lg bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 font-mono text-sm"
+              className="input py-2 font-mono text-sm"
               required
             />
           </div>
@@ -753,7 +753,7 @@ function ServerForm({
               value={args}
               onChange={(e) => setArgs(e.target.value)}
               placeholder={t('mcp.argumentsPlaceholder')}
-              className="w-full px-4 py-2 rounded-lg bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 font-mono text-sm"
+              className="input py-2 font-mono text-sm"
             />
             <p className="text-xs text-text-muted mt-1">{t('mcp.spaceSeparated')}</p>
           </div>
@@ -787,7 +787,7 @@ function ServerForm({
                       value={value}
                       onChange={(e) => handleEnvChange(key, e.target.value)}
                       placeholder={`${t('mcp.envValuePlaceholder')}: ${key}`}
-                      className="flex-1 px-3 py-1.5 rounded bg-background border border-border text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      className="input flex-1 px-3 py-1.5 text-sm font-mono"
                     />
                     <button
                       type="button"
@@ -811,7 +811,7 @@ function ServerForm({
                       value={newEnvKey}
                       onChange={(e) => setNewEnvKey(e.target.value)}
                       placeholder="NOTION_TOKEN"
-                      className="w-full px-3 py-1.5 rounded bg-surface border border-border text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      className="input px-3 py-1.5 text-sm font-mono"
                       autoFocus
                     />
                     <input
@@ -819,7 +819,7 @@ function ServerForm({
                       value={newEnvValue}
                       onChange={(e) => setNewEnvValue(e.target.value)}
                       placeholder={t('mcp.envValuePlaceholder')}
-                      className="w-full px-3 py-1.5 rounded bg-surface border border-border text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      className="input px-3 py-1.5 text-sm font-mono"
                     />
                     <div className="flex gap-2">
                       <button
@@ -863,7 +863,7 @@ function ServerForm({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com/mcp"
-            className="w-full px-4 py-2 rounded-lg bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 font-mono text-sm"
+            className="input py-2 font-mono text-sm"
             required
           />
         </div>
