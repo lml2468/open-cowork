@@ -56,7 +56,7 @@ export const ThinkingBlock = memo(function ThinkingBlock({ block }: ThinkingBloc
     <div className="rounded-2xl border border-border-subtle bg-background/40 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-hover/50 transition-colors"
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-hover/50 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent focus-visible:ring-opacity-50"
       >
         <Brain className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
         <span className="text-xs font-medium text-text-muted flex-shrink-0">
