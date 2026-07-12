@@ -189,9 +189,14 @@ sizes like `text-[13px]`; the scale carries the correct line-height and letter-s
 ## Layout & Spacing
 
 Spacing follows a 4/8 rhythm (`xs 4 · sm 8 · md 16 · lg 24 · xl 32`). Primary reading columns are
-width-capped and centered (chat content and composer sit at `max-w-[920px]`) so lines stay readable
-on wide monitors. The shell is a fixed titlebar, a collapsible sidebar (`4.5rem` collapsed /
-`17.5rem` expanded), a flexible main column, and an optional context panel that appears only at `xl+`.
+width-capped and centered via shared tokens: **`max-w-content` (920px)** for the main column (chat
+messages + composer + context bar) and **`max-w-content-narrow` (860px)** for the calmer columns
+(settings content, the welcome landing) — never hardcode a `max-w-[…px]` reading width. The shell is
+a fixed titlebar, a collapsible sidebar (`4.5rem` collapsed / `17.5rem` expanded), a flexible main
+column, and an optional context panel that appears only at `xl+`. Shell rails use width tokens:
+`w-sidebar` (17.5rem) / `w-sidebar-collapsed` (4.5rem) and `w-context` (18rem) — the context panel and
+its loading fallback share `w-context` so there's no width jump on load. In-app view headers use a
+shared `h-header` (3rem) so the main-column header and the side-panel header align on one baseline.
 
 ## Elevation & Depth
 
@@ -226,6 +231,8 @@ Reusable primitives live in `globals.css @layer components` and should be prefer
 - **`.tag`** — chips and quick actions.
 - **`.badge`** — status/count pills.
 - **`.overlay`** — the single modal scrim wrapper.
+- **`.gutter-x`** — the shared horizontal content gutter (`px-5` → `lg:px-8`); use it on a view's
+  header/bars and its body so they stay aligned at every breakpoint.
 - **`.message-user`** — the right-aligned user bubble (`surface`, `3xl`).
 
 ## Do's and Don'ts

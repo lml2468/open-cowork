@@ -48,7 +48,7 @@ export const CodeBlock = memo(function CodeBlock({ language, children }: CodeBlo
         <span className="text-xs text-text-muted px-2 py-1 rounded bg-surface">{language}</span>
         <button
           onClick={handleCopy}
-          className="w-7 h-7 flex items-center justify-center rounded bg-surface hover:bg-surface-hover transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg bg-surface hover:bg-surface-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50"
         >
           {copied ? (
             <Check className="w-3.5 h-3.5 text-success" />

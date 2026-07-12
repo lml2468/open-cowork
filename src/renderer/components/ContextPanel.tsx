@@ -293,9 +293,9 @@ export function ContextPanel() {
   }
 
   return (
-    <div className="w-72 bg-background border-l border-border-muted flex flex-col overflow-hidden text-sm">
+    <div className="w-context bg-background border-l border-border-muted flex flex-col overflow-hidden text-sm">
       {/* Header */}
-      <div className="px-3 h-10 flex items-center gap-2 border-b border-border-muted shrink-0">
+      <div className="px-3 h-header flex items-center gap-2 border-b border-border-muted shrink-0">
         <button
           onClick={toggleContextPanel}
           className="icon-btn w-6 h-6"
