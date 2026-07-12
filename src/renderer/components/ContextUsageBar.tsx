@@ -127,7 +127,7 @@ export function ContextUsageBar() {
             }}
           >
             <div
-              className="absolute top-12 left-0 right-0 gutter-x py-3 bg-background border-b border-border-muted shadow-lg"
+              className="absolute top-12 left-0 right-0 gutter-x py-3 bg-background border-b border-border-muted shadow-elevated"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="max-w-content mx-auto flex items-center justify-between gap-4">

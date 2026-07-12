@@ -1072,7 +1072,7 @@ function TimeMultiSelectMenu(props: {
                       key={time}
                       type="button"
                       onClick={() => onRemove(time)}
-                      className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-surface px-3 py-1 text-sm text-accent shadow-sm"
+                      className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-surface px-3 py-1 text-sm text-accent shadow-soft"
                     >
                       <span>{time}</span>
                       <X className="h-3 w-3" />
