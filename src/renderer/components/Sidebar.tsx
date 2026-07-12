@@ -227,7 +227,7 @@ export function Sidebar() {
         <div className="px-3 pt-4 pb-3 flex flex-col items-center gap-2 border-b border-border-muted">
           <button
             onClick={toggleSidebar}
-            className="w-9 h-9 rounded-2xl flex items-center justify-center hover:bg-surface-hover transition-colors text-text-secondary"
+            className="icon-btn w-9 h-9"
             title={t('context.expandPanel')}
           >
             <ChevronRight className="w-4 h-4" />
@@ -244,7 +244,7 @@ export function Sidebar() {
         <div className="flex-1 flex flex-col items-center justify-center px-3 py-4">
           <button
             onClick={toggleSidebar}
-            className="rounded-2xl px-2 py-3 text-[11px] leading-4 text-center text-text-muted hover:bg-surface-hover transition-colors"
+            className="rounded-2xl px-2 py-3 text-caption text-center text-text-muted hover:bg-surface-hover transition-colors"
             title={t('sidebar.expandToView')}
           >
             {t('sidebar.expandToView')}
@@ -254,14 +254,14 @@ export function Sidebar() {
         <div className="px-3 py-3 border-t border-border-muted flex flex-col items-center gap-2">
           <button
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-2xl flex items-center justify-center hover:bg-surface-hover transition-colors text-text-secondary"
+            className="icon-btn w-9 h-9"
             title={t('sidebar.themeToggle')}
           >
             {themeIcon}
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            className="w-9 h-9 rounded-2xl flex items-center justify-center hover:bg-surface-hover transition-colors text-text-secondary relative"
+            className="icon-btn w-9 h-9 relative"
             title={t('sidebar.settings')}
           >
             <Settings className="w-4 h-4" />
@@ -292,7 +292,7 @@ export function Sidebar() {
           </div>
           <button
             onClick={toggleSidebar}
-            className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-surface-hover transition-colors text-text-secondary flex-shrink-0"
+            className="icon-btn w-8 h-8 flex-shrink-0"
             title={t('context.collapsePanel')}
           >
             <ChevronLeft className="w-4 h-4" />
@@ -373,7 +373,7 @@ export function Sidebar() {
                           isSelectMode && isSelected
                             ? 'bg-accent-muted/20'
                             : isActive && !isSelectMode
-                              ? 'bg-surface-hover/80'
+                              ? 'bg-accent/10'
                               : 'hover:bg-surface-hover/60'
                         }`}
                       >
@@ -442,11 +442,11 @@ export function Sidebar() {
               <div className="flex items-center justify-between px-1">
                 <button
                   onClick={toggleSelectAll}
-                  className="text-[12px] font-medium text-accent hover:text-accent/80 transition-colors"
+                  className="text-caption font-medium text-accent hover:text-accent/80 transition-colors"
                 >
                   {allVisibleSelected ? t('sidebar.deselectAll') : t('sidebar.selectAll')}
                 </button>
-                <span className="text-[12px] text-text-muted">
+                <span className="text-caption text-text-muted">
                   {t('sidebar.nSelected', { count: selectedIds.size })}
                 </span>
               </div>
@@ -481,7 +481,7 @@ export function Sidebar() {
                 <div className="text-body-sm font-medium text-text-primary">
                   {t('sidebar.settings')}
                 </div>
-                <div className="text-[11px] text-text-muted truncate">
+                <div className="text-caption text-text-muted truncate">
                   {isConfigured ? t('sidebar.apiConfigured') : t('sidebar.apiNotConfigured')}
                 </div>
               </div>
@@ -489,7 +489,7 @@ export function Sidebar() {
 
             <button
               onClick={toggleTheme}
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors flex-shrink-0"
+              className="icon-btn w-8 h-8 flex-shrink-0"
               title={t('sidebar.themeToggle')}
             >
               {themeIcon}
