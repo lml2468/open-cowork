@@ -57,8 +57,17 @@ export function SudoPasswordDialog({ request }: SudoPasswordDialogProps) {
   };
 
   return (
-    <div className="overlay">
-      <div className="card-elevated w-full max-w-md p-6 m-4 animate-slide-up">
+    <div
+      className="overlay"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) handleCancel();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="card-elevated w-full max-w-md p-6 m-4 animate-slide-up"
+      >
         {/* Header */}
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-warning/10">
@@ -86,12 +95,13 @@ export function SudoPasswordDialog({ request }: SudoPasswordDialogProps) {
           <input
             ref={inputRef}
             type="password"
+            autoFocus
             onChange={(e) => {
               passwordRef.current = e.target.value;
             }}
             onKeyDown={handleKeyDown}
             placeholder={t('sudo.passwordPlaceholder')}
-            className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/50"
+            className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
             autoComplete="new-password"
           />
         </div>
