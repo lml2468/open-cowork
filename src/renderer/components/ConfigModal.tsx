@@ -476,7 +476,7 @@ export function ConfigModal({
                 void handleSave();
               }}
               disabled={isSaving || (requiresApiKey && !apiKey.trim())}
-              className="w-full py-3 px-4 rounded-xl bg-accent text-on-accent font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              className="btn btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? (
                 <>
