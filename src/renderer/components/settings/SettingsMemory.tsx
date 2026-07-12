@@ -441,7 +441,7 @@ export function SettingsMemory() {
                   setRuntimeDraft((prev) => ({ ...prev, storageRoot: event.target.value }))
                 }
                 placeholder={overview?.storageRoot || ''}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                className="input text-sm"
               />
             </LabeledField>
             <LabeledField label={t('memory.maxNavSteps', '导航步数')}>
@@ -456,7 +456,7 @@ export function SettingsMemory() {
                     maxNavSteps: Number(event.target.value || 0),
                   }))
                 }
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                className="input text-sm"
               />
             </LabeledField>
             <LabeledField label={t('memory.ingestionConcurrency', '重建并发度')}>
@@ -471,7 +471,7 @@ export function SettingsMemory() {
                     ingestionConcurrency: Number(event.target.value || 1),
                   }))
                 }
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                className="input text-sm"
               />
             </LabeledField>
             <ToggleField
@@ -502,7 +502,7 @@ export function SettingsMemory() {
                 onChange={(event) =>
                   setRuntimeDraft((prev) => ({ ...prev, evalArtifactsRoot: event.target.value }))
                 }
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                className="input text-sm"
               />
             </LabeledField>
             <LabeledField label={t('memory.evalMaxRounds', '评测轮数')}>
@@ -517,7 +517,7 @@ export function SettingsMemory() {
                     evalMaxRounds: Number(event.target.value || 12),
                   }))
                 }
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                className="input text-sm"
               />
             </LabeledField>
             <LabeledField label={t('memory.promptIterationRounds', 'Prompt 迭代轮数')}>
@@ -532,7 +532,7 @@ export function SettingsMemory() {
                     promptIterationRounds: Number(event.target.value || 2),
                   }))
                 }
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                className="input text-sm"
               />
             </LabeledField>
           </div>
@@ -561,7 +561,7 @@ export function SettingsMemory() {
                     }))
                   }
                   placeholder={appConfig?.model || ''}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                  className="input text-sm"
                 />
               </LabeledField>
               <LabeledField label={t('memory.baseUrlOverride', 'Base URL 覆盖')}>
@@ -574,7 +574,7 @@ export function SettingsMemory() {
                     }))
                   }
                   placeholder={appConfig?.baseUrl || ''}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                  className="input text-sm"
                 />
               </LabeledField>
               <LabeledField label={t('memory.apiKeyOverride', 'API Key 覆盖')}>
@@ -587,7 +587,7 @@ export function SettingsMemory() {
                       llm: { ...prev.llm, apiKey: event.target.value },
                     }))
                   }
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                  className="input text-sm"
                 />
               </LabeledField>
             </div>
@@ -614,7 +614,7 @@ export function SettingsMemory() {
                       embedding: { ...prev.embedding, model: event.target.value },
                     }))
                   }
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                  className="input text-sm"
                 />
               </LabeledField>
               <LabeledField label={t('memory.baseUrlOverride', 'Base URL 覆盖')}>
@@ -626,7 +626,7 @@ export function SettingsMemory() {
                       embedding: { ...prev.embedding, baseUrl: event.target.value },
                     }))
                   }
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                  className="input text-sm"
                 />
               </LabeledField>
               <LabeledField label={t('memory.apiKeyOverride', 'API Key 覆盖')}>
@@ -639,7 +639,7 @@ export function SettingsMemory() {
                       embedding: { ...prev.embedding, apiKey: event.target.value },
                     }))
                   }
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                  className="input text-sm"
                 />
               </LabeledField>
             </div>
