@@ -337,7 +337,7 @@ export function RemoteControlPanel({ isActive }: { isActive: boolean }) {
           <button
             onClick={saveConfig}
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent/90 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent-hover text-on-accent rounded-xl font-medium transition-colors disabled:opacity-50"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />

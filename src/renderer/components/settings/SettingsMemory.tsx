@@ -361,7 +361,7 @@ export function SettingsMemory() {
               disabled={isBusy}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 enabled
-                  ? 'bg-accent text-white hover:opacity-90'
+                  ? 'bg-accent text-on-accent hover:opacity-90'
                   : 'bg-surface hover:bg-surface-hover text-text-primary border border-border'
               } disabled:cursor-not-allowed disabled:opacity-60`}
             >
@@ -650,7 +650,7 @@ export function SettingsMemory() {
                 void handleSaveRuntime();
               }}
               disabled={isBusy}
-              className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-on-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               {t('memory.saveRuntime', '保存运行时配置')}
             </button>
@@ -696,7 +696,7 @@ export function SettingsMemory() {
                 void handleSearch();
               }}
               disabled={isBusy || !query.trim()}
-              className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-on-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               {t('memory.searchAction')}
             </button>

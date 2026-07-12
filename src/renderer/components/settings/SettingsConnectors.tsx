@@ -306,7 +306,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                   (key: string) => !presetEnvValues[key]?.trim()
                 )
               }
-              className="px-4 py-1.5 rounded-md bg-accent text-white text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
+              className="px-4 py-1.5 rounded-md bg-accent text-on-accent text-sm font-medium hover:bg-accent-hover transition-colors disabled:opacity-50"
             >
               {t('common.add')}
             </button>
@@ -369,7 +369,7 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                       <button
                         onClick={() => handleAddPreset(key)}
                         disabled={isLoading}
-                        className="px-3 py-1.5 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-md bg-accent text-on-accent text-xs font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 whitespace-nowrap flex items-center gap-1"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         {requiresConfig ? t('mcp.configure') : t('common.add')}
@@ -698,7 +698,7 @@ function ServerForm({
             onClick={() => setType('stdio')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               type === 'stdio'
-                ? 'bg-accent text-white'
+                ? 'bg-accent text-on-accent'
                 : 'bg-surface-muted text-text-secondary hover:bg-surface-active'
             }`}
           >
@@ -709,7 +709,7 @@ function ServerForm({
             onClick={() => setType('sse')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               type === 'sse'
-                ? 'bg-accent text-white'
+                ? 'bg-accent text-on-accent'
                 : 'bg-surface-muted text-text-secondary hover:bg-surface-active'
             }`}
           >
@@ -720,7 +720,7 @@ function ServerForm({
             onClick={() => setType('streamable-http')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               type === 'streamable-http'
-                ? 'bg-accent text-white'
+                ? 'bg-accent text-on-accent'
                 : 'bg-surface-muted text-text-secondary hover:bg-surface-active'
             }`}
           >
@@ -826,7 +826,7 @@ function ServerForm({
                         type="button"
                         onClick={handleSaveNewEnvVar}
                         disabled={!newEnvKey.trim()}
-                        className="flex-1 py-1 px-3 rounded bg-accent text-white text-xs hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex-1 py-1 px-3 rounded bg-accent text-on-accent text-xs hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {t('common.save')}
                       </button>
@@ -886,7 +886,7 @@ function ServerForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 py-2 px-4 rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          className="flex-1 py-2 px-4 rounded-lg bg-accent text-on-accent hover:bg-accent-hover disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <>

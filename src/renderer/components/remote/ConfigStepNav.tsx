@@ -50,7 +50,7 @@ export function ConfigStepNav({
           onClick={() => onStepChange(step.id)}
           className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all ${
             activeStep === step.id
-              ? 'bg-accent text-white'
+              ? 'bg-accent text-on-accent'
               : 'hover:bg-surface-hover text-text-secondary'
           }`}
         >

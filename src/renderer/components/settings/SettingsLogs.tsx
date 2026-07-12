@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-  Save,
-  Globe,
-  Trash2,
-  Copy,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2, Save, Globe, Trash2, Copy } from 'lucide-react';
 import { formatAppDateTime } from '../../utils/i18n-format';
 import { SettingsContentSection } from './shared';
 
@@ -271,7 +263,7 @@ export function SettingsLogs({ isActive }: { isActive: boolean }) {
           <button
             onClick={handleExport}
             disabled={isLoading}
-            className="py-3 px-4 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
+            className="py-3 px-4 rounded-lg bg-accent text-on-accent font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98] flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

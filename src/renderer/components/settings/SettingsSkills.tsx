@@ -630,7 +630,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                               <button
                                 onClick={() => handleInstallPlugin(plugin)}
                                 disabled={!isInstallable || pluginActionKey !== null}
-                                className="px-3 py-2 rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                className="px-3 py-2 rounded-lg bg-accent text-on-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                               >
                                 {isInstalling ? (
                                   <span className="inline-flex items-center gap-1">

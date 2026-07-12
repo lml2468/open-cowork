@@ -208,7 +208,7 @@ export function ConfigModal({
                     onClick={() => changeProvider(p)}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       provider === p
-                        ? 'bg-accent text-white'
+                        ? 'bg-accent text-on-accent'
                         : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
                     }`}
                   >
@@ -259,7 +259,7 @@ export function ConfigModal({
                     onClick={() => changeProtocol(mode.id)}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       customProtocol === mode.id
-                        ? 'bg-accent text-white'
+                        ? 'bg-accent text-on-accent'
                         : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
                     }`}
                   >
@@ -476,7 +476,7 @@ export function ConfigModal({
                 void handleSave();
               }}
               disabled={isSaving || (requiresApiKey && !apiKey.trim())}
-              className="w-full py-3 px-4 rounded-xl bg-accent text-white font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl bg-accent text-on-accent font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
             >
               {isSaving ? (
                 <>
