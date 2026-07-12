@@ -70,6 +70,7 @@ module.exports = {
         '2xl': '16px',
         '3xl': '20px',
         '4xl': '26px',
+        '5xl': '32px',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',

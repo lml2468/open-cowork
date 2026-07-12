@@ -81,6 +81,7 @@ rounded:
   2xl: '16px'
   3xl: '20px'
   4xl: '26px'
+  5xl: '32px'
   full: '9999px'
 spacing:
   xs: '4px'
@@ -209,7 +210,7 @@ per-dialog opacity guess.
 
 One radius scale, softening as elements grow: `sm 6` (chips/tiny) · `md 8` · `lg 10` · `xl 12`
 (buttons, inputs, tags) · `2xl 16` (cards) · `3xl 20` (message bubbles) · `4xl 26` (the composer and
-hero card) · `full` (pills, avatars). Never introduce arbitrary radii like `rounded-[1.75rem]`.
+hero card) · `5xl 32` (large framed panels / dialogs) · `full` (pills, avatars). Never introduce arbitrary radii like `rounded-[1.75rem]`.
 
 ## Components
 

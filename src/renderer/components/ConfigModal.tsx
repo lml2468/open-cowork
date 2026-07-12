@@ -144,7 +144,7 @@ export function ConfigModal({
 
   return (
     <div className="overlay">
-      <div className="bg-background rounded-[2rem] shadow-elevated w-full max-w-[880px] mx-4 max-h-[88vh] overflow-hidden border border-border-subtle flex flex-col">
+      <div className="bg-background rounded-5xl shadow-elevated w-full max-w-[880px] mx-4 max-h-[88vh] overflow-hidden border border-border-subtle flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border-muted bg-background/88">
           <div className="flex items-center gap-3">
