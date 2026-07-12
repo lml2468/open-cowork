@@ -117,6 +117,16 @@ export function ConfigModal({
     return () => clearTimeout(timer);
   }, [lastSaveCompletedAt, onClose]);
 
+  // Close on Escape while open
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const testErrorMessage = (result: ApiTestResult) => {
@@ -143,8 +153,17 @@ export function ConfigModal({
   };
 
   return (
-    <div className="overlay">
-      <div className="bg-background rounded-5xl shadow-elevated w-full max-w-[880px] mx-4 max-h-[88vh] overflow-hidden border border-border-subtle flex flex-col">
+    <div
+      className="overlay"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="bg-background rounded-5xl shadow-elevated w-full max-w-[880px] mx-4 max-h-[88vh] overflow-hidden border border-border-subtle flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border-muted bg-background/88">
           <div className="flex items-center gap-3">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIPC } from '../hooks/useIPC';
 import type { PermissionRequest } from '../types';
@@ -12,6 +12,20 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
   const { t } = useTranslation();
   const { respondToPermission } = useIPC();
   const [pendingAlwaysAllow, setPendingAlwaysAllow] = useState(false);
+
+  // Dismissing a permission prompt maps to the safe default: deny.
+  const handleDeny = useCallback(
+    () => respondToPermission(permission.toolUseId, 'deny'),
+    [permission.toolUseId, respondToPermission]
+  );
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleDeny();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleDeny]);
 
   const getToolDescription = (toolName: string): string => {
     const key = `permission.toolDescriptions.${toolName}`;
@@ -34,8 +48,17 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
   ].includes(permission.toolName);
 
   return (
-    <div className="overlay">
-      <div className="card-elevated w-full max-w-md p-6 m-4 animate-slide-up">
+    <div
+      className="overlay"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) handleDeny();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="card-elevated w-full max-w-md p-6 m-4 animate-slide-up"
+      >
         {/* Header */}
         <div className="flex items-start gap-4">
           <div
@@ -87,10 +110,7 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
 
         {/* Actions */}
         <div className="mt-6 flex items-center gap-3">
-          <button
-            onClick={() => respondToPermission(permission.toolUseId, 'deny')}
-            className="flex-1 btn btn-secondary"
-          >
+          <button onClick={handleDeny} autoFocus className="flex-1 btn btn-secondary">
             <X className="w-4 h-4" />
             {t('permission.deny')}
           </button>
