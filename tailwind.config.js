@@ -83,6 +83,10 @@ module.exports = {
         'sidebar-collapsed': '4.5rem',
         'context': '18rem',
       },
+      height: {
+        // Shared in-app view header height (aligns main + side-panel headers)
+        'header': '3rem',
+      },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',

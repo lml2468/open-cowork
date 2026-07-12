@@ -195,7 +195,8 @@ messages + composer + context bar) and **`max-w-content-narrow` (860px)** for th
 a fixed titlebar, a collapsible sidebar (`4.5rem` collapsed / `17.5rem` expanded), a flexible main
 column, and an optional context panel that appears only at `xl+`. Shell rails use width tokens:
 `w-sidebar` (17.5rem) / `w-sidebar-collapsed` (4.5rem) and `w-context` (18rem) — the context panel and
-its loading fallback share `w-context` so there's no width jump on load.
+its loading fallback share `w-context` so there's no width jump on load. In-app view headers use a
+shared `h-header` (3rem) so the main-column header and the side-panel header align on one baseline.
 
 ## Elevation & Depth
 

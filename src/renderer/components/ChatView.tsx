@@ -634,7 +634,7 @@ export function ChatView() {
       {/* Header */}
       <div
         ref={headerRef}
-        className="relative h-12 border-b border-border-muted grid grid-cols-[1fr_auto_1fr] items-center gutter-x bg-background/88 backdrop-blur-md"
+        className="relative h-header border-b border-border-muted grid grid-cols-[1fr_auto_1fr] items-center gutter-x bg-background/88 backdrop-blur-md"
       >
         <div className="text-label font-medium uppercase text-text-muted">Open Cowork</div>
         <h2
