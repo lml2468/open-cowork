@@ -232,7 +232,7 @@ export function ConfigModal({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder={currentPreset?.keyPlaceholder || t('api.enterApiKey')}
-              className="w-full px-4 py-3 rounded-xl bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+              className="input"
             />
             {currentPreset?.keyHint && (
               <p className="text-xs text-text-muted">{currentPreset.keyHint}</p>
@@ -309,7 +309,7 @@ export function ConfigModal({
                         ? 'https://generativelanguage.googleapis.com'
                         : currentPreset?.baseUrl || 'https://api.anthropic.com'
                 }
-                className="w-full px-4 py-3 rounded-xl bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+                className="input"
               />
               <p className="text-xs text-text-muted">
                 {provider === 'ollama'
@@ -376,13 +376,13 @@ export function ConfigModal({
                 value={customModel}
                 onChange={(e) => setCustomModel(e.target.value)}
                 placeholder={modelInputPlaceholder}
-                className="w-full px-4 py-3 rounded-xl bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+                className="input"
               />
             ) : (
               <select
                 value={modelOptions.length ? model : ''}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all appearance-none cursor-pointer"
+                className="input appearance-none cursor-pointer"
               >
                 {modelOptions.length ? (
                   modelOptions.map((m) => (
@@ -457,7 +457,7 @@ export function ConfigModal({
             <button
               onClick={handleTest}
               disabled={isTesting || (requiresApiKey && !apiKey.trim())}
-              className="w-full py-3 px-4 rounded-xl border border-border bg-surface text-text-primary font-medium hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              className="btn btn-secondary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isTesting ? (
                 <>

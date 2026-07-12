@@ -163,7 +163,7 @@ export function SettingsAPI() {
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           placeholder={currentPreset?.keyPlaceholder || t('api.enterApiKey')}
-          className="w-full px-4 py-3 rounded-lg bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+          className="input"
         />
         {currentPreset?.keyHint && (
           <p className="text-xs text-text-muted">{currentPreset.keyHint}</p>
@@ -246,7 +246,7 @@ export function SettingsAPI() {
                     ? 'https://generativelanguage.googleapis.com'
                     : currentPreset?.baseUrl || 'https://api.anthropic.com'
             }
-            className="w-full px-4 py-3 rounded-lg bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+            className="input"
           />
           <p className="text-xs text-text-muted">
             {provider === 'ollama'
@@ -317,14 +317,14 @@ export function SettingsAPI() {
             value={customModel}
             onChange={(e) => setCustomModel(e.target.value)}
             placeholder={modelInputPlaceholder}
-            className="w-full px-4 py-3 rounded-lg bg-background border border-border text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+            className="input"
           />
         ) : (
           <select
             id="api-model-input"
             value={modelOptions.length ? model : ''}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all appearance-none cursor-pointer"
+            className="input appearance-none cursor-pointer"
           >
             {modelOptions.length ? (
               (modelOptions as ModelOptionItem[]).map((m) => (
@@ -359,7 +359,7 @@ export function SettingsAPI() {
                 placeholder={t('api.contextWindowPlaceholder')}
                 min={1024}
                 step={1024}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-text-primary text-sm placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+                className="input text-sm px-3 py-2"
               />
             </div>
             <div>
@@ -377,7 +377,7 @@ export function SettingsAPI() {
                 placeholder={t('api.maxOutputTokensPlaceholder')}
                 min={256}
                 step={256}
-                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-text-primary text-sm placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all"
+                className="input text-sm px-3 py-2"
               />
             </div>
             <p className="col-span-2 text-xs text-text-muted">{t('api.contextWindowHint')}</p>
