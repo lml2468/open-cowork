@@ -45,7 +45,9 @@ export const CodeBlock = memo(function CodeBlock({ language, children }: CodeBlo
   return (
     <div className="relative group my-3">
       <div className="absolute top-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <span className="text-xs text-text-muted px-2 py-1 rounded bg-surface">{language}</span>
+        <span className="text-caption text-text-muted px-2 py-1 rounded bg-surface">
+          {language}
+        </span>
         <button
           onClick={handleCopy}
           className="w-7 h-7 flex items-center justify-center rounded-lg bg-surface hover:bg-surface-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50"

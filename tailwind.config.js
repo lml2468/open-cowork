@@ -54,9 +54,9 @@ module.exports = {
         title: ['1.375rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
         heading: ['1.125rem', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
         body: ['0.9375rem', { lineHeight: '1.55', letterSpacing: '-0.006em' }],
-        'body-sm': ['0.8125rem', { lineHeight: '1.5' }],
+        'body-sm': ['0.875rem', { lineHeight: '1.5' }],
         label: ['0.6875rem', { lineHeight: '1', letterSpacing: '0.1em' }],
-        caption: ['0.6875rem', { lineHeight: '1.45' }],
+        caption: ['0.75rem', { lineHeight: '1.4' }],
       },
       boxShadow: {
         'soft': 'var(--shadow-soft)',

@@ -46,7 +46,7 @@ export function GlobalNoticeToast({ notice, onDismiss, onAction }: Props) {
         className={`max-w-sm rounded-4xl border bg-background/92 backdrop-blur-md shadow-elevated ${tone.border}`}
       >
         <div className="flex items-start gap-3 px-4 py-3">
-          <div className={`flex-1 text-sm leading-relaxed ${tone.text}`}>{message}</div>
+          <div className={`flex-1 text-body-sm leading-relaxed ${tone.text}`}>{message}</div>
           <button
             type="button"
             onClick={onDismiss}
@@ -61,7 +61,7 @@ export function GlobalNoticeToast({ notice, onDismiss, onAction }: Props) {
             <button
               type="button"
               onClick={() => onAction(noticeAction)}
-              className="w-full rounded-xl border border-accent/40 bg-accent/10 px-3 py-2.5 text-sm font-medium text-accent hover:bg-accent/20 transition-colors"
+              className="w-full rounded-xl border border-accent/40 bg-accent/10 px-3 py-2.5 text-body-sm font-medium text-accent hover:bg-accent/20 transition-colors"
             >
               {actionLabel}
             </button>

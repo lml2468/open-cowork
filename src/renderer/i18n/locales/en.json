@@ -816,6 +816,8 @@
     "feishuTitle": "Feishu bot setup",
     "feishuDesc": "Create an app in Feishu Open Platform, then fill in the credentials here.",
     "dmPolicy": "DM authorization policy",
+    "feishuAppId": "App ID",
+    "feishuAppSecret": "App Secret",
     "policyPairing": "Pairing verification",
     "policyPairingDesc": "Users must enter a pairing code.",
     "policyAllowlist": "Allowlist",

@@ -34,7 +34,7 @@ function Countdown({ expiresAt }: { expiresAt: number }) {
   const time = minutes > 0 ? `${minutes}:${String(seconds).padStart(2, '0')}` : `${seconds}s`;
 
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-text-tertiary">
+    <span className="inline-flex items-center gap-1 text-caption text-text-tertiary">
       <Clock className="w-3 h-3" />
       {t('remote.expiresIn', { time })}
     </span>
@@ -58,7 +58,7 @@ export function PairingRequestsSection({
         {t('remote.pairingRequests')}
       </h3>
       {pendingPairings.length === 0 ? (
-        <div className="text-sm text-text-secondary py-3 text-center">
+        <div className="text-body-sm text-text-secondary py-3 text-center">
           {t('remote.waitingForPairing')}
         </div>
       ) : (
@@ -73,11 +73,11 @@ export function PairingRequestsSection({
                   <span className="font-medium text-text-primary">
                     {request.userName || t('remote.unknownUser')}
                   </span>
-                  <span className="px-1.5 py-0.5 text-xs rounded bg-accent/10 text-accent capitalize">
+                  <span className="px-1.5 py-0.5 text-caption rounded bg-accent/10 text-accent capitalize">
                     {request.channelType}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-text-secondary mt-1">
+                <div className="flex items-center gap-3 text-body-sm text-text-secondary mt-1">
                   <span>
                     {t('remote.pairingCode')}:{' '}
                     <span className="font-mono text-warning font-bold">{request.code}</span>

@@ -72,14 +72,14 @@ export function SandboxSyncToast({ status }: Props) {
           <div className={`text-xl ${isComplete ? '' : 'animate-pulse'}`}>{config.icon}</div>
           <div className="flex-1 min-w-0">
             <p
-              className={`font-medium text-sm ${
+              className={`font-medium text-body-sm ${
                 isComplete ? 'text-success' : isError ? 'text-error' : 'text-accent'
               }`}
             >
               {displayText.message}
             </p>
             {displayText.detail && (
-              <p className="text-xs text-text-muted mt-0.5 truncate">{displayText.detail}</p>
+              <p className="text-caption text-text-muted mt-0.5 truncate">{displayText.detail}</p>
             )}
           </div>
           {!isComplete && !isError && (
@@ -91,7 +91,7 @@ export function SandboxSyncToast({ status }: Props) {
 
         {/* File info bar */}
         {status.fileCount !== undefined && status.totalSize !== undefined && (
-          <div className="px-4 py-2 bg-background-secondary/70 border-t border-border-muted flex items-center justify-between text-xs text-text-muted">
+          <div className="px-4 py-2 bg-background-secondary/70 border-t border-border-muted flex items-center justify-between text-caption text-text-muted">
             <span>{t('sandbox.syncFiles', { count: status.fileCount })}</span>
             <span>{formatSize(status.totalSize)}</span>
           </div>
@@ -100,7 +100,7 @@ export function SandboxSyncToast({ status }: Props) {
         {/* Explanation for slow sync */}
         {status.phase === 'syncing_files' && (
           <div className="px-4 py-2.5 bg-accent-muted/50 border-t border-border-muted">
-            <p className="text-xs text-text-secondary leading-relaxed">
+            <p className="text-caption text-text-secondary leading-relaxed">
               {t('sandbox.syncExplanation')}
               <span className="text-accent font-medium"> {t('sandbox.syncFirst')}</span>{' '}
               {t('sandbox.syncFollowup')}

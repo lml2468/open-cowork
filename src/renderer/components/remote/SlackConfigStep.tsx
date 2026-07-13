@@ -42,12 +42,12 @@ export function SlackConfigStep({
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium text-text-primary mb-1">{t('remote.slackTitle')}</h3>
-        <p className="text-sm text-text-secondary">{t('remote.slackDesc')}</p>
+        <p className="text-body-sm text-text-secondary">{t('remote.slackDesc')}</p>
       </div>
 
       <div className="grid gap-4">
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
+          <label className="block text-body-sm font-medium text-text-secondary mb-2">
             {t('remote.slackBotToken')}
           </label>
           <input
@@ -69,16 +69,16 @@ export function SlackConfigStep({
             />
           </button>
           <div>
-            <div className="text-sm font-medium text-text-primary">
+            <div className="text-body-sm font-medium text-text-primary">
               {t('remote.slackSocketMode')}
             </div>
-            <div className="text-xs text-text-muted">{t('remote.slackSocketModeDesc')}</div>
+            <div className="text-caption text-text-muted">{t('remote.slackSocketModeDesc')}</div>
           </div>
         </div>
 
         {useSocketMode && (
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
+            <label className="block text-body-sm font-medium text-text-secondary mb-2">
               {t('remote.slackAppToken')}
             </label>
             <input
@@ -92,7 +92,7 @@ export function SlackConfigStep({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
+          <label className="block text-body-sm font-medium text-text-secondary mb-2">
             {t('remote.dmPolicy')}
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -106,8 +106,8 @@ export function SlackConfigStep({
                     : 'border-border hover:border-accent/50'
                 }`}
               >
-                <div className="font-medium text-text-primary text-sm">{option.label}</div>
-                <div className="text-xs text-text-muted mt-0.5">{option.desc}</div>
+                <div className="font-medium text-text-primary text-body-sm">{option.label}</div>
+                <div className="text-caption text-text-muted mt-0.5">{option.desc}</div>
               </button>
             ))}
           </div>
@@ -118,7 +118,7 @@ export function SlackConfigStep({
         href="https://api.slack.com/apps"
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-sm text-accent hover:underline"
+        className="inline-flex items-center gap-2 text-body-sm text-accent hover:underline"
       >
         <ExternalLink className="w-4 h-4" />
         {t('remote.openSlack')}

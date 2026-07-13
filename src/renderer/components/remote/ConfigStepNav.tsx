@@ -59,7 +59,7 @@ export function ConfigStepNav({
           ) : (
             <step.icon className="w-4 h-4" />
           )}
-          <span className="text-sm font-medium">{t(step.labelKey)}</span>
+          <span className="text-body-sm font-medium">{t(step.labelKey)}</span>
         </button>
       ))}
     </div>

@@ -9,7 +9,8 @@ interface AskUserQuestionBlockProps {
 
 export function AskUserQuestionBlock({ block }: AskUserQuestionBlockProps) {
   const { t } = useTranslation();
-  const questions: QuestionItem[] = (block.input as Record<string, unknown>)?.questions as QuestionItem[] || [];
+  const questions: QuestionItem[] =
+    ((block.input as Record<string, unknown>)?.questions as QuestionItem[]) || [];
 
   const getOptionLetter = (index: number) => String.fromCharCode(65 + index);
 
@@ -29,7 +30,9 @@ export function AskUserQuestionBlock({ block }: AskUserQuestionBlockProps) {
           <HelpCircle className="w-4 h-4 text-accent" />
         </div>
         <div>
-          <span className="font-medium text-sm text-text-primary">{t('messageCard.question')}</span>
+          <span className="font-medium text-body-sm text-text-primary">
+            {t('messageCard.question')}
+          </span>
         </div>
       </div>
 
@@ -38,11 +41,11 @@ export function AskUserQuestionBlock({ block }: AskUserQuestionBlockProps) {
         {questions.map((q, qIdx) => (
           <div key={qIdx} className="space-y-2">
             {q.header && (
-              <span className="inline-block px-2 py-0.5 bg-accent/10 text-accent text-xs font-semibold rounded uppercase tracking-wide">
+              <span className="inline-block px-2 py-0.5 bg-accent/10 text-accent text-caption font-semibold rounded uppercase tracking-wide">
                 {q.header}
               </span>
             )}
-            <p className="text-text-primary font-medium text-sm">{q.question}</p>
+            <p className="text-text-primary font-medium text-body-sm">{q.question}</p>
             {q.options && q.options.length > 0 && (
               <div className="space-y-1.5 mt-2">
                 {q.options.map((option, optIdx) => (
@@ -51,13 +54,15 @@ export function AskUserQuestionBlock({ block }: AskUserQuestionBlockProps) {
                     className="w-full p-3 rounded-lg border border-border-subtle bg-surface-muted text-left"
                   >
                     <div className="flex items-start gap-2.5">
-                      <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 text-xs font-semibold bg-border-subtle text-text-secondary">
+                      <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 text-caption font-semibold bg-border-subtle text-text-secondary">
                         {getOptionLetter(optIdx)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm text-text-primary">{option.label}</span>
+                        <span className="text-body-sm text-text-primary">{option.label}</span>
                         {option.description && (
-                          <p className="text-xs text-text-muted mt-0.5">{option.description}</p>
+                          <p className="text-caption text-text-muted mt-0.5">
+                            {option.description}
+                          </p>
                         )}
                       </div>
                     </div>

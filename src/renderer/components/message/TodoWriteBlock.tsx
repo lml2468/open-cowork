@@ -20,7 +20,7 @@ interface TodoWriteBlockProps {
 export const TodoWriteBlock = memo(function TodoWriteBlock({ block }: TodoWriteBlockProps) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
-  const todos: TodoItem[] = (block.input as Record<string, unknown>)?.todos as TodoItem[] || [];
+  const todos: TodoItem[] = ((block.input as Record<string, unknown>)?.todos as TodoItem[]) || [];
 
   const completedCount = todos.filter((item) => item.status === 'completed').length;
   const totalCount = todos.length;
@@ -68,16 +68,16 @@ export const TodoWriteBlock = memo(function TodoWriteBlock({ block }: TodoWriteB
           <ListTodo className="w-3.5 h-3.5 text-accent" />
         </div>
         <div className="flex-1 text-left">
-          <span className="font-medium text-sm text-text-primary">
+          <span className="font-medium text-body-sm text-text-primary">
             {t('messageCard.taskProgress')}
           </span>
           {inProgressItem && (
-            <span className="text-xs text-text-muted ml-2">
+            <span className="text-caption text-text-muted ml-2">
               — {inProgressItem.activeForm || inProgressItem.content}
             </span>
           )}
         </div>
-        <span className="text-xs font-medium text-text-muted mr-2">
+        <span className="text-caption font-medium text-text-muted mr-2">
           {completedCount}/{totalCount}
         </span>
         {expanded ? (
@@ -106,7 +106,7 @@ export const TodoWriteBlock = memo(function TodoWriteBlock({ block }: TodoWriteB
               }`}
             >
               <div className="mt-0.5 flex-shrink-0">{getStatusIcon(todo.status)}</div>
-              <span className={`text-sm leading-relaxed ${getStatusStyle(todo.status)}`}>
+              <span className={`text-body-sm leading-relaxed ${getStatusStyle(todo.status)}`}>
                 {todo.content}
               </span>
             </div>

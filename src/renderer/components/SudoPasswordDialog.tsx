@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIPC } from '../hooks/useIPC';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { SudoPasswordRequest } from '../types';
 import { Shield, X, Play } from 'lucide-react';
 
@@ -11,6 +12,7 @@ interface SudoPasswordDialogProps {
 export function SudoPasswordDialog({ request }: SudoPasswordDialogProps) {
   const { t } = useTranslation();
   const { respondToSudoPassword } = useIPC();
+  const dialogRef = useFocusTrap<HTMLDivElement>(true);
   // Use ref so the password never lives in React state / re-render cycle
   const passwordRef = useRef<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +66,7 @@ export function SudoPasswordDialog({ request }: SudoPasswordDialogProps) {
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         className="card-elevated w-full max-w-md p-6 m-4 animate-slide-up"
@@ -76,20 +79,20 @@ export function SudoPasswordDialog({ request }: SudoPasswordDialogProps) {
 
           <div className="flex-1">
             <h2 className="text-heading font-semibold text-text-primary">{t('sudo.title')}</h2>
-            <p className="text-sm text-text-secondary mt-1">{t('sudo.description')}</p>
+            <p className="text-body-sm text-text-secondary mt-1">{t('sudo.description')}</p>
           </div>
         </div>
 
         {/* Command display */}
         <div className="mt-4 p-4 bg-surface-muted rounded-xl">
-          <pre className="text-xs code-block max-h-32 overflow-auto whitespace-pre-wrap break-all">
+          <pre className="text-caption code-block max-h-32 overflow-auto whitespace-pre-wrap break-all">
             {request.command}
           </pre>
         </div>
 
         {/* Password input */}
         <div className="mt-4">
-          <label className="block text-sm font-medium text-text-primary mb-1">
+          <label className="block text-body-sm font-medium text-text-primary mb-1">
             {t('sudo.passwordLabel')}
           </label>
           <input
@@ -108,7 +111,7 @@ export function SudoPasswordDialog({ request }: SudoPasswordDialogProps) {
 
         {/* Warning */}
         <div className="mt-3 p-3 bg-warning/10 border border-warning/20 rounded-xl">
-          <p className="text-xs text-warning">{t('sudo.warning')}</p>
+          <p className="text-caption text-warning">{t('sudo.warning')}</p>
         </div>
 
         {/* Actions */}

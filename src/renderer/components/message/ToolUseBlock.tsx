@@ -152,7 +152,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
         <div className="flex-shrink-0 text-text-muted">{getToolIcon(block.name)}</div>
 
         {/* Label */}
-        <span className="text-xs font-mono text-text-secondary truncate flex-1 min-w-0">
+        <span className="text-caption font-mono text-text-secondary truncate flex-1 min-w-0">
           {label}
         </span>
 
@@ -196,7 +196,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
             <div className="text-label uppercase text-text-muted font-medium mb-1.5">
               {t('toolUse.input')}
             </div>
-            <pre className="text-xs font-mono text-text-secondary whitespace-pre-wrap break-all bg-surface-muted rounded-lg p-2.5 border border-border-subtle">
+            <pre className="text-caption font-mono text-text-secondary whitespace-pre-wrap break-all bg-surface-muted rounded-lg p-2.5 border border-border-subtle">
               {JSON.stringify(block.input, null, 2)}
             </pre>
           </div>
@@ -220,7 +220,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
                 ))}
               {shouldShowOutputText && (
                 <pre
-                  className={`text-xs font-mono whitespace-pre-wrap break-all rounded-lg p-2.5 border border-border-subtle max-h-[300px] overflow-y-auto ${
+                  className={`text-caption font-mono whitespace-pre-wrap break-all rounded-lg p-2.5 border border-border-subtle max-h-[300px] overflow-y-auto ${
                     isError ? 'text-error bg-error/5' : 'text-text-secondary bg-surface-muted'
                   } ${preferImageOutput ? 'mt-2' : ''}`}
                 >

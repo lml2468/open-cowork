@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import {
   X,
   Key,
@@ -45,6 +46,7 @@ export function ConfigModal({
   isFirstRun,
 }: ConfigModalProps) {
   const { t } = useTranslation();
+  const dialogRef = useFocusTrap<HTMLDivElement>(isOpen);
   const {
     provider,
     customProtocol,
@@ -160,6 +162,7 @@ export function ConfigModal({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         className="bg-background rounded-5xl shadow-elevated w-full max-w-[880px] mx-4 max-h-[88vh] overflow-hidden border border-border-subtle flex flex-col"
@@ -175,7 +178,7 @@ export function ConfigModal({
               <h2 className="mt-1 text-title font-semibold text-text-primary">
                 {isFirstRun ? t('api.firstRunTitle') : t('api.settingsTitle')}
               </h2>
-              <p className="text-sm text-text-secondary">
+              <p className="text-body-sm text-text-secondary">
                 {isFirstRun ? t('api.firstRunSubtitle') : t('api.settingsSubtitle')}
               </p>
             </div>
@@ -210,7 +213,7 @@ export function ConfigModal({
 
           {/* Provider Selection */}
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+            <label className="flex items-center gap-2 text-body-sm font-medium text-text-primary">
               <Server className="w-4 h-4" />
               {t('api.provider')}
             </label>
@@ -220,7 +223,7 @@ export function ConfigModal({
                   <button
                     key={p}
                     onClick={() => changeProvider(p)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-3 py-2 rounded-lg text-body-sm font-medium transition-all ${
                       provider === p
                         ? 'bg-accent text-on-accent'
                         : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
@@ -237,7 +240,7 @@ export function ConfigModal({
 
           {/* API Key */}
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+            <label className="flex items-center gap-2 text-body-sm font-medium text-text-primary">
               <Key className="w-4 h-4" />
               {t('api.apiKey')}
             </label>
@@ -249,14 +252,14 @@ export function ConfigModal({
               className="input"
             />
             {currentPreset?.keyHint && (
-              <p className="text-xs text-text-muted">{currentPreset.keyHint}</p>
+              <p className="text-caption text-text-muted">{currentPreset.keyHint}</p>
             )}
           </div>
 
           {/* Custom Protocol */}
           {provider === 'custom' && (
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+              <label className="flex items-center gap-2 text-body-sm font-medium text-text-primary">
                 <Server className="w-4 h-4" />
                 {t('api.protocol')}
               </label>
@@ -271,7 +274,7 @@ export function ConfigModal({
                   <button
                     key={mode.id}
                     onClick={() => changeProtocol(mode.id)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-3 py-2 rounded-lg text-body-sm font-medium transition-all ${
                       customProtocol === mode.id
                         ? 'bg-accent text-on-accent'
                         : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
@@ -281,7 +284,7 @@ export function ConfigModal({
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-text-muted">{t('api.selectProtocol')}</p>
+              <p className="text-caption text-text-muted">{t('api.selectProtocol')}</p>
               <GuidanceInlineHint text={protocolGuidanceText} tone={protocolGuidanceTone} />
             </div>
           )}
@@ -290,7 +293,7 @@ export function ConfigModal({
           {(provider === 'custom' || provider === 'ollama') && (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+                <label className="flex items-center gap-2 text-body-sm font-medium text-text-primary">
                   <Server className="w-4 h-4" />
                   {t('api.baseUrl')}
                 </label>
@@ -301,7 +304,7 @@ export function ConfigModal({
                       void discoverLocalOllama();
                     }}
                     disabled={isDiscoveringLocalOllama}
-                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all bg-accent-muted text-accent hover:bg-accent-muted/80 disabled:opacity-50"
+                    className="flex items-center gap-1 text-caption px-2 py-1 rounded-md transition-all bg-accent-muted text-accent hover:bg-accent-muted/80 disabled:opacity-50"
                   >
                     <Plug className="w-3 h-3" />
                     {isDiscoveringLocalOllama
@@ -325,7 +328,7 @@ export function ConfigModal({
                 }
                 className="input"
               />
-              <p className="text-xs text-text-muted">
+              <p className="text-caption text-text-muted">
                 {provider === 'ollama'
                   ? t('api.enterOllamaUrl')
                   : customProtocol === 'openai'
@@ -335,7 +338,7 @@ export function ConfigModal({
                       : t('api.enterAnthropicUrl')}
               </p>
               {isOllamaMode && (
-                <p className="text-xs text-text-muted">{t('api.discoverLocalOllamaHint')}</p>
+                <p className="text-caption text-text-muted">{t('api.discoverLocalOllamaHint')}</p>
               )}
               {provider === 'custom' && <GuidanceInlineHint text={baseUrlGuidanceText} />}
             </div>
@@ -344,7 +347,7 @@ export function ConfigModal({
           {/* Model Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm font-medium text-text-primary">
+              <label className="flex items-center gap-2 text-body-sm font-medium text-text-primary">
                 <Cpu className="w-4 h-4" />
                 {t('api.model')}
               </label>
@@ -355,7 +358,7 @@ export function ConfigModal({
                     onClick={() => {
                       void refreshModelOptions();
                     }}
-                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all bg-surface-hover text-text-secondary hover:bg-surface-active disabled:opacity-50"
+                    className="flex items-center gap-1 text-caption px-2 py-1 rounded-md transition-all bg-surface-hover text-text-secondary hover:bg-surface-active disabled:opacity-50"
                     disabled={isRefreshingModels}
                   >
                     <RefreshCw className={`w-3 h-3 ${isRefreshingModels ? 'animate-spin' : ''}`} />
@@ -366,7 +369,7 @@ export function ConfigModal({
                   <button
                     type="button"
                     onClick={toggleCustomModel}
-                    className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all ${
+                    className={`flex items-center gap-1 text-caption px-2 py-1 rounded-md transition-all ${
                       useCustomModel
                         ? 'bg-accent-muted text-accent'
                         : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
@@ -411,7 +414,7 @@ export function ConfigModal({
                 )}
               </select>
             )}
-            {useCustomModel && <p className="text-xs text-text-muted">{modelInputHint}</p>}
+            {useCustomModel && <p className="text-caption text-text-muted">{modelInputHint}</p>}
           </div>
 
           {provider === 'custom' && (
@@ -423,7 +426,7 @@ export function ConfigModal({
 
           {/* Error Message */}
           {error && (
-            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-error/10 text-error text-sm">
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-error/10 text-error text-body-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -431,7 +434,7 @@ export function ConfigModal({
 
           {testResult && (
             <div
-              className={`flex gap-2 px-4 py-3 rounded-xl text-sm ${testResult.ok ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}
+              className={`flex gap-2 px-4 py-3 rounded-xl text-body-sm ${testResult.ok ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}
             >
               {testResult.ok ? (
                 <CheckCircle className="w-4 h-4 flex-shrink-0" />
@@ -447,12 +450,12 @@ export function ConfigModal({
                     : testErrorMessage(testResult)}
                 </div>
                 {!testResult.ok && friendlyTestDetails && (
-                  <div className="mt-1 text-xs leading-5 text-text-primary">
+                  <div className="mt-1 text-caption leading-5 text-text-primary">
                     {friendlyTestDetails}
                   </div>
                 )}
                 {!testResult.ok && testResult.details && (
-                  <div className="mt-1 text-xs text-text-muted">{testResult.details}</div>
+                  <div className="mt-1 text-caption text-text-muted">{testResult.details}</div>
                 )}
               </div>
             </div>
@@ -462,7 +465,7 @@ export function ConfigModal({
         {/* Footer */}
         <div className="px-6 py-4 bg-surface-hover border-t border-border">
           {successMessage && (
-            <div className="mb-3 flex items-center gap-2 px-4 py-3 rounded-xl bg-success/10 text-success text-sm">
+            <div className="mb-3 flex items-center gap-2 px-4 py-3 rounded-xl bg-success/10 text-success text-body-sm">
               <CheckCircle className="w-4 h-4 flex-shrink-0" />
               {successMessage}
             </div>

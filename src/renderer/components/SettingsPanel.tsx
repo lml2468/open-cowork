@@ -188,7 +188,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
               <tab.icon className="w-4.5 h-4.5 flex-shrink-0" />
               {!compactSidebar && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{tab.label}</p>
+                  <p className="text-body-sm font-medium truncate">{tab.label}</p>
                   <p className="text-caption text-text-muted line-clamp-2 mt-0.5">
                     {tab.description}
                   </p>
@@ -203,7 +203,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
         <div className={`${compactSidebar ? 'p-1.5' : 'p-4'} border-t border-border-muted`}>
           <button
             onClick={onClose}
-            className={`w-full py-2 ${compactSidebar ? 'px-2' : 'px-4'} rounded-lg bg-background hover:bg-background transition-colors text-text-secondary text-sm`}
+            className={`w-full py-2 ${compactSidebar ? 'px-2' : 'px-4'} rounded-lg bg-background hover:bg-background transition-colors text-text-secondary text-body-sm`}
             title={compactSidebar ? t('common.close') : undefined}
           >
             {compactSidebar ? <X className="w-4 h-4 mx-auto" /> : t('common.close')}
@@ -225,7 +225,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
               {activeTabMeta?.label}
             </h3>
             {activeTabMeta?.description && (
-              <p className="mt-1 text-sm text-text-muted max-w-[36rem]">
+              <p className="mt-1 text-body-sm text-text-muted max-w-[36rem]">
                 {activeTabMeta.description}
               </p>
             )}

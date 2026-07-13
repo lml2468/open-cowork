@@ -110,7 +110,7 @@ export function SandboxSetupDialog({ progress, onComplete }: Props) {
               <h2 className="text-heading font-semibold text-text-primary">
                 {t('sandbox.setupTitle')}
               </h2>
-              <p className="text-sm text-text-secondary">{t('sandbox.setupSubtitle')}</p>
+              <p className="text-body-sm text-text-secondary">{t('sandbox.setupSubtitle')}</p>
             </div>
           </div>
         </div>
@@ -136,7 +136,7 @@ export function SandboxSetupDialog({ progress, onComplete }: Props) {
                 {displayText.message}
               </p>
               {displayText.detail && (
-                <p className="text-sm text-text-muted mt-1">{displayText.detail}</p>
+                <p className="text-body-sm text-text-muted mt-1">{displayText.detail}</p>
               )}
             </div>
           </div>
@@ -152,7 +152,7 @@ export function SandboxSetupDialog({ progress, onComplete }: Props) {
                   style={{ width: `${progress.progress}%` }}
                 />
               </div>
-              <div className="flex justify-between mt-2 text-xs text-text-muted">
+              <div className="flex justify-between mt-2 text-caption text-text-muted">
                 <span>{t('sandbox.progressLabel')}</span>
                 <span>{progress.progress}%</span>
               </div>
@@ -162,8 +162,8 @@ export function SandboxSetupDialog({ progress, onComplete }: Props) {
           {/* Error Display */}
           {isError && progress.error && (
             <div className="mt-4 p-3 bg-error/10 border border-error/30 rounded-xl">
-              <p className="text-sm text-error">{progress.error}</p>
-              <p className="text-xs text-text-muted mt-2">{t('sandbox.continuingNative')}</p>
+              <p className="text-body-sm text-error">{progress.error}</p>
+              <p className="text-caption text-text-muted mt-2">{t('sandbox.continuingNative')}</p>
             </div>
           )}
 
@@ -195,7 +195,7 @@ export function SandboxSetupDialog({ progress, onComplete }: Props) {
           {/* Completion Message */}
           {isComplete && (
             <div className="mt-4 p-3 bg-success/10 border border-success/30 rounded-xl">
-              <p className="text-sm text-success">
+              <p className="text-body-sm text-success">
                 {progress.phase === 'ready'
                   ? t('sandbox.configuredSuccess')
                   : t('sandbox.nativeFallbackSuccess')}
@@ -206,7 +206,7 @@ export function SandboxSetupDialog({ progress, onComplete }: Props) {
 
         {/* Footer */}
         <div className="px-6 py-4 bg-background-secondary/70 border-t border-border-muted">
-          <div className="flex items-center justify-between text-xs text-text-muted">
+          <div className="flex items-center justify-between text-caption text-text-muted">
             <span>
               {window.electronAPI?.platform === 'win32'
                 ? t('sandbox.footerWsl')

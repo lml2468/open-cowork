@@ -182,13 +182,13 @@
   /* Tag/Chip styles - like the quick action buttons */
   .tag {
     @apply inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface border border-border;
-    @apply text-sm font-medium text-text-primary;
+    @apply text-body-sm font-medium text-text-primary;
     @apply hover:bg-surface-hover hover:shadow-soft cursor-pointer transition duration-150;
   }
 
   /* Badge styles */
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium;
   }
 }
 
@@ -367,7 +367,7 @@
 
   /* Code block */
   .code-block {
-    @apply bg-surface-muted rounded-xl p-4 font-mono text-sm overflow-x-auto border border-border-subtle;
+    @apply bg-surface-muted rounded-xl p-4 font-mono text-body-sm overflow-x-auto border border-border-subtle;
   }
 
   /* Override hljs theme background to use our code-block background */

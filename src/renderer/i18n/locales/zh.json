@@ -816,6 +816,8 @@
     "feishuTitle": "飞书机器人配置",
     "feishuDesc": "在飞书开放平台创建应用后，填入凭证信息",
     "dmPolicy": "私聊授权策略",
+    "feishuAppId": "App ID",
+    "feishuAppSecret": "App Secret",
     "policyPairing": "配对验证",
     "policyPairingDesc": "需要输入配对码",
     "policyAllowlist": "白名单",

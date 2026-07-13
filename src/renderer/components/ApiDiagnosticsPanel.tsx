@@ -184,7 +184,7 @@ function FailureDetail({ step }: { step: DiagnosticStep }) {
   })();
 
   return (
-    <div className="mt-2 rounded-lg bg-error/8 border border-error/20 px-3 py-2 text-xs">
+    <div className="mt-2 rounded-lg bg-error/8 border border-error/20 px-3 py-2 text-caption">
       {step.error && <p className="text-error font-medium">{step.error}</p>}
       {fixText && <p className="mt-1 text-text-secondary">{fixText}</p>}
     </div>
@@ -218,7 +218,7 @@ export default function ApiDiagnosticsPanel({
           onClick={() => onRunDiagnostics()}
           disabled={disabled || isRunning}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-            bg-accent text-on-accent text-sm font-medium
+            bg-accent text-on-accent text-body-sm font-medium
             hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed
             transition-colors"
         >
@@ -237,7 +237,7 @@ export default function ApiDiagnosticsPanel({
             onClick={() => onRunDeepDiagnostics()}
             disabled={disabled || isRunning}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border
-              bg-background text-text-primary text-sm font-medium
+              bg-background text-text-primary text-body-sm font-medium
               hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors"
           >
@@ -266,14 +266,14 @@ export default function ApiDiagnosticsPanel({
           {failedStep && <FailureDetail step={failedStep} />}
 
           {result?.advisoryText && !isRunning && (
-            <div className="mt-3 rounded-lg bg-accent/8 border border-accent/20 px-3 py-2 text-xs text-text-secondary">
+            <div className="mt-3 rounded-lg bg-accent/8 border border-accent/20 px-3 py-2 text-caption text-text-secondary">
               {t(`api.diagnostic.advisory.${result.advisoryCode ?? ''}`, result.advisoryText)}
             </div>
           )}
 
           {/* Skipped info */}
           {result?.skippedReason && !isRunning && (
-            <div className="mt-3 pt-3 border-t border-border text-sm text-text-muted">
+            <div className="mt-3 pt-3 border-t border-border text-body-sm text-text-muted">
               {t(
                 'api.diagnostic.skipped',
                 'Diagnostics skipped: another run is already in progress.'
@@ -283,7 +283,7 @@ export default function ApiDiagnosticsPanel({
 
           {/* Overall summary */}
           {result && !result.skippedReason && !isRunning && (
-            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-sm">
+            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-body-sm">
               <span
                 className={result.overallOk ? 'text-success font-medium' : 'text-error font-medium'}
               >
@@ -296,7 +296,7 @@ export default function ApiDiagnosticsPanel({
                         result.failedAt,
                     })}
               </span>
-              <span className="text-text-muted text-xs">{result.totalLatencyMs}ms</span>
+              <span className="text-text-muted text-caption">{result.totalLatencyMs}ms</span>
             </div>
           )}
         </div>

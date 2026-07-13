@@ -40,7 +40,7 @@ export function GatewayControlCard({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-text-primary">{t('remote.title')}</h2>
-              <p className="text-sm text-text-secondary mt-0.5">
+              <p className="text-body-sm text-text-secondary mt-0.5">
                 {status?.running ? t('remote.statusRunning') : t('remote.statusStopped')}
               </p>
             </div>
@@ -69,15 +69,17 @@ export function GatewayControlCard({
           <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/50">
             <div className="text-center p-3 rounded-xl bg-surface/50">
               <div className="text-2xl font-bold text-accent">{status.activeSessions}</div>
-              <div className="text-xs text-text-muted mt-1">{t('remote.activeSessions')}</div>
+              <div className="text-caption text-text-muted mt-1">{t('remote.activeSessions')}</div>
             </div>
             <div className="text-center p-3 rounded-xl bg-surface/50">
               <div className="text-2xl font-bold text-success">{pairedUsers.length}</div>
-              <div className="text-xs text-text-muted mt-1">{t('remote.authorizedUsers')}</div>
+              <div className="text-caption text-text-muted mt-1">{t('remote.authorizedUsers')}</div>
             </div>
             <div className="text-center p-3 rounded-xl bg-surface/50">
               <div className="text-2xl font-bold text-warning">{pendingPairings.length}</div>
-              <div className="text-xs text-text-muted mt-1">{t('remote.pendingApprovals')}</div>
+              <div className="text-caption text-text-muted mt-1">
+                {t('remote.pendingApprovals')}
+              </div>
             </div>
           </div>
         )}

@@ -189,7 +189,7 @@ export const ContentBlockView = memo(function ContentBlockView({
           }
           return (
             <code
-              className="px-1.5 py-0.5 rounded bg-surface-muted text-accent font-mono text-sm"
+              className="px-1.5 py-0.5 rounded bg-surface-muted text-accent font-mono text-body-sm"
               {...props}
             >
               {children}
@@ -215,7 +215,7 @@ export const ContentBlockView = memo(function ContentBlockView({
       th({ children, style }: { children?: React.ReactNode; style?: React.CSSProperties }) {
         return (
           <th
-            className="border border-border px-3 py-2 text-sm font-semibold text-text-primary bg-surface-muted"
+            className="border border-border px-3 py-2 text-body-sm font-semibold text-text-primary bg-surface-muted"
             style={style}
           >
             {children}
@@ -224,7 +224,10 @@ export const ContentBlockView = memo(function ContentBlockView({
       },
       td({ children, style }: { children?: React.ReactNode; style?: React.CSSProperties }) {
         return (
-          <td className="border border-border px-3 py-2 text-sm text-text-primary" style={style}>
+          <td
+            className="border border-border px-3 py-2 text-body-sm text-text-primary"
+            style={style}
+          >
             {children}
           </td>
         );
@@ -333,7 +336,7 @@ export const ContentBlockView = memo(function ContentBlockView({
         <div className="flex max-w-full min-w-0 items-center gap-2 px-3 py-2 rounded-lg bg-surface-muted border border-border overflow-hidden">
           <FileText className="w-4 h-4 text-accent flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-text-primary truncate">{fileBlock.filename}</p>
+            <p className="text-body-sm text-text-primary truncate">{fileBlock.filename}</p>
           </div>
         </div>
       );

@@ -652,14 +652,14 @@ export function ChatView() {
             >
               <div className="flex items-center gap-2 px-2 py-1 rounded-lg border border-mcp/20">
                 <Plug className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium whitespace-nowrap">
+                <span className="text-caption font-medium whitespace-nowrap">
                   {t('chat.connectorCount', { count: activeConnectors.length })}
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mcp/8 border border-mcp/15 justify-self-end">
               <Plug className="w-3.5 h-3.5 text-mcp" />
-              <span className="text-xs text-mcp font-medium">
+              <span className="text-caption text-mcp font-medium">
                 {showConnectorLabel
                   ? t('chat.connectorCount', { count: activeConnectors.length })
                   : activeConnectors.length}
@@ -704,7 +704,7 @@ export function ChatView() {
             !partialThinking && (
               <div className="flex items-center gap-3 px-4 py-3 rounded-full bg-background/80 border border-border-subtle max-w-fit">
                 <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                <span className="text-sm text-text-secondary">{t('chat.processing')}</span>
+                <span className="text-body-sm text-text-secondary">{t('chat.processing')}</span>
               </div>
             )}
 
@@ -765,7 +765,7 @@ export function ChatView() {
                     className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-muted border border-border group"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-text-primary truncate">{file.name}</p>
+                      <p className="text-body-sm text-text-primary truncate">{file.name}</p>
                     </div>
                     <button
                       type="button"
@@ -822,7 +822,7 @@ export function ChatView() {
 
               <div className="flex items-center gap-2">
                 {/* Model display */}
-                <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full border border-border-subtle bg-background/60 text-xs text-text-muted">
+                <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full border border-border-subtle bg-background/60 text-caption text-text-muted">
                   {appConfig?.model || t('chat.noModel')}
                 </span>
 

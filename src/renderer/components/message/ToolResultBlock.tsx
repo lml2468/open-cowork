@@ -115,7 +115,7 @@ export const ToolResultBlock = memo(function ToolResultBlock({
           <CheckCircle2 className="w-3.5 h-3.5 text-success flex-shrink-0" />
         )}
         <span
-          className={`text-xs font-mono flex-shrink-0 ${block.isError ? 'text-error' : 'text-text-muted'}`}
+          className={`text-caption font-mono flex-shrink-0 ${block.isError ? 'text-error' : 'text-text-muted'}`}
         >
           {displayName}
         </span>
@@ -150,7 +150,7 @@ export const ToolResultBlock = memo(function ToolResultBlock({
           )}
           {shouldShowOutputText && (
             <pre
-              className={`text-xs font-mono whitespace-pre-wrap break-all rounded-lg p-2.5 border border-border-subtle max-h-[300px] overflow-y-auto ${
+              className={`text-caption font-mono whitespace-pre-wrap break-all rounded-lg p-2.5 border border-border-subtle max-h-[300px] overflow-y-auto ${
                 block.isError ? 'text-error bg-error/5' : 'text-text-secondary bg-surface-muted'
               } ${preferImageOutput ? 'mt-2' : ''}`}
             >

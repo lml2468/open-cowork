@@ -419,13 +419,13 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-body-sm">
           <AlertCircle className="w-4 h-4" />
           {error.key ? t(error.key) : error.text}
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-body-sm">
           <CheckCircle className="w-4 h-4" />
           {success.key ? t(success.key) : success.text}
         </div>
@@ -435,7 +435,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
         title={t('skills.storagePathTitle')}
         description={t('skills.storagePathHint')}
       >
-        <div className="text-xs text-text-muted break-all">
+        <div className="text-caption text-text-muted break-all">
           {storagePath || t('skills.storagePathUnavailable')}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -491,7 +491,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
           <div className="text-center py-8 text-text-muted">
             <Package className="w-10 h-10 mx-auto mb-3 opacity-50" />
             <p>{t('skills.noCustomSkills')}</p>
-            <p className="text-sm mt-1">{t('skills.installSkillsDesc')}</p>
+            <p className="text-body-sm mt-1">{t('skills.installSkillsDesc')}</p>
           </div>
         ) : (
           customSkills.map((skill) => (
@@ -589,18 +589,18 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                                   {plugin.name}
                                 </h4>
                                 {plugin.version && (
-                                  <span className="text-xs px-2 py-0.5 rounded bg-surface text-text-muted">
+                                  <span className="text-caption px-2 py-0.5 rounded bg-surface text-text-muted">
                                     v{plugin.version}
                                   </span>
                                 )}
                               </div>
                               {plugin.description && (
-                                <p className="text-sm text-text-muted line-clamp-2">
+                                <p className="text-body-sm text-text-muted line-clamp-2">
                                   {plugin.description}
                                 </p>
                               )}
                               {hasKnownComponents ? (
-                                <p className="text-xs text-text-muted mt-2">
+                                <p className="text-caption text-text-muted mt-2">
                                   {t('skills.pluginComponents', {
                                     skills: plugin.componentCounts.skills,
                                     commands: plugin.componentCounts.commands,
@@ -612,7 +612,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                               ) : (
                                 isMarketplaceCatalog &&
                                 !installedPlugin && (
-                                  <p className="text-xs text-text-muted mt-2">
+                                  <p className="text-caption text-text-muted mt-2">
                                     {t('skills.pluginComponentsAvailableAfterInstall')}
                                   </p>
                                 )
@@ -620,25 +620,25 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                               {hasKnownComponents &&
                                 plugin.componentCounts.hooks > 0 &&
                                 !installedPlugin && (
-                                  <p className="text-xs text-warning mt-1">
+                                  <p className="text-caption text-warning mt-1">
                                     {t('skills.pluginComponentHooksDisabledByDefault')}
                                   </p>
                                 )}
                               {hasKnownComponents &&
                                 plugin.componentCounts.mcp > 0 &&
                                 !installedPlugin && (
-                                  <p className="text-xs text-warning mt-1">
+                                  <p className="text-caption text-warning mt-1">
                                     {t('skills.pluginComponentMcpDisabledByDefault')}
                                   </p>
                                 )}
                               {!isInstallable && !isMarketplaceCatalog && (
-                                <p className="text-xs text-error mt-1">
+                                <p className="text-caption text-error mt-1">
                                   {t('skills.pluginNoComponents')}
                                 </p>
                               )}
                             </div>
                             {installedPlugin ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-success/10 text-success text-sm">
+                              <span className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-success/10 text-success text-body-sm">
                                 <CheckCircle className="w-4 h-4" />
                                 {t('skills.pluginInstalled')}
                               </span>
@@ -646,7 +646,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                               <button
                                 onClick={() => handleInstallPlugin(plugin)}
                                 disabled={!isInstallable || pluginActionKey !== null}
-                                className="px-3 py-2 rounded-lg bg-accent text-on-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                className="px-3 py-2 rounded-lg bg-accent text-on-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-body-sm"
                               >
                                 {isInstalling ? (
                                   <span className="inline-flex items-center gap-1">
@@ -662,7 +662,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                           {installedPlugin && (
                             <div className="mt-3 pt-3 border-t border-border space-y-2">
                               <div className="flex items-center justify-between gap-2">
-                                <div className="text-xs text-text-muted">
+                                <div className="text-caption text-text-muted">
                                   {installedPlugin.enabled
                                     ? t('skills.pluginAppliedInRuntime')
                                     : t('skills.pluginDisabled')}
@@ -676,7 +676,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                                       )
                                     }
                                     disabled={pluginActionKey !== null}
-                                    className={`px-3 py-1.5 rounded-md text-xs ${
+                                    className={`px-3 py-1.5 rounded-md text-caption ${
                                       installedPlugin.enabled
                                         ? 'bg-warning/10 text-warning hover:bg-warning/20'
                                         : 'bg-success/10 text-success hover:bg-success/20'
@@ -689,7 +689,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                                   <button
                                     onClick={() => handleUninstallPlugin(installedPlugin)}
                                     disabled={pluginActionKey !== null}
-                                    className="px-3 py-1.5 rounded-md text-xs bg-error/10 text-error hover:bg-error/20 disabled:opacity-50"
+                                    className="px-3 py-1.5 rounded-md text-caption bg-error/10 text-error hover:bg-error/20 disabled:opacity-50"
                                   >
                                     {t('skills.pluginManageUninstall')}
                                   </button>
@@ -703,7 +703,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                                       key={`${installedPlugin.pluginId}:${component}`}
                                       className="flex items-center justify-between gap-2"
                                     >
-                                      <div className="text-xs text-text-secondary">
+                                      <div className="text-caption text-text-secondary">
                                         <span className="font-medium">{component}</span>
                                         <span className="text-text-muted">
                                           {' '}
@@ -719,7 +719,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
                                           )
                                         }
                                         disabled={pluginActionKey !== null}
-                                        className={`px-2 py-1 rounded text-xs ${
+                                        className={`px-2 py-1 rounded text-caption ${
                                           enabled
                                             ? 'bg-success/10 text-success hover:bg-success/20'
                                             : 'bg-surface text-text-muted hover:bg-surface-active'
@@ -748,7 +748,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
 
       {pluginToastMessage && (
         <div className="fixed right-6 bottom-6 z-[80] max-w-md rounded-lg border border-success/30 bg-surface px-4 py-3 shadow-elevated">
-          <div className="flex items-start gap-2 text-success text-sm">
+          <div className="flex items-start gap-2 text-success text-body-sm">
             <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
             <span>{pluginToastMessage}</span>
           </div>
@@ -782,7 +782,7 @@ function SkillCard({
             />
             <h3 className="font-medium text-text-primary">{skill.name}</h3>
             <span
-              className={`px-2 py-0.5 text-xs rounded ${
+              className={`px-2 py-0.5 text-caption rounded ${
                 isBuiltin
                   ? 'bg-accent/10 text-accent'
                   : skill.type === 'mcp'
@@ -794,7 +794,7 @@ function SkillCard({
             </span>
           </div>
           {skill.description && (
-            <p className="text-sm text-text-muted ml-6 line-clamp-2">{skill.description}</p>
+            <p className="text-body-sm text-text-muted ml-6 line-clamp-2">{skill.description}</p>
           )}
         </div>
         <div className="flex items-center gap-2">

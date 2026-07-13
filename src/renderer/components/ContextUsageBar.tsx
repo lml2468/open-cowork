@@ -87,7 +87,7 @@ export function ContextUsageBar() {
           />
         </div>
 
-        <span className={`text-xs whitespace-nowrap ${textColor}`}>
+        <span className={`text-caption whitespace-nowrap ${textColor}`}>
           {Math.round(percent)}% · {formatTokens(tokens)}/{formatTokens(contextWindow)}
           {projectedTurnsRemaining !== null && (
             <span className="text-text-muted ml-1">
@@ -100,7 +100,7 @@ export function ContextUsageBar() {
           <button
             type="button"
             onClick={() => setShowConfirm(true)}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-medium transition-colors ${
               isUrgent
                 ? 'bg-error/10 text-error hover:bg-error/20 border border-error/20'
                 : 'bg-surface-muted text-text-muted hover:bg-surface-hover hover:text-text-primary'
@@ -112,7 +112,9 @@ export function ContextUsageBar() {
         )}
 
         {isCompacting && (
-          <span className="text-xs text-accent animate-pulse">{t('compaction.compacting')}</span>
+          <span className="text-caption text-accent animate-pulse">
+            {t('compaction.compacting')}
+          </span>
         )}
       </div>
 
@@ -132,10 +134,10 @@ export function ContextUsageBar() {
             >
               <div className="max-w-content mx-auto flex items-center justify-between gap-4">
                 <div className="flex-1">
-                  <p className="text-sm text-text-primary font-medium">
+                  <p className="text-body-sm text-text-primary font-medium">
                     {t('compaction.confirmTitle')}
                   </p>
-                  <p className="text-xs text-text-muted mt-0.5">
+                  <p className="text-caption text-text-muted mt-0.5">
                     {t('compaction.confirmDescription')}
                   </p>
                 </div>
@@ -143,14 +145,14 @@ export function ContextUsageBar() {
                   <button
                     type="button"
                     onClick={() => setShowConfirm(false)}
-                    className="px-3 py-1.5 rounded-lg text-xs text-text-muted hover:bg-surface-hover transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-caption text-text-muted hover:bg-surface-hover transition-colors"
                   >
                     {t('common.cancel')}
                   </button>
                   <button
                     type="button"
                     onClick={handleCompact}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent text-background hover:bg-accent-hover transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-caption font-medium bg-accent text-background hover:bg-accent-hover transition-colors"
                   >
                     {t('compaction.confirm')}
                   </button>

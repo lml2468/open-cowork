@@ -297,13 +297,13 @@ export function SettingsSandbox() {
     <div className="space-y-4">
       {/* Error/Success Messages */}
       {error && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 text-error text-body-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {renderLocalizedBannerMessage(error, t)}
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-success/10 text-success text-body-sm">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           {renderLocalizedBannerMessage(success, t)}
         </div>
@@ -318,7 +318,7 @@ export function SettingsSandbox() {
           <h3 className="text-base font-semibold text-text-primary">
             {t('sandbox.enableSandbox')}
           </h3>
-          <p className="text-sm text-text-muted mt-1">
+          <p className="text-body-sm text-text-muted mt-1">
             {isWindows
               ? t('sandbox.wslDesc')
               : isMac
@@ -327,7 +327,7 @@ export function SettingsSandbox() {
           </p>
         </div>
         <div
-          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-caption font-medium ${
             sandboxReady
               ? 'bg-success/10 text-success'
               : sandboxEnabled
@@ -342,7 +342,7 @@ export function SettingsSandbox() {
           )}
           <span>{sandboxStatusText}</span>
         </div>
-        <p className="text-xs text-text-muted max-w-sm mx-auto">
+        <p className="text-caption text-text-muted max-w-sm mx-auto">
           {t('sandbox.helpText1')} {t('sandbox.helpText2')}
         </p>
       </div>
@@ -351,13 +351,13 @@ export function SettingsSandbox() {
       {sandboxEnabled && (
         <div className="p-4 rounded-lg bg-surface border border-border space-y-4 animate-in fade-in duration-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-primary">
+            <h3 className="text-body-sm font-medium text-text-primary">
               {t('sandbox.environmentStatus')}
             </h3>
             <button
               onClick={handleCheckStatus}
               disabled={isChecking || isInstalling !== null}
-              className="px-3 py-1.5 rounded-lg bg-surface-hover text-text-secondary text-xs hover:bg-surface-active transition-colors disabled:opacity-50 flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg bg-surface-hover text-text-secondary text-caption hover:bg-surface-active transition-colors disabled:opacity-50 flex items-center gap-1.5"
             >
               {isChecking ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -371,14 +371,14 @@ export function SettingsSandbox() {
           {/* Platform Info */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg bg-surface-muted">
-              <div className="text-xs text-text-muted mb-1">{t('sandbox.platform')}</div>
-              <div className="text-sm font-medium text-text-primary">
+              <div className="text-caption text-text-muted mb-1">{t('sandbox.platform')}</div>
+              <div className="text-body-sm font-medium text-text-primary">
                 {isWindows ? 'Windows' : isMac ? 'macOS' : 'Linux'}
               </div>
             </div>
             <div className="p-3 rounded-lg bg-surface-muted">
-              <div className="text-xs text-text-muted mb-1">{t('sandbox.mode')}</div>
-              <div className="text-sm font-medium text-text-primary">
+              <div className="text-caption text-text-muted mb-1">{t('sandbox.mode')}</div>
+              <div className="text-body-sm font-medium text-text-primary">
                 {status?.mode === 'wsl'
                   ? 'WSL2'
                   : status?.mode === 'lima'
@@ -391,7 +391,7 @@ export function SettingsSandbox() {
           {/* WSL Status (Windows) */}
           {isWindows && (
             <div className="space-y-2">
-              <div className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <div className="text-caption font-medium text-text-secondary uppercase tracking-wider">
                 WSL2 {t('sandbox.status')}
               </div>
               <div className="space-y-2">
@@ -433,10 +433,10 @@ export function SettingsSandbox() {
               </div>
 
               {!status?.wsl?.available && (
-                <div className="mt-3 p-3 rounded-lg bg-warning/10 text-warning text-xs">
+                <div className="mt-3 p-3 rounded-lg bg-warning/10 text-warning text-caption">
                   <p className="font-medium mb-1">{t('sandbox.wslNotInstalled')}</p>
                   <p className="opacity-80">{t('sandbox.wslInstallHint')}</p>
-                  <code className="block mt-2 p-2 rounded bg-background font-mono text-xs">
+                  <code className="block mt-2 p-2 rounded bg-background font-mono text-caption">
                     wsl --install
                   </code>
                 </div>
@@ -447,7 +447,7 @@ export function SettingsSandbox() {
           {/* Lima Status (macOS) */}
           {isMac && (
             <div className="space-y-2">
-              <div className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <div className="text-caption font-medium text-text-secondary uppercase tracking-wider">
                 Lima VM {t('sandbox.status')}
               </div>
               <div className="space-y-2">
@@ -512,10 +512,10 @@ export function SettingsSandbox() {
               </div>
 
               {!status?.lima?.available && (
-                <div className="mt-3 p-3 rounded-lg bg-warning/10 text-warning text-xs">
+                <div className="mt-3 p-3 rounded-lg bg-warning/10 text-warning text-caption">
                   <p className="font-medium mb-1">{t('sandbox.limaNotInstalled')}</p>
                   <p className="opacity-80">{t('sandbox.limaInstallHint')}</p>
-                  <code className="block mt-2 p-2 rounded bg-background font-mono text-xs">
+                  <code className="block mt-2 p-2 rounded bg-background font-mono text-caption">
                     brew install lima
                   </code>
                 </div>
@@ -525,7 +525,7 @@ export function SettingsSandbox() {
 
           {/* Linux - Native Mode */}
           {!isWindows && !isMac && (
-            <div className="p-3 rounded-lg bg-surface-muted text-text-secondary text-sm">
+            <div className="p-3 rounded-lg bg-surface-muted text-text-secondary text-body-sm">
               {t('sandbox.linuxNative')}
             </div>
           )}
@@ -593,17 +593,17 @@ function StatusItem({
             <AlertCircle className="w-3.5 h-3.5" />
           )}
         </div>
-        <span className="text-sm text-text-primary">{label}</span>
-        {detail && <span className="text-xs text-text-muted">({detail})</span>}
+        <span className="text-body-sm text-text-primary">{label}</span>
+        {detail && <span className="text-caption text-text-muted">({detail})</span>}
         {optional && !available && (
-          <span className="text-xs text-text-muted">({t('common.optional')})</span>
+          <span className="text-caption text-text-muted">({t('common.optional')})</span>
         )}
       </div>
       {action && (
         <button
           onClick={action.onClick}
           disabled={action.loading}
-          className={`px-2.5 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
+          className={`px-2.5 py-1 rounded text-caption font-medium transition-colors disabled:opacity-50 flex items-center gap-1 ${
             action.variant === 'secondary'
               ? 'bg-surface-muted text-text-secondary hover:bg-surface-active'
               : 'bg-accent text-on-accent hover:bg-accent-hover'
