@@ -51,7 +51,9 @@ export function FeishuConfigStep({
 
       <div className="grid gap-4">
         <div>
-          <label className="block text-body-sm font-medium text-text-secondary mb-2">App ID</label>
+          <label className="block text-body-sm font-medium text-text-secondary mb-2">
+            {t('remote.feishuAppId')}
+          </label>
           <input
             type="text"
             value={feishuAppId}
@@ -63,7 +65,7 @@ export function FeishuConfigStep({
 
         <div>
           <label className="block text-body-sm font-medium text-text-secondary mb-2">
-            App Secret
+            {t('remote.feishuAppSecret')}
           </label>
           <input
             type="password"
