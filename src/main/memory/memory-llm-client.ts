@@ -1,13 +1,6 @@
-import OpenAI from 'openai';
 import type { AppConfig, CustomProtocolType, ProviderType } from '../config/config-store';
 import { configStore } from '../config/config-store';
-import {
-  normalizeOpenAICompatibleBaseUrl,
-  resolveOllamaCredentials,
-  resolveOpenAICredentials,
-} from '../config/auth-utils';
 import { runPiAiOneShot } from '../agent/sdk-one-shot';
-import { logWarn } from '../utils/logger';
 
 export interface MemoryCompletionRequest {
   systemPrompt: string;
@@ -22,7 +15,6 @@ export interface MemoryCompletionResponse {
 
 export interface MemoryLLMClientLike {
   complete(request: MemoryCompletionRequest): Promise<MemoryCompletionResponse>;
-  embed(text: string): Promise<number[]>;
 }
 
 interface MemoryModelConfig {
@@ -124,64 +116,5 @@ export class MemoryLLMClient implements MemoryLLMClientLike {
         clearTimeout(timeout);
       }
     }
-  }
-
-  async embed(text: string): Promise<number[]> {
-    const trimmed = text.trim();
-    if (!trimmed) {
-      return [];
-    }
-
-    const appConfig = this.getConfig();
-    if (!appConfig.memoryRuntime?.useEmbedding) {
-      return [];
-    }
-    const embedConfig = normalizeModelConfig(
-      appConfig,
-      appConfig.memoryRuntime.embedding,
-      'text-embedding-3-small'
-    );
-
-    const provider = embedConfig.provider;
-    const protocol = embedConfig.customProtocol;
-    const isOpenAiCompatible =
-      provider === 'openai' ||
-      provider === 'openrouter' ||
-      provider === 'ollama' ||
-      (provider === 'custom' && protocol === 'openai');
-
-    if (!isOpenAiCompatible) {
-      logWarn(
-        '[MemoryLLMClient] Embedding requested for unsupported provider; returning empty embedding:',
-        provider
-      );
-      return [];
-    }
-
-    const resolved =
-      provider === 'ollama'
-        ? resolveOllamaCredentials({
-            provider,
-            customProtocol: protocol,
-            apiKey: embedConfig.apiKey,
-            baseUrl: embedConfig.baseUrl,
-          })
-        : resolveOpenAICredentials({
-            provider,
-            customProtocol: protocol,
-            apiKey: embedConfig.apiKey,
-            baseUrl: embedConfig.baseUrl,
-          });
-
-    const client = new OpenAI({
-      apiKey: resolved?.apiKey || embedConfig.apiKey,
-      baseURL: resolved?.baseUrl || normalizeOpenAICompatibleBaseUrl(embedConfig.baseUrl),
-      timeout: embedConfig.timeoutMs,
-    });
-    const response = await client.embeddings.create({
-      model: embedConfig.model,
-      input: trimmed,
-    });
-    return response.data[0]?.embedding || [];
   }
 }

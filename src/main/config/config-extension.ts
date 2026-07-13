@@ -187,7 +187,7 @@ const WRITABLE_KEYS = new Set<keyof AppConfig>([
  * containers for nested credential-bearing structures (e.g. `profiles`
  * holds `profiles[*].apiKey`, `configSets` holds
  * `configSets[*].profiles[*].apiKey`, `memoryRuntime` holds
- * `memoryRuntime.llm.apiKey` / `memoryRuntime.embedding.apiKey`).
+ * `memoryRuntime.llm.apiKey`).
  */
 const BLOCKED_TOP_LEVEL_KEYS = new Set<string>([
   'apiKey',

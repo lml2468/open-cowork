@@ -1,19 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   MemoryDebugFileContent,
   MemoryDebugFileInfo,
-  MemoryInspectSessionResult,
   MemoryOverview,
   MemoryReadResult,
   MemoryRuntimeConfig,
   MemorySearchResult,
-  MemorySearchScope,
 } from '../../types';
 import { useAppStore } from '../../store';
 import { SettingsContentSection } from './shared';
-
-type SearchMode = 'workspace' | 'all' | 'global';
 
 const DEFAULT_MEMORY_RUNTIME: MemoryRuntimeConfig = {
   llm: {
@@ -23,63 +19,25 @@ const DEFAULT_MEMORY_RUNTIME: MemoryRuntimeConfig = {
     model: '',
     timeoutMs: 180000,
   },
-  embedding: {
-    inheritFromActive: true,
-    apiKey: '',
-    baseUrl: '',
-    model: 'text-embedding-3-small',
-    timeoutMs: 180000,
-  },
-  useEmbedding: false,
-  maxNavSteps: 2,
-  ingestionConcurrency: 4,
   storageRoot: '',
-  evalEnabled: false,
-  evalWorkspaces: [],
-  evalMaxRounds: 12,
-  evalArtifactsRoot: '',
-  promptIterationRounds: 2,
 };
 
 function cloneRuntimeConfig(runtime?: MemoryRuntimeConfig): MemoryRuntimeConfig {
   const source = runtime || DEFAULT_MEMORY_RUNTIME;
   return {
     llm: { ...DEFAULT_MEMORY_RUNTIME.llm, ...source.llm },
-    embedding: { ...DEFAULT_MEMORY_RUNTIME.embedding, ...source.embedding },
-    useEmbedding: source.useEmbedding ?? DEFAULT_MEMORY_RUNTIME.useEmbedding,
-    maxNavSteps: source.maxNavSteps ?? DEFAULT_MEMORY_RUNTIME.maxNavSteps,
-    ingestionConcurrency:
-      source.ingestionConcurrency ?? DEFAULT_MEMORY_RUNTIME.ingestionConcurrency,
     storageRoot: source.storageRoot ?? DEFAULT_MEMORY_RUNTIME.storageRoot,
-    evalEnabled: source.evalEnabled ?? DEFAULT_MEMORY_RUNTIME.evalEnabled,
-    evalWorkspaces: Array.isArray(source.evalWorkspaces)
-      ? [...source.evalWorkspaces]
-      : [...(DEFAULT_MEMORY_RUNTIME.evalWorkspaces || [])],
-    evalMaxRounds: source.evalMaxRounds ?? DEFAULT_MEMORY_RUNTIME.evalMaxRounds,
-    evalArtifactsRoot: source.evalArtifactsRoot ?? DEFAULT_MEMORY_RUNTIME.evalArtifactsRoot,
-    promptIterationRounds:
-      source.promptIterationRounds ?? DEFAULT_MEMORY_RUNTIME.promptIterationRounds,
   };
 }
 
 export function SettingsMemory() {
   const { t } = useTranslation();
-  const activeSessionId = useAppStore((state) => state.activeSessionId);
-  const sessions = useAppStore((state) => state.sessions);
-  const workingDir = useAppStore((state) => state.workingDir);
   const appConfig = useAppStore((state) => state.appConfig);
-
-  const currentSession = sessions.find((session) => session.id === activeSessionId);
-  const currentWorkspace = currentSession?.cwd || workingDir || '';
-  const hasWorkspace = Boolean(currentWorkspace);
 
   const [overview, setOverview] = useState<MemoryOverview | null>(null);
   const [query, setQuery] = useState('');
-  const [scope, setScope] = useState<SearchMode>(currentWorkspace ? 'workspace' : 'all');
-  const [sourceWorkspaceFilter, setSourceWorkspaceFilter] = useState<string>('');
   const [results, setResults] = useState<MemorySearchResult[]>([]);
   const [selected, setSelected] = useState<MemoryReadResult | null>(null);
-  const [inspectedSession, setInspectedSession] = useState<MemoryInspectSessionResult | null>(null);
   const [files, setFiles] = useState<MemoryDebugFileInfo[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<MemoryDebugFileContent | null>(null);
@@ -91,27 +49,12 @@ export function SettingsMemory() {
 
   const enabled = overview?.enabled ?? appConfig?.memoryEnabled ?? true;
 
-  const groupedResults = useMemo(() => {
-    return {
-      core: results.filter((item) => item.kind === 'core'),
-      sessions: results.filter((item) => item.kind === 'experience_session'),
-      chunks: results.filter((item) => item.kind === 'experience_chunk'),
-      raw: results.filter((item) => item.kind === 'raw_session'),
-    };
-  }, [results]);
-
   useEffect(() => {
     setRuntimeDraft(cloneRuntimeConfig(appConfig?.memoryRuntime));
   }, [appConfig?.memoryRuntime]);
 
-  useEffect(() => {
-    if (!hasWorkspace && scope === 'workspace') {
-      setScope('all');
-    }
-  }, [hasWorkspace, scope]);
-
   const refreshOverview = async () => {
-    const nextOverview = await window.electronAPI.memory.getOverview(currentWorkspace || undefined);
+    const nextOverview = await window.electronAPI.memory.getOverview();
     setOverview(nextOverview);
   };
 
@@ -132,7 +75,7 @@ export function SettingsMemory() {
     const load = async () => {
       try {
         const [nextOverview, nextFiles] = await Promise.all([
-          window.electronAPI.memory.getOverview(currentWorkspace || undefined),
+          window.electronAPI.memory.getOverview(),
           window.electronAPI.memory.listFiles(),
         ]);
         if (!cancelled) {
@@ -149,7 +92,7 @@ export function SettingsMemory() {
     return () => {
       cancelled = true;
     };
-  }, [currentWorkspace]);
+  }, []);
 
   const handleToggle = async () => {
     setIsBusy(true);
@@ -170,7 +113,6 @@ export function SettingsMemory() {
     if (!trimmed) {
       setResults([]);
       setSelected(null);
-      setInspectedSession(null);
       return;
     }
     setIsBusy(true);
@@ -178,19 +120,12 @@ export function SettingsMemory() {
     try {
       const nextResults = await window.electronAPI.memory.search({
         query: trimmed,
-        cwd: hasWorkspace ? currentWorkspace : undefined,
-        scope: scope as MemorySearchScope,
-        sourceWorkspace:
-          scope === 'workspace' && hasWorkspace
-            ? currentWorkspace
-            : sourceWorkspaceFilter || undefined,
         limit: 20,
       });
       setResults(nextResults);
       if (nextResults.length > 0) {
         const detail = await window.electronAPI.memory.read(nextResults[0].id);
         setSelected(detail);
-        setInspectedSession(null);
       } else {
         setSelected(null);
       }
@@ -207,20 +142,6 @@ export function SettingsMemory() {
     try {
       const detail = await window.electronAPI.memory.read(id);
       setSelected(detail);
-      setInspectedSession(null);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const handleInspectSession = async (sessionId: string, workspaceKey?: string) => {
-    setIsBusy(true);
-    setStatus(null);
-    try {
-      const detail = await window.electronAPI.memory.inspectSession(sessionId, workspaceKey);
-      setInspectedSession(detail);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
     } finally {
@@ -251,72 +172,6 @@ export function SettingsMemory() {
       });
       await refreshOverview();
       setStatus(t('memory.runtimeSaved', '记忆运行时配置已保存'));
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const handleRebuildWorkspace = async () => {
-    if (!currentWorkspace) {
-      return;
-    }
-    if (!window.confirm(t('memory.rebuildConfirm'))) {
-      return;
-    }
-    setIsBusy(true);
-    setStatus(null);
-    try {
-      await window.electronAPI.memory.rebuildWorkspace(currentWorkspace);
-      await Promise.all([refreshOverview(), refreshFiles()]);
-      setStatus(t('memory.rebuildSuccess'));
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const handleRebuildAll = async () => {
-    if (!window.confirm(t('memory.rebuildAllConfirm', '这会清空并重建全部记忆，是否继续？'))) {
-      return;
-    }
-    setIsBusy(true);
-    setStatus(null);
-    try {
-      const result = await window.electronAPI.memory.rebuildAll();
-      await Promise.all([refreshOverview(), refreshFiles()]);
-      setStatus(
-        t('memory.rebuildAllSuccess', {
-          defaultValue: `已重建全部记忆：${result.sessionCount} 个会话，${result.workspaceCount} 个来源工作区`,
-          sessionCount: result.sessionCount,
-          workspaceCount: result.workspaceCount,
-        })
-      );
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const handleClearWorkspace = async () => {
-    if (!currentWorkspace) {
-      return;
-    }
-    if (!window.confirm(t('memory.clearWorkspaceConfirm'))) {
-      return;
-    }
-    setIsBusy(true);
-    setStatus(null);
-    try {
-      await window.electronAPI.memory.clearWorkspace(currentWorkspace);
-      setResults([]);
-      setSelected(null);
-      setInspectedSession(null);
-      await Promise.all([refreshOverview(), refreshFiles()]);
-      setStatus(t('memory.clearWorkspaceSuccess'));
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
     } finally {
@@ -368,22 +223,8 @@ export function SettingsMemory() {
               {enabled ? t('memory.disableAction') : t('memory.enableAction')}
             </button>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <MetricCard label={t('memory.coreCount')} value={overview?.coreCount ?? 0} />
-            <MetricCard
-              label={t('memory.sessionCount')}
-              value={overview?.experienceSessionCount ?? 0}
-            />
-            <MetricCard
-              label={t('memory.chunkCount')}
-              value={overview?.experienceChunkCount ?? 0}
-            />
-            <MetricCard
-              label={t('memory.workspaceCount')}
-              value={overview?.sourceWorkspaceCount ?? 0}
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
             <InfoCard
               label={t('memory.latestIngestion')}
               value={
@@ -402,24 +243,10 @@ export function SettingsMemory() {
               secondary={overview?.latestError || undefined}
             />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-1">
             <InfoCard
               label={t('memory.storageRoot', '存储根目录')}
               value={overview?.storageRoot || runtimeDraft.storageRoot || 'Default userData/memory'}
-            />
-            <InfoCard
-              label={t('memory.currentWorkspace', '当前工作区')}
-              value={currentWorkspace || t('memory.noWorkspace', '暂无工作区')}
-              secondary={
-                overview?.topSourceWorkspaces?.length
-                  ? `Top sources: ${overview.topSourceWorkspaces
-                      .slice(0, 3)
-                      .map(
-                        (item) => `${item.workspaceKey} (${item.sessionCount}/${item.chunkCount})`
-                      )
-                      .join(' · ')}`
-                  : undefined
-              }
             />
           </div>
         </div>
@@ -429,7 +256,7 @@ export function SettingsMemory() {
         title={t('memory.runtimeTitle', '运行时配置')}
         description={t(
           'memory.runtimeDescription',
-          '默认继承当前激活的 API 配置。这里主要调节导航深度、embedding 和落盘目录。'
+          '默认继承当前激活的 API 配置。这里可调节 core memory 使用的模型与落盘目录。'
         )}
       >
         <div className="space-y-4 rounded-xl border border-border-muted bg-background-secondary/60 p-4">
@@ -441,97 +268,6 @@ export function SettingsMemory() {
                   setRuntimeDraft((prev) => ({ ...prev, storageRoot: event.target.value }))
                 }
                 placeholder={overview?.storageRoot || ''}
-                className="input text-body-sm"
-              />
-            </LabeledField>
-            <LabeledField label={t('memory.maxNavSteps', '导航步数')}>
-              <input
-                type="number"
-                min={0}
-                max={4}
-                value={runtimeDraft.maxNavSteps}
-                onChange={(event) =>
-                  setRuntimeDraft((prev) => ({
-                    ...prev,
-                    maxNavSteps: Number(event.target.value || 0),
-                  }))
-                }
-                className="input text-body-sm"
-              />
-            </LabeledField>
-            <LabeledField label={t('memory.ingestionConcurrency', '重建并发度')}>
-              <input
-                type="number"
-                min={1}
-                max={16}
-                value={runtimeDraft.ingestionConcurrency}
-                onChange={(event) =>
-                  setRuntimeDraft((prev) => ({
-                    ...prev,
-                    ingestionConcurrency: Number(event.target.value || 1),
-                  }))
-                }
-                className="input text-body-sm"
-              />
-            </LabeledField>
-            <ToggleField
-              label={t('memory.useEmbedding', '启用 embedding 检索')}
-              checked={runtimeDraft.useEmbedding}
-              onChange={(checked) =>
-                setRuntimeDraft((prev) => ({
-                  ...prev,
-                  useEmbedding: checked,
-                }))
-              }
-            />
-            <ToggleField
-              label={t('memory.evalEnabled', '启用真实模型评测')}
-              checked={runtimeDraft.evalEnabled ?? false}
-              onChange={(checked) =>
-                setRuntimeDraft((prev) => ({
-                  ...prev,
-                  evalEnabled: checked,
-                }))
-              }
-            />
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <LabeledField label={t('memory.evalArtifactsRoot', '评测产物目录')}>
-              <input
-                value={runtimeDraft.evalArtifactsRoot || ''}
-                onChange={(event) =>
-                  setRuntimeDraft((prev) => ({ ...prev, evalArtifactsRoot: event.target.value }))
-                }
-                className="input text-body-sm"
-              />
-            </LabeledField>
-            <LabeledField label={t('memory.evalMaxRounds', '评测轮数')}>
-              <input
-                type="number"
-                min={1}
-                max={100}
-                value={runtimeDraft.evalMaxRounds ?? 12}
-                onChange={(event) =>
-                  setRuntimeDraft((prev) => ({
-                    ...prev,
-                    evalMaxRounds: Number(event.target.value || 12),
-                  }))
-                }
-                className="input text-body-sm"
-              />
-            </LabeledField>
-            <LabeledField label={t('memory.promptIterationRounds', 'Prompt 迭代轮数')}>
-              <input
-                type="number"
-                min={0}
-                max={10}
-                value={runtimeDraft.promptIterationRounds ?? 2}
-                onChange={(event) =>
-                  setRuntimeDraft((prev) => ({
-                    ...prev,
-                    promptIterationRounds: Number(event.target.value || 2),
-                  }))
-                }
                 className="input text-body-sm"
               />
             </LabeledField>
@@ -591,58 +327,6 @@ export function SettingsMemory() {
                 />
               </LabeledField>
             </div>
-            <div className="space-y-3 rounded-lg border border-border-muted bg-background/80 p-3">
-              <p className="text-body-sm font-medium text-text-primary">
-                {t('memory.embeddingConfig', 'Embedding')}
-              </p>
-              <ToggleField
-                label={t('memory.inheritActive', '继承当前激活 API')}
-                checked={runtimeDraft.embedding.inheritFromActive}
-                onChange={(checked) =>
-                  setRuntimeDraft((prev) => ({
-                    ...prev,
-                    embedding: { ...prev.embedding, inheritFromActive: checked },
-                  }))
-                }
-              />
-              <LabeledField label={t('memory.modelOverride', '模型覆盖')}>
-                <input
-                  value={runtimeDraft.embedding.model || ''}
-                  onChange={(event) =>
-                    setRuntimeDraft((prev) => ({
-                      ...prev,
-                      embedding: { ...prev.embedding, model: event.target.value },
-                    }))
-                  }
-                  className="input text-body-sm"
-                />
-              </LabeledField>
-              <LabeledField label={t('memory.baseUrlOverride', 'Base URL 覆盖')}>
-                <input
-                  value={runtimeDraft.embedding.baseUrl || ''}
-                  onChange={(event) =>
-                    setRuntimeDraft((prev) => ({
-                      ...prev,
-                      embedding: { ...prev.embedding, baseUrl: event.target.value },
-                    }))
-                  }
-                  className="input text-body-sm"
-                />
-              </LabeledField>
-              <LabeledField label={t('memory.apiKeyOverride', 'API Key 覆盖')}>
-                <input
-                  type="password"
-                  value={runtimeDraft.embedding.apiKey || ''}
-                  onChange={(event) =>
-                    setRuntimeDraft((prev) => ({
-                      ...prev,
-                      embedding: { ...prev.embedding, apiKey: event.target.value },
-                    }))
-                  }
-                  className="input text-body-sm"
-                />
-              </LabeledField>
-            </div>
           </div>
           <div className="flex justify-end">
             <button
@@ -670,27 +354,6 @@ export function SettingsMemory() {
               placeholder={t('memory.searchPlaceholder')}
               className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-body-sm text-text-primary outline-none transition-colors focus:border-accent"
             />
-            <select
-              value={scope}
-              onChange={(event) => setScope(event.target.value as SearchMode)}
-              className="rounded-lg border border-border bg-background px-3 py-2.5 text-body-sm text-text-primary outline-none"
-            >
-              {hasWorkspace && <option value="workspace">{t('memory.scopeWorkspace')}</option>}
-              <option value="all">{t('memory.scopeAll')}</option>
-              <option value="global">{t('memory.scopeGlobal')}</option>
-            </select>
-            <select
-              value={sourceWorkspaceFilter}
-              onChange={(event) => setSourceWorkspaceFilter(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2.5 text-body-sm text-text-primary outline-none"
-            >
-              <option value="">{t('memory.allSources', '全部来源')}</option>
-              {overview?.topSourceWorkspaces?.map((item) => (
-                <option key={item.workspaceKey} value={item.workspaceKey}>
-                  {item.workspaceKey}
-                </option>
-              ))}
-            </select>
             <button
               onClick={() => {
                 void handleSearch();
@@ -701,37 +364,11 @@ export function SettingsMemory() {
               {t('memory.searchAction')}
             </button>
           </div>
-          {hasWorkspace && (
-            <p className="text-caption text-text-muted">
-              {t('memory.currentWorkspace')}: {currentWorkspace}
-            </p>
-          )}
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div className="space-y-4">
               <ResultGroup
                 title={t('memory.groupCore')}
-                items={groupedResults.core}
-                selectedId={selected?.id || null}
-                onSelect={handleSelectResult}
-                emptyLabel={t('memory.noResults')}
-              />
-              <ResultGroup
-                title={t('memory.groupSessions')}
-                items={groupedResults.sessions}
-                selectedId={selected?.id || null}
-                onSelect={handleSelectResult}
-                emptyLabel={t('memory.noResults')}
-              />
-              <ResultGroup
-                title={t('memory.groupChunks')}
-                items={groupedResults.chunks}
-                selectedId={selected?.id || null}
-                onSelect={handleSelectResult}
-                emptyLabel={t('memory.noResults')}
-              />
-              <ResultGroup
-                title={t('memory.groupRawSessions', '原始会话')}
-                items={groupedResults.raw}
+                items={results}
                 selectedId={selected?.id || null}
                 onSelect={handleSelectResult}
                 emptyLabel={t('memory.noResults')}
@@ -760,95 +397,14 @@ export function SettingsMemory() {
                         {t('memory.sourceFile', '来源文件')}: {selected.sourceFile}
                       </p>
                     )}
-                    {selected.sessionId && (
-                      <button
-                        onClick={() => {
-                          void handleInspectSession(
-                            selected.sessionId!,
-                            selected.sourceWorkspace || selected.workspaceKey
-                          );
-                        }}
-                        className="rounded-lg border border-border bg-background px-3 py-2 text-caption font-medium text-text-primary"
-                      >
-                        {t('memory.inspectSession', '查看该会话的完整记忆')}
-                      </button>
-                    )}
-                    {selected.details && (
-                      <pre className="max-h-56 overflow-auto rounded-lg bg-background-secondary/80 p-3 text-caption leading-5 text-text-secondary whitespace-pre-wrap">
-                        {selected.details}
-                      </pre>
-                    )}
                     {selected.rawText && (
                       <pre className="max-h-64 overflow-auto rounded-lg bg-background-secondary/80 p-3 text-caption leading-5 text-text-secondary whitespace-pre-wrap">
                         {selected.rawText}
                       </pre>
                     )}
-                    {selected.sourceExcerpt && (
-                      <div className="rounded-lg border border-border-muted bg-background-secondary/60 p-3 text-caption text-text-secondary whitespace-pre-wrap">
-                        {selected.sourceExcerpt}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <p className="mt-3 text-body-sm text-text-muted">{t('memory.noSelection')}</p>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-border-muted bg-background/80 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-body-sm font-semibold text-text-primary">
-                    {t('memory.inspectSession', '查看会话记忆')}
-                  </p>
-                  {inspectedSession?.filePath && (
-                    <button
-                      onClick={() => {
-                        void window.electronAPI.showItemInFolder(inspectedSession.filePath);
-                      }}
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-caption font-medium text-text-primary"
-                    >
-                      {t('memory.revealInFinder', '在 Finder 中显示')}
-                    </button>
-                  )}
-                </div>
-                {inspectedSession ? (
-                  <div className="mt-3 space-y-3">
-                    <div className="rounded-lg border border-border-muted bg-background-secondary/60 p-3">
-                      <p className="text-caption text-text-muted">
-                        {inspectedSession.sourceWorkspace || t('memory.noWorkspace', '暂无工作区')}
-                      </p>
-                      <p className="mt-1 text-body-sm font-medium text-text-primary">
-                        {inspectedSession.session.summary}
-                      </p>
-                    </div>
-                    <pre className="max-h-48 overflow-auto rounded-lg bg-background-secondary/80 p-3 text-caption leading-5 text-text-secondary whitespace-pre-wrap">
-                      {JSON.stringify(inspectedSession.session.rawSession, null, 2)}
-                    </pre>
-                    <div className="space-y-2">
-                      {inspectedSession.chunks.map((chunk) => (
-                        <div
-                          key={chunk.id}
-                          className="rounded-lg border border-border-muted bg-background-secondary/60 p-3"
-                        >
-                          <p className="text-body-sm font-medium text-text-primary">
-                            {chunk.summary}
-                          </p>
-                          <p className="mt-1 text-caption text-text-muted">
-                            turns: {chunk.sourceTurns.join(', ')}
-                          </p>
-                          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap text-caption leading-5 text-text-secondary">
-                            {chunk.rawText}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="mt-3 text-body-sm text-text-muted">
-                    {t(
-                      'memory.inspectSessionHint',
-                      '从上方搜索结果中选择一个 session 或 chunk 后查看'
-                    )}
-                  </p>
                 )}
               </div>
             </div>
@@ -860,7 +416,7 @@ export function SettingsMemory() {
         title={t('memory.filesTitle', '原始文件查看')}
         description={t(
           'memory.filesDescription',
-          '直接查看实际落盘的 core / unified experience / session_state / eval artifacts。'
+          '直接查看实际落盘的 core memory 与 session_state。'
         )}
       >
         <div className="grid gap-4 rounded-xl border border-border-muted bg-background-secondary/60 p-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
@@ -893,13 +449,7 @@ export function SettingsMemory() {
                 >
                   <p className="text-body-sm font-medium text-text-primary">{file.label}</p>
                   <p className="mt-1 text-caption text-text-muted">{file.filePath}</p>
-                  <p className="mt-2 text-caption text-text-muted">
-                    {file.sizeBytes} bytes
-                    {typeof file.sessionCount === 'number'
-                      ? ` · ${file.sessionCount} sessions`
-                      : ''}
-                    {typeof file.chunkCount === 'number' ? ` · ${file.chunkCount} chunks` : ''}
-                  </p>
+                  <p className="mt-2 text-caption text-text-muted">{file.sizeBytes} bytes</p>
                 </button>
               ))
             ) : (
@@ -947,36 +497,9 @@ export function SettingsMemory() {
 
       <SettingsContentSection
         title={t('memory.maintenanceTitle')}
-        description={t('memory.maintenanceDescription')}
+        description={t('memory.maintenanceDescription', '清空全局 core memory。')}
       >
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => {
-              void handleRebuildWorkspace();
-            }}
-            disabled={!hasWorkspace || isBusy}
-            className="rounded-lg border border-border bg-background px-4 py-2.5 text-body-sm font-medium text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {t('memory.rebuildWorkspace')}
-          </button>
-          <button
-            onClick={() => {
-              void handleRebuildAll();
-            }}
-            disabled={isBusy}
-            className="rounded-lg border border-border bg-background px-4 py-2.5 text-body-sm font-medium text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {t('memory.rebuildAll', '重建全部记忆')}
-          </button>
-          <button
-            onClick={() => {
-              void handleClearWorkspace();
-            }}
-            disabled={!hasWorkspace || isBusy}
-            className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-2.5 text-body-sm font-medium text-warning disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {t('memory.clearWorkspace')}
-          </button>
           <button
             onClick={() => {
               void handleClearCore();
@@ -1087,11 +610,6 @@ function ResultGroup({
             >
               <p className="text-body-sm font-medium text-text-primary">{item.title}</p>
               <p className="mt-1 text-caption leading-5 text-text-muted">{item.contentPreview}</p>
-              {(item.sourceWorkspace || item.sourceSessionTitle) && (
-                <p className="mt-2 text-caption text-text-muted">
-                  {[item.sourceWorkspace, item.sourceSessionTitle].filter(Boolean).join(' · ')}
-                </p>
-              )}
               {item.sourceFile && (
                 <p className="mt-2 text-caption text-text-muted">{item.sourceFile}</p>
               )}

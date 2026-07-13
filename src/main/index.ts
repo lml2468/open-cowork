@@ -1995,12 +1995,6 @@ ipcMain.handle('config.save', async (_event, newConfig: Partial<AppConfig>) => {
                 apiKey: newConfig.memoryRuntime.llm.apiKey ? '***' : '',
               }
             : undefined,
-          embedding: newConfig.memoryRuntime.embedding
-            ? {
-                ...newConfig.memoryRuntime.embedding,
-                apiKey: newConfig.memoryRuntime.embedding.apiKey ? '***' : '',
-              }
-            : undefined,
         }
       : undefined,
   });
@@ -3047,11 +3041,11 @@ ipcMain.handle('schedule.runNow', async (_event, id: string) => {
   return scheduledTaskManager.runNow(id);
 });
 
-ipcMain.handle('memory.getOverview', (_event, cwd?: string) => {
+ipcMain.handle('memory.getOverview', () => {
   if (!memoryService) {
     throw new Error('Memory service not initialized');
   }
-  return memoryService.getOverview(cwd);
+  return memoryService.getOverview();
 });
 
 ipcMain.handle(
@@ -3060,9 +3054,6 @@ ipcMain.handle(
     _event,
     payload: {
       query: string;
-      cwd?: string;
-      sourceWorkspace?: string | null;
-      scope?: 'workspace' | 'global' | 'all';
       limit?: number;
     }
   ) => {
@@ -3080,32 +3071,11 @@ ipcMain.handle('memory.read', (_event, id: string) => {
   return memoryService.read(id);
 });
 
-ipcMain.handle('memory.rebuildWorkspace', async (_event, cwd: string) => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.rebuildWorkspace(cwd);
-});
-
-ipcMain.handle('memory.clearWorkspace', (_event, cwd: string) => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.clearWorkspace(cwd);
-});
-
 ipcMain.handle('memory.clearCoreMemory', () => {
   if (!memoryService) {
     throw new Error('Memory service not initialized');
   }
   return memoryService.clearCoreMemory();
-});
-
-ipcMain.handle('memory.rebuildAll', async () => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.rebuildAll();
 });
 
 ipcMain.handle('memory.listFiles', () => {
@@ -3120,13 +3090,6 @@ ipcMain.handle('memory.readFile', (_event, filePath: string) => {
     throw new Error('Memory service not initialized');
   }
   return memoryService.readFile(filePath);
-});
-
-ipcMain.handle('memory.inspectSession', (_event, sessionId: string, workspaceKey?: string) => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.inspectSession(sessionId, workspaceKey);
 });
 
 ipcMain.handle('memory.setEnabled', (_event, enabled: boolean) => {

@@ -13,8 +13,12 @@ describe('memory integration wiring', () => {
     expect(mainIndex).toContain("ipcMain.handle('memory.getOverview'");
     expect(mainIndex).toContain("'memory.search'");
     expect(mainIndex).toContain("'memory.listFiles'");
-    expect(mainIndex).toContain("'memory.inspectSession'");
     expect(mainIndex).toContain("ipcMain.handle('memory.setEnabled'");
+    // Experience-only maintenance handlers are removed in core-only mode.
+    expect(mainIndex).not.toContain("'memory.inspectSession'");
+    expect(mainIndex).not.toContain("'memory.rebuildWorkspace'");
+    expect(mainIndex).not.toContain("'memory.rebuildAll'");
+    expect(mainIndex).not.toContain("'memory.clearWorkspace'");
   });
 
   it('injects runtime plugin skill paths and extension hooks into the agent runner', () => {
@@ -39,10 +43,11 @@ describe('memory integration wiring', () => {
     expect(preload).toContain("ipcRenderer.invoke('memory.listFiles')");
     expect(memorySettings).toContain('window.electronAPI.memory.search');
     expect(memorySettings).toContain('window.electronAPI.memory.readFile');
-    expect(memorySettings).toContain('window.electronAPI.memory.inspectSession');
-    expect(memorySettings).toContain('window.electronAPI.memory.rebuildWorkspace');
-    expect(memorySettings).toContain('evalEnabled: source.evalEnabled');
-    expect(memorySettings).toContain('promptIterationRounds');
+    // Experience-only UI is removed in core-only mode.
+    expect(memorySettings).not.toContain('window.electronAPI.memory.inspectSession');
+    expect(memorySettings).not.toContain('window.electronAPI.memory.rebuildWorkspace');
+    expect(memorySettings).not.toContain('evalEnabled');
+    expect(memorySettings).not.toContain('promptIterationRounds');
   });
 
   it('defaults new sessions to the global memory toggle', () => {

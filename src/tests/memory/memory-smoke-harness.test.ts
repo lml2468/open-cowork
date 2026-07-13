@@ -26,16 +26,6 @@ const mockConfigState = vi.hoisted(() => ({
         model: '',
         timeoutMs: 180000,
       },
-      embedding: {
-        inheritFromActive: true,
-        apiKey: '',
-        baseUrl: '',
-        model: 'text-embedding-3-small',
-        timeoutMs: 180000,
-      },
-      useEmbedding: false,
-      maxNavSteps: 2,
-      ingestionConcurrency: 2,
       storageRoot: '',
     },
     enableThinking: false,
@@ -100,48 +90,7 @@ class SmokeMemoryLLM implements MemoryLLMClientLike {
       };
     }
 
-    if (
-      request.systemPrompt.includes('experience memory extraction system') ||
-      request.systemPrompt.includes('memory extraction system')
-    ) {
-      const isWorkspaceA = request.userPrompt.includes('workspace A');
-      return {
-        text: JSON.stringify({
-          session_summary: isWorkspaceA
-            ? 'workspace A 的 gateway token rotation 经验'
-            : 'workspace B 的其他经验',
-          session_keywords: isWorkspaceA ? ['gateway', 'rotation'] : ['other'],
-          chunks: [
-            {
-              summary: isWorkspaceA
-                ? 'workspace A 中关于 gateway token rotation 的结论'
-                : 'workspace B 中不相关的总结',
-              details: isWorkspaceA
-                ? '在 workspace A 中完成 gateway token rotation，并保留后续整理说明。'
-                : '这条记录属于另一个 workspace。',
-              keywords: isWorkspaceA ? ['gateway', 'rotation'] : ['other'],
-              source_turns: [1, 2, 3, 4],
-            },
-          ],
-        }),
-      };
-    }
-
-    if (request.systemPrompt.includes('memory retrieval navigator')) {
-      return {
-        text: JSON.stringify({
-          sufficient: true,
-          reason: 'summaries_are_enough',
-          actions: [],
-        }),
-      };
-    }
-
     return { text: '{}' };
-  }
-
-  async embed(): Promise<number[]> {
-    return [];
   }
 }
 
@@ -257,16 +206,6 @@ describe('memory smoke harness', () => {
           model: '',
           timeoutMs: 180000,
         },
-        embedding: {
-          inheritFromActive: true,
-          apiKey: '',
-          baseUrl: '',
-          model: 'text-embedding-3-small',
-          timeoutMs: 180000,
-        },
-        useEmbedding: false,
-        maxNavSteps: 2,
-        ingestionConcurrency: 2,
         storageRoot: path.join(storageRoot, 'memory-root'),
       },
     });
@@ -277,7 +216,7 @@ describe('memory smoke harness', () => {
     fs.rmSync(storageRoot, { recursive: true, force: true });
   });
 
-  it('simulates multi-session recall across same and different workspaces', async () => {
+  it('recalls core memory across sessions and workspaces', async () => {
     const workspaceA = '/repo/workspace-a';
     const workspaceB = '/repo/workspace-b';
 
@@ -297,38 +236,10 @@ describe('memory smoke harness', () => {
       messages: makeMessages('a-1', [
         { role: 'user', text: '请用中文回答。', timestamp: 1 },
         { role: 'assistant', text: '好的。', timestamp: 2 },
-        {
-          role: 'user',
-          text: '在 workspace A 里实现 gateway token rotation，并同步 remote gateway。',
-          timestamp: 3,
-        },
-        {
-          role: 'assistant',
-          text: '已在 workspace A 完成 gateway token rotation。',
-          timestamp: 4,
-        },
       ]),
     });
 
-    await service.enqueueIngestion({
-      session: {
-        id: 'b-1',
-        title: 'Other workspace',
-        status: 'idle',
-        cwd: workspaceB,
-        mountedPaths: [],
-        allowedTools: [],
-        memoryEnabled: true,
-        createdAt: 2000,
-        updatedAt: 2000,
-      },
-      prompt: '记录别的事情',
-      messages: makeMessages('b-1', [
-        { role: 'user', text: '在 workspace B 中讨论不相关的话题。', timestamp: 5 },
-        { role: 'assistant', text: '已记录。', timestamp: 6 },
-      ]),
-    });
-
+    // Core memory is global, so it should surface regardless of the current workspace.
     const sameWorkspacePrompt = await service.buildPromptPrefix(
       { cwd: workspaceA },
       '继续 gateway token rotation'
@@ -338,11 +249,10 @@ describe('memory smoke harness', () => {
       '继续 gateway token rotation'
     );
 
-    expect(sameWorkspacePrompt).toContain('gateway token rotation');
-    expect(sameWorkspacePrompt).toContain('<experience_memory');
-    expect(otherWorkspacePrompt).toContain('workspace A');
-    expect(otherWorkspacePrompt).toContain('source=/repo/workspace-a');
+    expect(sameWorkspacePrompt).toContain('<core_memory>');
+    expect(sameWorkspacePrompt).toContain('中文');
     expect(otherWorkspacePrompt).toContain('<core_memory>');
+    expect(otherWorkspacePrompt).not.toContain('<experience_memory');
   });
 
   it('keeps the manual live checklist alongside deterministic smoke coverage', async () => {
