@@ -53,6 +53,7 @@ function makeConfig(timeoutMs: number): AppConfig {
       promptIterationRounds: 2,
     },
     enableThinking: false,
+    gpuAcceleration: 'auto',
     isConfigured: true,
   };
 }

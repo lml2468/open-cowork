@@ -32,6 +32,8 @@ import {
   shouldUseAnthropicAuthToken,
 } from './auth-utils';
 import { API_PROVIDER_PRESETS, PI_AI_CURATED_PRESETS } from '../../shared/api-model-presets';
+import type { GpuAccelerationMode } from '../system/gpu-detection';
+import { isGpuAccelerationMode } from '../system/gpu-detection';
 
 /**
  * Application configuration schema
@@ -125,6 +127,12 @@ export interface AppConfig {
 
   // Enable thinking mode (show thinking steps)
   enableThinking: boolean;
+
+  // GPU hardware acceleration preference ('auto' probes and persists a verdict)
+  gpuAcceleration: GpuAccelerationMode;
+
+  // Cached result of the last post-ready GPU probe (undefined until first probe)
+  gpuBlocklisted?: boolean;
 
   // First run flag
   isConfigured: boolean;
@@ -315,6 +323,7 @@ const defaultConfig: AppConfig = {
     promptIterationRounds: 2,
   },
   enableThinking: false,
+  gpuAcceleration: 'auto',
   isConfigured: false,
 };
 
@@ -1018,6 +1027,12 @@ export class ConfigStore {
       memoryEnabled: toBoolean(raw.memoryEnabled, defaultConfig.memoryEnabled),
       memoryRuntime: normalizeMemoryRuntimeConfig(raw.memoryRuntime),
       enableThinking: projected.enableThinking,
+      gpuAcceleration: isGpuAccelerationMode(raw.gpuAcceleration)
+        ? raw.gpuAcceleration
+        : defaultConfig.gpuAcceleration,
+      // Only persist gpuBlocklisted once a probe has produced a boolean verdict;
+      // electron-store/conf rejects explicit `undefined` values.
+      ...(typeof raw.gpuBlocklisted === 'boolean' ? { gpuBlocklisted: raw.gpuBlocklisted } : {}),
       isConfigured: toBoolean(raw.isConfigured, defaultConfig.isConfigured),
     };
     this.normalizeModelIds(result);

@@ -34,6 +34,7 @@ import {
   type AppTheme,
   type CreateConfigSetPayload,
 } from './config/config-store';
+import { shouldDisableHardwareAcceleration, isGpuBlocklisted } from './system/gpu-detection';
 import {
   startConfigFileWatcher,
   stopConfigFileWatcher,
@@ -124,8 +125,19 @@ if (configStore.isConfigured()) {
   configStore.applyToEnv();
 }
 
-// Disable hardware acceleration for better compatibility
-app.disableHardwareAcceleration();
+// Hardware acceleration: honor the persisted preference / last GPU probe.
+// disableHardwareAcceleration() must run before app.whenReady(); the probe that
+// refreshes the verdict (app.getGPUFeatureStatus) runs after ready and only
+// affects the *next* launch. Default 'auto' enables acceleration until a probe
+// flags the GPU as blocklisted.
+{
+  const gpuMode = configStore.get('gpuAcceleration');
+  const gpuBlocklisted = configStore.get('gpuBlocklisted');
+  if (shouldDisableHardwareAcceleration(gpuMode, gpuBlocklisted)) {
+    log(`[GPU] Disabling hardware acceleration (mode=${gpuMode}, blocklisted=${gpuBlocklisted})`);
+    app.disableHardwareAcceleration();
+  }
+}
 
 let mainWindow: BrowserWindow | null = null;
 let sessionManager: SessionManager | null = null;
@@ -854,6 +866,20 @@ app
       }
       log('[SmokeTest] PASSED');
       process.exit(0);
+    }
+
+    // Probe the real GPU feature status (only available after ready) and persist
+    // the verdict so the next launch's pre-ready decision can honor it. In 'auto'
+    // mode a blocklisted GPU disables acceleration on the following boot.
+    try {
+      const status = app.getGPUFeatureStatus() as unknown as Record<string, string>;
+      const blocklisted = isGpuBlocklisted(status);
+      if (configStore.get('gpuBlocklisted') !== blocklisted) {
+        configStore.set('gpuBlocklisted', blocklisted);
+        log(`[GPU] Probe updated blocklisted=${blocklisted} (effective next launch)`);
+      }
+    } catch (e) {
+      logWarn('[GPU] getGPUFeatureStatus probe failed:', e);
     }
 
     // ── Headless mode ──────────────────────────────────────────────────

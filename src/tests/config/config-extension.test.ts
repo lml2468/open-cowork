@@ -71,6 +71,7 @@ function createMockConfigStore(overrides: Partial<AppConfig> = {}) {
       storageRoot: '',
     },
     enableThinking: true,
+    gpuAcceleration: 'auto',
     isConfigured: true,
     ...overrides,
   };
