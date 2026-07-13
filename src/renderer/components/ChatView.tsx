@@ -13,6 +13,7 @@ import {
 } from '../store/selectors';
 import { useAppStore } from '../store';
 import { useIPC } from '../hooks/useIPC';
+import { useSmoothedStreamingText } from '../hooks/useSmoothedStreamingText';
 import { MessageCard } from './MessageCard';
 import { SubagentTracker } from './SubagentTracker';
 import { ContextUsageBar } from './ContextUsageBar';
@@ -108,6 +109,10 @@ export function ChatView() {
   const isSessionRunning = activeSession?.status === 'running';
   const canStop = isSessionRunning || hasActiveTurn || pendingCount > 0;
 
+  // Smooth the streamed answer so the typewriter reads as continuous even when
+  // the provider delivers text in coarse ~8/sec chunks.
+  const smoothedPartial = useSmoothedStreamingText(partialMessage);
+
   const displayedMessages = useMemo(() => {
     if (!activeSessionId) return messages;
     // Show streaming message if we have partial text OR partial thinking
@@ -127,7 +132,7 @@ export function ChatView() {
       contentBlocks.push({ type: 'thinking', thinking: partialThinking });
     }
     if (partialMessage) {
-      contentBlocks.push({ type: 'text', text: partialMessage });
+      contentBlocks.push({ type: 'text', text: smoothedPartial });
     }
 
     const streamingMessage: Message = {
@@ -139,7 +144,14 @@ export function ChatView() {
     };
 
     return [...messages.slice(0, insertIndex), streamingMessage, ...messages.slice(insertIndex)];
-  }, [activeSessionId, activeTurn?.userMessageId, messages, partialMessage, partialThinking]);
+  }, [
+    activeSessionId,
+    activeTurn?.userMessageId,
+    messages,
+    partialMessage,
+    smoothedPartial,
+    partialThinking,
+  ]);
 
   // Format execution time for display
   const formatExecutionTime = useCallback((ms: number): string => {
