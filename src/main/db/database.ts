@@ -220,6 +220,9 @@ function initializeSchema(database: Database.Database): void {
   try {
     // Enable WAL mode for better performance
     database.pragma('journal_mode = WAL');
+    // With WAL, NORMAL is durable enough and reduces fsync latency on the many
+    // small writes (messages, trace steps) this app makes.
+    database.pragma('synchronous = NORMAL');
 
     // Create sessions table
     database.exec(`

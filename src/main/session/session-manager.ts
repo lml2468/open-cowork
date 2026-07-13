@@ -50,6 +50,7 @@ import {
   generateTraceId,
 } from '../utils/logger';
 import { maybeGenerateSessionTitle } from './session-title-flow';
+import { TraceStepWriteQueue } from './trace-step-write-queue';
 import {
   buildTitlePrompt,
   getDefaultTitleFromPrompt,
@@ -102,6 +103,7 @@ export class SessionManager {
   private titleGenerationTokens: Map<string, symbol> = new Map();
   private messageCache: Map<string, Message[]> = new Map();
   private static readonly MAX_CACHE_SIZE = 100;
+  private readonly traceWriteQueue: TraceStepWriteQueue;
 
   constructor(
     db: DatabaseInstance,
@@ -110,12 +112,21 @@ export class SessionManager {
     extensionManager?: AgentRuntimeExtensionManager
   ) {
     this.db = db;
+    this.traceWriteQueue = new TraceStepWriteQueue(
+      {
+        create: (sessionId, step) => this.saveTraceStep(sessionId, step),
+        update: (stepId, updates) => this.updateTraceStep(stepId, updates),
+        transaction: (fn) => this.db.raw.transaction(fn)(),
+      },
+      { flushMs: 60 }
+    );
     this.sendToRenderer = (event) => {
+      // Forward to the UI immediately; persist trace writes off the hot path.
       if (event.type === 'trace.step') {
-        this.saveTraceStep(event.payload.sessionId, event.payload.step);
+        this.traceWriteQueue.enqueueCreate(event.payload.sessionId, event.payload.step);
       }
       if (event.type === 'trace.update') {
-        this.updateTraceStep(event.payload.stepId, event.payload.updates);
+        this.traceWriteQueue.enqueueUpdate(event.payload.stepId, event.payload.updates);
       }
       sendToRenderer(event);
     };
@@ -979,6 +990,9 @@ export class SessionManager {
     }
 
     // Delete from database (messages will be deleted automatically via CASCADE)
+    // Persist any buffered trace writes first so a late flush can't re-insert
+    // rows after the CASCADE removes them (FK violation).
+    this.traceWriteQueue.flush();
     this.db.sessions.delete(sessionId);
     this.messageCache.delete(sessionId);
     this.sessionTitleAttempts.delete(sessionId);
@@ -1011,6 +1025,8 @@ export class SessionManager {
     }
 
     // Perform all SQLite deletions atomically
+    // Flush buffered trace writes first so they can't re-insert after CASCADE.
+    this.traceWriteQueue.flush();
     this.db.raw.transaction(() => {
       for (const sessionId of sessionIds) {
         this.db.sessions.delete(sessionId);
