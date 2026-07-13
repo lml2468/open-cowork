@@ -2,6 +2,7 @@
 import { Suspense, lazy, isValidElement, cloneElement, memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../store';
+import { useActiveSessionCwd } from '../../store/selectors';
 import { PanelErrorBoundary } from '../PanelErrorBoundary';
 import {
   splitTextByFileMentions,
@@ -40,12 +41,8 @@ export const ContentBlockView = memo(function ContentBlockView({
   message,
 }: ContentBlockViewProps) {
   const { t } = useTranslation();
-  const activeSessionId = useAppStore((s) => s.activeSessionId);
-  const sessions = useAppStore((s) => s.sessions);
-  const workingDir = useAppStore((s) => s.workingDir);
+  const currentWorkingDir = useActiveSessionCwd();
   const setGlobalNotice = useAppStore((s) => s.setGlobalNotice);
-  const activeSession = activeSessionId ? sessions.find((s) => s.id === activeSessionId) : null;
-  const currentWorkingDir = activeSession?.cwd || workingDir;
 
   const resolveFilePath = (value: string) => resolvePathAgainstWorkspace(value, currentWorkingDir);
 

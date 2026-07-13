@@ -24,17 +24,31 @@ export const ToolResultBlock = memo(function ToolResultBlock({
   allBlocks,
   message,
 }: ToolResultBlockProps) {
-  const traceSteps = useAppStore((s) =>
-    message?.sessionId ? (s.sessionStates[message.sessionId]?.traceSteps ?? []) : []
-  );
+  const sessionId = message?.sessionId;
   const allMessages = useAppStore((s) =>
-    message?.sessionId ? (s.sessionStates[message.sessionId]?.messages ?? []) : []
+    sessionId ? (s.sessionStates[sessionId]?.messages ?? []) : []
+  );
+  // Narrow scalar subscriptions for the tool_call trace step of this result, so
+  // unrelated trace updates don't re-render this block.
+  const traceToolName = useAppStore((s) =>
+    sessionId
+      ? s.sessionStates[sessionId]?.traceSteps?.find(
+          (st) => st.id === block.toolUseId && st.type === 'tool_call'
+        )?.toolName
+      : undefined
+  );
+  const traceToolTitle = useAppStore((s) =>
+    sessionId
+      ? s.sessionStates[sessionId]?.traceSteps?.find(
+          (st) => st.id === block.toolUseId && st.type === 'tool_call'
+        )?.title
+      : undefined
   );
   const [expanded, setExpanded] = useState(false);
 
   // If a ToolUseBlock in any message already merges this result, hide this block
   const isOrphan = useMemo(() => {
-    if (!message?.sessionId) return true;
+    if (!sessionId) return true;
     for (const msg of allMessages) {
       if (!Array.isArray(msg.content)) continue;
       const hasMatchingToolUse = (msg.content as ContentBlock[]).some(
@@ -43,20 +57,13 @@ export const ToolResultBlock = memo(function ToolResultBlock({
       if (hasMatchingToolUse) return false;
     }
     return true;
-  }, [allMessages, block.toolUseId, message?.sessionId]);
+  }, [allMessages, block.toolUseId, sessionId]);
 
   if (!isOrphan) return null;
 
-  // Try to find the tool name from trace steps
-  let toolName: string | undefined;
-  let toolDisplayName: string | undefined;
-  if (message?.sessionId) {
-    const toolCallStep = traceSteps.find((s) => s.id === block.toolUseId && s.type === 'tool_call');
-    if (toolCallStep) {
-      toolName = toolCallStep.toolName;
-      toolDisplayName = toolCallStep.title;
-    }
-  }
+  // Prefer the tool name/title recovered from the trace step.
+  let toolName: string | undefined = traceToolName;
+  let toolDisplayName: string | undefined = traceToolTitle;
   const toolUseBlock = allBlocks?.find(
     (b) => b.type === 'tool_use' && (b as ToolUseContent).id === block.toolUseId
   ) as ToolUseContent | undefined;

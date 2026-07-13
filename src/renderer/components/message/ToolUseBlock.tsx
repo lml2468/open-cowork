@@ -28,14 +28,23 @@ export const ToolUseBlock = memo(function ToolUseBlock({
   message,
 }: ToolUseBlockProps) {
   const { t } = useTranslation();
-  const traceSteps = useAppStore((s) =>
-    message?.sessionId ? (s.sessionStates[message.sessionId]?.traceSteps ?? []) : []
-  );
+  const sessionId = message?.sessionId;
+  // Committed messages ref (changes a few times per turn) — used to find a
+  // matching tool_result that lives in a different message.
   const allMessages = useAppStore((s) =>
-    message?.sessionId ? (s.sessionStates[message.sessionId]?.messages ?? []) : []
+    sessionId ? (s.sessionStates[sessionId]?.messages ?? []) : []
   );
-  const activeTurn = useAppStore((s) =>
-    message?.sessionId ? (s.sessionStates[message.sessionId]?.activeTurn ?? null) : null
+  // Narrow scalar subscriptions: re-render only when THIS block's duration or
+  // the session's active-turn presence changes — not on every trace update.
+  const duration = useAppStore((s) =>
+    sessionId
+      ? s.sessionStates[sessionId]?.traceSteps?.find(
+          (st) => st.id === block.id && st.type === 'tool_result'
+        )?.duration
+      : undefined
+  );
+  const hasActiveTurn = useAppStore((s) =>
+    sessionId ? Boolean(s.sessionStates[sessionId]?.activeTurn) : false
   );
   const [expanded, setExpanded] = useState(false);
 
@@ -52,7 +61,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
     (b) => b.type === 'tool_result' && (b as ToolResultContent).toolUseId === block.id
   ) as ToolResultContent | undefined;
 
-  if (!toolResult && message?.sessionId) {
+  if (!toolResult && sessionId) {
     for (const msg of allMessages) {
       if (!Array.isArray(msg.content)) continue;
       const found = (msg.content as ContentBlock[]).find(
@@ -67,7 +76,6 @@ export const ToolUseBlock = memo(function ToolUseBlock({
 
   // Determine state: running / success / error
   // Only show spinner if session still has an active turn; otherwise treat as done
-  const hasActiveTurn = Boolean(activeTurn);
   const isRunning = !toolResult && hasActiveTurn;
   const isError = toolResult?.isError === true;
   const isSuccess = toolResult && !isError;
@@ -111,12 +119,7 @@ export const ToolUseBlock = memo(function ToolUseBlock({
       )
     : false;
 
-  // Duration from trace steps
-  let duration: number | undefined;
-  if (message?.sessionId) {
-    const resultStep = traceSteps.find((s) => s.id === block.id && s.type === 'tool_result');
-    duration = resultStep?.duration;
-  }
+  // Duration comes from the matching tool_result trace step (scalar subscription).
 
   return (
     <div

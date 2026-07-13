@@ -54,6 +54,21 @@ export function useIsSessionRunning(): boolean {
   });
 }
 
+/**
+ * Returns the effective working directory for the active session (its cwd, or
+ * the global workingDir fallback) as a scalar string. Re-renders only when that
+ * string changes — unlike subscribing to the whole `sessions` array, which
+ * fires on every session status flip.
+ */
+export function useActiveSessionCwd(): string | null {
+  return useAppStore((s) => {
+    const cwd = s.activeSessionId
+      ? (s.sessions.find((sess) => sess.id === s.activeSessionId)?.cwd ?? null)
+      : null;
+    return cwd || s.workingDir || null;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Message domain
 // ---------------------------------------------------------------------------
