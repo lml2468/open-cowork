@@ -72,6 +72,7 @@ import {
 } from './pi-model-resolution';
 import { buildPiSessionRuntimeSignature } from './pi-session-runtime';
 import { ThinkTagStreamParser } from './think-tag-parser';
+import { StreamDeltaBatcher } from './stream-delta-batcher';
 import {
   LoopGuard,
   buildAbortUserMessage,
@@ -554,6 +555,10 @@ interface CachedPiSession {
  */
 export class CoworkAgentRunner {
   private sendToRenderer: (event: ServerEvent) => void;
+  // `sendToRenderer` wraps this raw sink with a delta batcher so runs of
+  // stream.partial/stream.thinking deltas are coalesced into one IPC message
+  // per flush instead of one per token.
+  private readonly deltaBatcher: StreamDeltaBatcher;
   private saveMessage?: (message: Message) => void;
   private requestSudoPassword?: (
     sessionId: string,
@@ -889,7 +894,11 @@ ${hints.join('\n')}
     skillsAdapter?: SkillsAdapter,
     extensionManager?: AgentRuntimeExtensionManager
   ) {
-    this.sendToRenderer = options.sendToRenderer;
+    // Wrap the raw sink with a batcher: buffer consecutive text/thinking deltas
+    // and flush them as a single IPC message. Any non-delta event flushes
+    // pending deltas first so ordering (deltas → stream.message/trace.*) holds.
+    this.deltaBatcher = new StreamDeltaBatcher(options.sendToRenderer);
+    this.sendToRenderer = (event: ServerEvent) => this.deltaBatcher.send(event);
     this.saveMessage = options.saveMessage;
     this.requestSudoPassword = options.requestSudoPassword;
     this.requestPermission = options.requestPermission;
@@ -2982,6 +2991,8 @@ Tool routing:
         } catch (e) {
           logWarn('[CoworkAgentRunner] unsubscribe error:', e);
         }
+        // Emit any deltas still buffered by the coalescer for this turn.
+        this.deltaBatcher.flush(session.id);
         if (activityTimeoutId) clearTimeout(activityTimeoutId);
         if (ollamaColdStartTimerId) clearTimeout(ollamaColdStartTimerId);
       }
@@ -3209,6 +3220,8 @@ Tool routing:
   }
 
   cancel(sessionId: string): void {
+    // Flush any buffered deltas so partial content isn't lost on cancel.
+    this.deltaBatcher.flush(sessionId);
     const controller = this.activeControllers.get(sessionId);
     if (controller) controller.abort();
   }
