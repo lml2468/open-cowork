@@ -86,17 +86,46 @@ export class ToolExecutor {
   }
 
   /**
+   * Async existence check (replacement for fs.existsSync on hot tool paths so a
+   * large/slow filesystem never blocks the main-process event loop).
+   */
+  private async pathExists(p: string): Promise<boolean> {
+    try {
+      await fs.promises.access(p);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Upper bound on a single file read, to avoid huge synchronous decode stalls. */
+  private static readonly MAX_READ_BYTES = 20 * 1024 * 1024;
+
+  /** Throw if the target file exceeds the read cap. */
+  private async assertReadableSize(p: string): Promise<void> {
+    const { size } = await fs.promises.stat(p);
+    if (size > ToolExecutor.MAX_READ_BYTES) {
+      throw new Error(
+        `File too large to read (${this.formatSize(size)}, limit ${this.formatSize(
+          ToolExecutor.MAX_READ_BYTES
+        )})`
+      );
+    }
+  }
+
+  /**
    * Read file contents - Public method for agent-runner
    */
   async readFile(sessionId: string, filePath: string): Promise<string> {
     try {
       const pathToRead = this.resolveWorkspacePath(sessionId, filePath);
 
-      if (!fs.existsSync(pathToRead)) {
+      if (!(await this.pathExists(pathToRead))) {
         throw new Error(`File not found: ${filePath}`);
       }
 
-      return fs.readFileSync(pathToRead, 'utf-8');
+      await this.assertReadableSize(pathToRead);
+      return await fs.promises.readFile(pathToRead, 'utf-8');
     } catch (error) {
       throw new Error(
         `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -113,11 +142,11 @@ export class ToolExecutor {
 
       // Ensure directory exists
       const dir = path.dirname(pathToWrite);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      if (!(await this.pathExists(dir))) {
+        await fs.promises.mkdir(dir, { recursive: true });
       }
 
-      fs.writeFileSync(pathToWrite, content, 'utf-8');
+      await fs.promises.writeFile(pathToWrite, content, 'utf-8');
     } catch (error) {
       throw new Error(
         `Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -132,17 +161,17 @@ export class ToolExecutor {
     try {
       const pathToList = this.resolveWorkspacePath(sessionId, dirPath);
 
-      if (!fs.existsSync(pathToList)) {
+      if (!(await this.pathExists(pathToList))) {
         throw new Error(`Directory not found: ${dirPath}`);
       }
 
-      const entries = fs.readdirSync(pathToList, { withFileTypes: true });
+      const entries = await fs.promises.readdir(pathToList, { withFileTypes: true });
       const result: string[] = [];
 
       for (const entry of entries) {
         const prefix = entry.isDirectory() ? '[DIR]' : '[FILE]';
         const size = entry.isFile()
-          ? ` (${this.formatSize(fs.statSync(path.join(pathToList, entry.name)).size)})`
+          ? ` (${this.formatSize((await fs.promises.stat(path.join(pathToList, entry.name))).size)})`
           : '';
         result.push(`${prefix} ${entry.name}${size}`);
       }
@@ -475,7 +504,7 @@ export class ToolExecutor {
     try {
       const pathToSearch = this.resolveWorkspacePath(sessionId, searchPath || '.');
 
-      if (!fs.existsSync(pathToSearch)) {
+      if (!(await this.pathExists(pathToSearch))) {
         throw new Error(`Path not found: ${searchPath}`);
       }
 
@@ -524,18 +553,18 @@ export class ToolExecutor {
     try {
       const resolvedPath = this.resolveWorkspacePath(sessionId, filePath);
 
-      if (!fs.existsSync(resolvedPath)) {
+      if (!(await this.pathExists(resolvedPath))) {
         throw new Error(`File not found: ${filePath}`);
       }
 
-      const content = fs.readFileSync(resolvedPath, 'utf-8');
+      const content = await fs.promises.readFile(resolvedPath, 'utf-8');
 
       if (!content.includes(oldString)) {
         throw new Error(`String not found in file: "${oldString.slice(0, 50)}..."`);
       }
 
       const newContent = content.split(oldString).join(newString);
-      fs.writeFileSync(resolvedPath, newContent, 'utf-8');
+      await fs.promises.writeFile(resolvedPath, newContent, 'utf-8');
     } catch (error) {
       throw new Error(`Edit failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -553,7 +582,7 @@ export class ToolExecutor {
 
       const pathToSearch = this.resolveWorkspacePath(sessionId, searchPath || '.');
 
-      if (!fs.existsSync(pathToSearch)) {
+      if (!(await this.pathExists(pathToSearch))) {
         throw new Error(`Path not found: ${searchPath}`);
       }
 
@@ -576,7 +605,7 @@ export class ToolExecutor {
     try {
       const pathToSearch = this.resolveWorkspacePath(sessionId, searchPath || '.');
 
-      if (!fs.existsSync(pathToSearch)) {
+      if (!(await this.pathExists(pathToSearch))) {
         throw new Error(`Path not found: ${searchPath}`);
       }
 
@@ -619,7 +648,7 @@ export class ToolExecutor {
     }
     if (totalBytes >= MAX_OUTPUT_BYTES) return;
 
-    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
 
     for (const entry of entries) {
       if (results.length >= maxResults) break;
@@ -655,7 +684,7 @@ export class ToolExecutor {
         if (!textExtensions.includes(ext) && ext !== '') continue;
 
         try {
-          const content = fs.readFileSync(fullPath, 'utf-8');
+          const content = await fs.promises.readFile(fullPath, 'utf-8');
           const lines = content.split(/\r?\n/);
 
           lines.forEach((line, index) => {
@@ -721,7 +750,8 @@ export class ToolExecutor {
         return { success: false, error: 'Invalid or unauthorized path' };
       }
 
-      const content = fs.readFileSync(realPath, 'utf-8');
+      await this.assertReadableSize(realPath);
+      const content = await fs.promises.readFile(realPath, 'utf-8');
       return { success: true, output: content };
     } catch (error) {
       return {
@@ -746,11 +776,11 @@ export class ToolExecutor {
       }
 
       const dir = path.dirname(realPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      if (!(await this.pathExists(dir))) {
+        await fs.promises.mkdir(dir, { recursive: true });
       }
 
-      fs.writeFileSync(realPath, content, 'utf-8');
+      await fs.promises.writeFile(realPath, content, 'utf-8');
       return { success: true, output: `File written: ${virtualPath}` };
     } catch (error) {
       return {
@@ -775,14 +805,14 @@ export class ToolExecutor {
         return { success: false, error: 'Invalid or unauthorized path' };
       }
 
-      const content = fs.readFileSync(realPath, 'utf-8');
+      const content = await fs.promises.readFile(realPath, 'utf-8');
 
       if (!content.includes(oldString)) {
         return { success: false, error: 'Old string not found in file' };
       }
 
       const newContent = content.split(oldString).join(newString);
-      fs.writeFileSync(realPath, newContent, 'utf-8');
+      await fs.promises.writeFile(realPath, newContent, 'utf-8');
 
       return { success: true, output: `File edited: ${virtualPath}` };
     } catch (error) {
@@ -868,11 +898,11 @@ export class ToolExecutor {
 
       if (virtualPath) {
         const realPath = this.pathResolver.resolve(context.sessionId, virtualPath);
-        if (!realPath || !fs.existsSync(realPath)) {
+        if (!realPath || !(await this.pathExists(realPath))) {
           return { success: false, error: 'File not found' };
         }
 
-        const content = fs.readFileSync(realPath, 'utf-8');
+        const content = await fs.promises.readFile(realPath, 'utf-8');
         const lines = content.split(/\r?\n/);
 
         lines.forEach((line, index) => {
