@@ -20,6 +20,11 @@ map), and `implement.md` (phased execution plan).
 - **D4 — Providers:** **OpenAI-compatible only.** Accept OpenAI + any OpenAI-compatible
   base URL (OpenRouter, Azure, Ollama-via-OpenAI-compat, custom endpoints). **Drop native
   Anthropic + Gemini** support. No wire-translation shim is built.
+  - **D4a — refined after Phase 0 (user-accepted):** codex 0.142 supports **only the
+    OpenAI Responses API** (`wire_api="chat"` is dropped). So "OpenAI-compatible" in
+    practice = **OpenAI + Responses-API endpoints only**; chat-completions-only gateways
+    (OpenRouter, Ollama OpenAI-compat, Azure chat deployments, most third-party) will not
+    work. User accepted this narrowing (effectively near-OpenAI-only); no Responses proxy.
 
 ## Background — current runtime (from code)
 

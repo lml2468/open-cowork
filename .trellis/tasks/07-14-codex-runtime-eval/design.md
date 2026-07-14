@@ -92,20 +92,21 @@ final-item payload instead of pi's `AssistantMessage`/`ToolCall` types.
 
 ## Capability map (verdict + evidence)
 
-| Capability                                              | Verdict     | Notes                                                  |
-| ------------------------------------------------------- | ----------- | ------------------------------------------------------ |
-| Streaming text/thinking traces                          | keep        | Seam 3; codex streams deltas + reasoning               |
-| Per-tool permission gating                              | keep        | app-server approval events → `permission-rules-store`  |
-| MCP tools                                               | keep        | codex MCP client (`mcp_servers` TOML)                  |
-| Custom app tools (memory/config)                        | changed     | via `dynamic_tools` (exp.) or bundled MCP server       |
-| Subagents                                               | changed     | child codex threads instead of nested pi loop          |
-| VM sandbox (Lima/WSL)                                   | keep        | `danger-full-access` + delegate to app VM              |
-| Skills                                                  | keep        | prompt/resource assembly is runtime-agnostic           |
-| Memory / schedule / remote control / headless RPC       | keep        | above the runtime seam; unaffected                     |
-| Conversation history                                    | keep        | cold-start `<conversation_history>` preamble reused    |
-| Compaction                                              | changed     | codex-native compaction; re-map to `compaction.result` |
-| **Anthropic / Gemini providers**                        | **dropped** | D4 — OpenAI-wire only                                  |
-| OpenAI / OpenAI-compatible / OpenRouter / Ollama-compat | keep        | codex `model_providers`                                |
+| Capability                                                    | Verdict     | Notes                                                  |
+| ------------------------------------------------------------- | ----------- | ------------------------------------------------------ |
+| Streaming text/thinking traces                                | keep        | Seam 3; codex streams deltas + reasoning               |
+| Per-tool permission gating                                    | keep        | app-server approval events → `permission-rules-store`  |
+| MCP tools                                                     | keep        | codex MCP client (`mcp_servers` TOML)                  |
+| Custom app tools (memory/config)                              | changed     | via `dynamic_tools` (exp.) or bundled MCP server       |
+| Subagents                                                     | changed     | child codex threads instead of nested pi loop          |
+| VM sandbox (Lima/WSL)                                         | keep        | `danger-full-access` + delegate to app VM              |
+| Skills                                                        | keep        | prompt/resource assembly is runtime-agnostic           |
+| Memory / schedule / remote control / headless RPC             | keep        | above the runtime seam; unaffected                     |
+| Conversation history                                          | keep        | cold-start `<conversation_history>` preamble reused    |
+| Compaction                                                    | changed     | codex-native compaction; re-map to `compaction.result` |
+| **Anthropic / Gemini providers**                              | **dropped** | D4 — OpenAI-wire only                                  |
+| OpenAI + Responses-API endpoints only                         | keep        | `wire_api="responses"` (D4a; Phase 0 finding)          |
+| Chat-completions-only gateways (OpenRouter/Ollama/Azure-chat) | **dropped** | codex 0.142 dropped `wire_api="chat"` (D4a)            |
 
 ## Compatibility & migration notes (D4 regression)
 

@@ -1,0 +1,2 @@
+# regenerable via: codex app-server generate-ts --out proto-ts
+proto-ts/
