@@ -5,6 +5,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Rebuild better-sqlite3 for the Node ABI when needed (fast no-op otherwise),
+    // so SQLite-backed tests also pass under direct invocations like `npx vitest run`
+    // that bypass the `pretest` npm hook.
+    globalSetup: ['./tests/vitest-global-setup.ts'],
     // Resolve Electron to a stable test double so CI does not depend on the
     // postinstall-generated `node_modules/electron/path.txt` file.
     alias: {
