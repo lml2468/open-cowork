@@ -21,7 +21,21 @@
     "appLogoAlt": "Open Cowork 标志",
     "pastedImageAlt": "粘贴图片 {{index}}"
   },
+  "nav": {
+    "sectionTitle": "工作区",
+    "skills": "技能",
+    "experts": "专家",
+    "tasks": "任务",
+    "files": "文件",
+    "connectors": "连接",
+    "back": "返回",
+    "comingSoonTitle": "敬请期待",
+    "filesDescription": "在这里浏览和管理工作目录中的文件。该工作区视图即将上线。",
+    "expertsDescription": "为专项任务精选的专家智能体即将推出。"
+  },
   "welcome": {
+    "skillsHeading": "从技能开始",
+    "skillPromptTemplate": "使用「{{name}}」技能来",
     "title": "今天我能为您做些什么？",
     "placeholder": "描述你想做的事情...",
     "createFile": "创建文件",
@@ -571,6 +585,8 @@
     "helpText2": "把诊断包发给我们后，通常可以更快定位到是前端异常、工具调用失败，还是配置/环境问题。"
   },
   "sidebar": {
+    "collapseGroup": "收起",
+    "expandGroup": "展开",
     "recents": "最近",
     "expandToView": "展开查看任务",
     "noTasks": "暂无任务",

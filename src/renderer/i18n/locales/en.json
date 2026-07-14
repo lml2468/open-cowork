@@ -21,7 +21,21 @@
     "appLogoAlt": "Open Cowork logo",
     "pastedImageAlt": "Pasted {{index}}"
   },
+  "nav": {
+    "sectionTitle": "Workspace",
+    "skills": "Skills",
+    "experts": "Experts",
+    "tasks": "Tasks",
+    "files": "Files",
+    "connectors": "Connectors",
+    "back": "Back",
+    "comingSoonTitle": "Coming soon",
+    "filesDescription": "Browse and manage your working-directory files here. This workspace view is on the way.",
+    "expertsDescription": "Curated expert agents for specialized tasks are coming soon."
+  },
   "welcome": {
+    "skillsHeading": "Start with a skill",
+    "skillPromptTemplate": "Use the {{name}} skill to ",
     "title": "How can I help you today?",
     "placeholder": "Describe what you'd like to do...",
     "createFile": "Create a file",
@@ -571,6 +585,8 @@
     "helpText2": "Sharing that bundle usually lets us narrow issues down much faster, whether they come from the UI, tool execution, or local environment."
   },
   "sidebar": {
+    "collapseGroup": "Collapse",
+    "expandGroup": "Expand",
     "recents": "Recents",
     "expandToView": "Expand to view tasks",
     "noTasks": "No tasks yet",
