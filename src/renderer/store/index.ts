@@ -16,6 +16,22 @@ import { applySessionUpdate } from '../utils/session-update';
 export type GlobalNoticeType = 'info' | 'warning' | 'error' | 'success';
 export type GlobalNoticeAction = 'open_api_settings';
 
+/**
+ * Top-level view shown in the main content area. `'home'` means chat/welcome
+ * (driven by activeSessionId); the rest are nav-rail destinations rendered
+ * full-width. Settings remains a separate overlay flag (showSettings).
+ */
+export type ActiveView = 'home' | 'skills' | 'connectors' | 'tasks' | 'files' | 'experts';
+
+/** All nav-rail views (excludes 'home'), for whitelist checks. */
+export const NAV_VIEWS: readonly ActiveView[] = [
+  'skills',
+  'connectors',
+  'tasks',
+  'files',
+  'experts',
+];
+
 export interface GlobalNotice {
   id: string;
   message: string;
@@ -99,6 +115,7 @@ interface AppState {
   contextPanelCollapsed: boolean;
   showSettings: boolean;
   settingsTab: string | null;
+  activeView: ActiveView;
 
   // Permission
   pendingPermission: PermissionRequest | null;
@@ -167,6 +184,7 @@ interface AppState {
   setContextPanelCollapsed: (collapsed: boolean) => void;
   setShowSettings: (show: boolean) => void;
   setSettingsTab: (tab: string | null) => void;
+  setActiveView: (view: ActiveView) => void;
 
   setPendingPermission: (permission: PermissionRequest | null) => void;
 
@@ -243,6 +261,7 @@ export const useAppStore = create<AppState>((set) => ({
   contextPanelCollapsed: false,
   showSettings: false,
   settingsTab: null,
+  activeView: 'home',
   pendingPermission: null,
   pendingSudoPassword: null,
   settings: defaultSettings,
@@ -302,7 +321,9 @@ export const useAppStore = create<AppState>((set) => ({
       };
     }),
 
-  setActiveSession: (sessionId) => set({ activeSessionId: sessionId }),
+  // Selecting a session (or clearing it via "new task") always leaves any
+  // full-width nav destination and returns to the chat/welcome view.
+  setActiveSession: (sessionId) => set({ activeSessionId: sessionId, activeView: 'home' }),
 
   // Message actions
   addMessage: (sessionId, message) =>
@@ -558,6 +579,9 @@ export const useAppStore = create<AppState>((set) => ({
   setContextPanelCollapsed: (collapsed) => set({ contextPanelCollapsed: collapsed }),
   setShowSettings: (show) => set({ showSettings: show }),
   setSettingsTab: (tab) => set({ settingsTab: tab }),
+  // Opening a nav destination closes Settings but preserves activeSessionId so
+  // returning to chat is just setActiveView('home').
+  setActiveView: (view) => set({ activeView: view, showSettings: false }),
 
   // Permission actions
   setPendingPermission: (permission) => set({ pendingPermission: permission }),
@@ -635,6 +659,7 @@ if (typeof window !== 'undefined') {
     const s = useAppStore.getState();
     return {
       showSettings: !!s.showSettings,
+      activeView: s.activeView,
       activeSessionId: s.activeSessionId || null,
       sessionCount: (s.sessions || []).length,
     };
@@ -644,6 +669,7 @@ if (typeof window !== 'undefined') {
     const store = useAppStore.getState();
     if (page === 'welcome') {
       store.setShowSettings(false);
+      store.setActiveView('home');
       store.setActiveSession(null);
     } else if (page === 'settings') {
       store.setSettingsTab(tab || 'api');
@@ -654,6 +680,10 @@ if (typeof window !== 'undefined') {
       if (!exists) return false;
       store.setShowSettings(false);
       store.setActiveSession(sessionId);
+    } else if ((NAV_VIEWS as readonly string[]).includes(page)) {
+      store.setActiveView(page as ActiveView);
+    } else {
+      return false;
     }
     return true;
   };

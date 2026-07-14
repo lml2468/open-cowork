@@ -5,6 +5,7 @@ import {
   useSettings,
   useSystemDarkMode,
   useSettingsState,
+  useActiveView,
   useLayoutState,
   useConfigModalState,
   useGlobalNotice,
@@ -38,6 +39,9 @@ const ConfigModal = lazy(() =>
 const SettingsPanel = lazy(() =>
   import('./components/SettingsPanel').then((module) => ({ default: module.SettingsPanel }))
 );
+const NavPageRouter = lazy(() =>
+  import('./components/nav/NavPageRouter').then((module) => ({ default: module.NavPageRouter }))
+);
 
 function MainPanelFallback() {
   return (
@@ -62,6 +66,7 @@ function App() {
   const settings = useSettings();
   const systemDarkMode = useSystemDarkMode();
   const { showSettings } = useSettingsState();
+  const activeView = useActiveView();
   const { sidebarCollapsed } = useLayoutState();
   const { showConfigModal, isConfigured, appConfig } = useConfigModalState();
   const globalNotice = useGlobalNotice();
@@ -190,6 +195,16 @@ function App() {
                 <SettingsPanel onClose={() => setShowSettings(false)} />
               </Suspense>
             </PanelErrorBoundary>
+          ) : activeView !== 'home' ? (
+            <PanelErrorBoundary
+              name="NavPage"
+              resetKey={activeView}
+              fallback={<MainPanelFallback />}
+            >
+              <Suspense fallback={<MainPanelFallback />}>
+                <NavPageRouter view={activeView} />
+              </Suspense>
+            </PanelErrorBoundary>
           ) : activeSessionId ? (
             <PanelErrorBoundary
               name="ChatView"
@@ -205,8 +220,8 @@ function App() {
           )}
         </main>
 
-        {/* Context Panel - only show when in session and not in settings */}
-        {activeSessionId && !showSettings && (
+        {/* Context Panel - only show when in a session, not in settings, and on the home view */}
+        {activeSessionId && !showSettings && activeView === 'home' && (
           <PanelErrorBoundary
             name="ContextPanel"
             resetKey={activeSessionId}

@@ -17,7 +17,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from './index';
 import type { Session, Message, TraceStep, Settings, AppConfig } from '../types';
-import type { GlobalNotice, SessionExecutionClock, CompactionEvent } from './index';
+import type { GlobalNotice, SessionExecutionClock, CompactionEvent, ActiveView } from './index';
 
 // ---------------------------------------------------------------------------
 // Session domain
@@ -215,6 +215,11 @@ export function useSettingsState(): { showSettings: boolean; settingsTab: string
       settingsTab: s.settingsTab,
     }))
   );
+}
+
+/** Returns the active top-level view ('home' = chat/welcome, else a nav destination). */
+export function useActiveView(): ActiveView {
+  return useAppStore((s) => s.activeView);
 }
 
 // ---------------------------------------------------------------------------

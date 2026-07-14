@@ -5,6 +5,7 @@ import { useIPC } from '../hooks/useIPC';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Trash2,
   Moon,
   Sun,
@@ -14,8 +15,15 @@ import {
   Plus,
   ListChecks,
   Check,
+  Sparkles,
+  GraduationCap,
+  Clock3,
+  Folder,
+  Plug,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { Session } from '../types';
+import type { ActiveView } from '../store';
 
 import sidebarLogoSrc from '../assets/logo.png';
 
@@ -38,6 +46,9 @@ export function Sidebar() {
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
+  const showSettings = useAppStore((s) => s.showSettings);
+  const activeView = useAppStore((s) => s.activeView);
+  const setActiveView = useAppStore((s) => s.setActiveView);
   const {
     deleteSession,
     batchDeleteSessions,
@@ -50,6 +61,30 @@ export function Sidebar() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const navItems: { id: ActiveView; label: string; icon: LucideIcon }[] = useMemo(
+    () => [
+      { id: 'skills', label: t('nav.skills'), icon: Sparkles },
+      { id: 'experts', label: t('nav.experts'), icon: GraduationCap },
+      { id: 'tasks', label: t('nav.tasks'), icon: Clock3 },
+      { id: 'files', label: t('nav.files'), icon: Folder },
+      { id: 'connectors', label: t('nav.connectors'), icon: Plug },
+    ],
+    [t]
+  );
+
+  const toggleGroupCollapsed = useCallback((key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
 
   const normalizedQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
   const filteredSessions = useMemo(() => {
@@ -241,14 +276,20 @@ export function Sidebar() {
           </button>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-3 py-4">
-          <button
-            onClick={toggleSidebar}
-            className="rounded-2xl px-2 py-3 text-caption text-center text-text-muted hover:bg-surface-hover transition-colors"
-            title={t('sidebar.expandToView')}
-          >
-            {t('sidebar.expandToView')}
-          </button>
+        <div className="flex-1 flex flex-col items-center gap-1.5 px-3 py-4">
+          {navItems.map((item) => {
+            const isActive = activeView === item.id && !showSettings;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveView(item.id)}
+                className={`icon-btn w-9 h-9 ${isActive ? 'bg-accent/10 text-text-primary' : ''}`}
+                title={item.label}
+              >
+                <item.icon className="w-4 h-4" />
+              </button>
+            );
+          })}
         </div>
 
         <div className="px-3 py-3 border-t border-border-muted flex flex-col items-center gap-2">
@@ -340,6 +381,33 @@ export function Sidebar() {
         )}
       </div>
 
+      <nav className="px-3 pt-3 pb-1 border-b border-border-muted">
+        <div className="px-2 pb-1.5 text-label font-medium uppercase text-text-muted">
+          {t('nav.sectionTitle')}
+        </div>
+        <div className="space-y-0.5">
+          {navItems.map((item) => {
+            const isActive = activeView === item.id && !showSettings;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveView(item.id)}
+                className={`w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                  isActive
+                    ? 'bg-accent/10 text-text-primary'
+                    : 'text-text-secondary hover:bg-surface-hover/60 hover:text-text-primary'
+                }`}
+              >
+                <item.icon
+                  className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-accent' : 'text-text-muted'}`}
+                />
+                <span className="text-body-sm font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {groupedSessions.length === 0 ? (
           <div className="px-3 py-6">
@@ -348,69 +416,86 @@ export function Sidebar() {
           </div>
         ) : (
           <div className="space-y-3">
-            {groupedSessions.map((group) => (
-              <section key={group.key}>
-                <div className="px-3 pb-2 text-label font-medium uppercase text-text-muted">
-                  {group.label}
-                </div>
-                <div className="space-y-0.5">
-                  {group.sessions.map((session) => {
-                    const isActive = activeSessionId === session.id;
-                    const isSelected = selectedIds.has(session.id);
-                    return (
-                      <div
-                        key={session.id}
-                        onClick={() => {
-                          if (isSelectMode) {
-                            toggleSelectSession(session.id);
-                          } else {
-                            handleSessionClick(session.id);
-                          }
-                        }}
-                        onMouseEnter={() => setHoveredSession(session.id)}
-                        onMouseLeave={() => setHoveredSession(null)}
-                        className={`group relative cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors ${
-                          isSelectMode && isSelected
-                            ? 'bg-accent-muted/20'
-                            : isActive && !isSelectMode
-                              ? 'bg-accent/10'
-                              : 'hover:bg-surface-hover/60'
-                        }`}
-                      >
-                        <div className={`flex items-center gap-2 ${!isSelectMode ? 'pr-6' : ''}`}>
-                          {isSelectMode && (
-                            <div
-                              className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
-                                isSelected
-                                  ? 'bg-accent text-on-accent'
-                                  : 'border border-border-muted bg-background'
-                              }`}
-                            >
-                              {isSelected && <Check className="w-2.5 h-2.5" />}
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div className="text-body-sm font-medium leading-5 text-text-primary truncate">
-                              {session.title}
-                            </div>
-                          </div>
-                        </div>
-
-                        {!isSelectMode && hoveredSession === session.id && (
-                          <button
-                            onClick={(e) => handleDeleteSession(e, session.id)}
-                            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-text-muted hover:text-error hover:bg-surface-active transition-colors"
-                            title={t('common.delete')}
+            {groupedSessions.map((group) => {
+              const isGroupCollapsed = collapsedGroups.has(group.key);
+              return (
+                <section key={group.key}>
+                  <button
+                    onClick={() => toggleGroupCollapsed(group.key)}
+                    className="w-full flex items-center gap-1 px-3 pb-2 text-label font-medium uppercase text-text-muted hover:text-text-secondary transition-colors"
+                    title={isGroupCollapsed ? t('sidebar.expandGroup') : t('sidebar.collapseGroup')}
+                  >
+                    {isGroupCollapsed ? (
+                      <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3 flex-shrink-0" />
+                    )}
+                    <span>{group.label}</span>
+                    <span className="text-text-muted/60">{group.sessions.length}</span>
+                  </button>
+                  {!isGroupCollapsed && (
+                    <div className="space-y-0.5">
+                      {group.sessions.map((session) => {
+                        const isActive = activeSessionId === session.id;
+                        const isSelected = selectedIds.has(session.id);
+                        return (
+                          <div
+                            key={session.id}
+                            onClick={() => {
+                              if (isSelectMode) {
+                                toggleSelectSession(session.id);
+                              } else {
+                                handleSessionClick(session.id);
+                              }
+                            }}
+                            onMouseEnter={() => setHoveredSession(session.id)}
+                            onMouseLeave={() => setHoveredSession(null)}
+                            className={`group relative cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors ${
+                              isSelectMode && isSelected
+                                ? 'bg-accent-muted/20'
+                                : isActive && !isSelectMode
+                                  ? 'bg-accent/10'
+                                  : 'hover:bg-surface-hover/60'
+                            }`}
                           >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+                            <div
+                              className={`flex items-center gap-2 ${!isSelectMode ? 'pr-6' : ''}`}
+                            >
+                              {isSelectMode && (
+                                <div
+                                  className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
+                                    isSelected
+                                      ? 'bg-accent text-on-accent'
+                                      : 'border border-border-muted bg-background'
+                                  }`}
+                                >
+                                  {isSelected && <Check className="w-2.5 h-2.5" />}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="text-body-sm font-medium leading-5 text-text-primary truncate">
+                                  {session.title}
+                                </div>
+                              </div>
+                            </div>
+
+                            {!isSelectMode && hoveredSession === session.id && (
+                              <button
+                                onClick={(e) => handleDeleteSession(e, session.id)}
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-text-muted hover:text-error hover:bg-surface-active transition-colors"
+                                title={t('common.delete')}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
           </div>
         )}
       </div>

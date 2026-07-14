@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
 import { useIPC } from '../hooks/useIPC';
-import type { ContentBlock } from '../types';
+import type { ContentBlock, Skill, SkillType } from '../types';
 import { getInitialSessionTitle } from '../../shared/session-title';
 import {
   FileText,
@@ -14,7 +14,12 @@ import {
   Paperclip,
   BookOpen,
   FileSearch,
+  Sparkles,
+  Plug,
+  Wrench,
+  Package,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 type AttachedFile = {
   name: string;
@@ -25,6 +30,19 @@ type AttachedFile = {
 };
 
 import welcomeLogoSrc from '../assets/logo.png';
+
+function skillIcon(type: SkillType): LucideIcon {
+  switch (type) {
+    case 'builtin':
+      return Sparkles;
+    case 'mcp':
+      return Plug;
+    case 'custom':
+      return Wrench;
+    default:
+      return Package;
+  }
+}
 
 export function WelcomeView() {
   const { t } = useTranslation();
@@ -44,7 +62,41 @@ export function WelcomeView() {
   const isConfigured = useAppStore((state) => state.isConfigured);
   const setShowSettings = useAppStore((state) => state.setShowSettings);
   const setSettingsTab = useAppStore((state) => state.setSettingsTab);
+  const skillsStorageChangedAt = useAppStore((state) => state.skillsStorageChangedAt);
   const canSubmit = prompt.trim().length > 0 || pastedImages.length > 0 || attachedFiles.length > 0;
+
+  // Skills for the welcome cards. `null` = still loading; `[]` = none/unavailable
+  // (falls back to the quick-action tags below).
+  const [skills, setSkills] = useState<Skill[] | null>(null);
+
+  useEffect(() => {
+    if (!isElectron || !window.electronAPI) {
+      setSkills([]);
+      return;
+    }
+    let cancelled = false;
+    window.electronAPI.skills
+      .getAll()
+      .then((all) => {
+        if (!cancelled) setSkills(all.filter((s) => s.enabled));
+      })
+      .catch(() => {
+        if (!cancelled) setSkills([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isElectron, skillsStorageChangedAt]);
+
+  const handleSkillClick = (skill: Skill) => {
+    const template = t('welcome.skillPromptTemplate', { name: skill.name });
+    setPrompt(template);
+    if (textareaRef.current) {
+      textareaRef.current.value = template;
+      adjustTextareaHeight();
+    }
+    textareaRef.current?.focus();
+  };
 
   const handleSelectFolder = async () => {
     try {
@@ -477,40 +529,80 @@ export function WelcomeView() {
           </p>
         )}
 
-        {/* Quick Action Tags */}
-        <div className="flex flex-wrap gap-2 justify-center px-3">
-          {quickTags.map((tag) => (
-            <button
-              key={tag.id}
-              onClick={() => handleTagClick(tag.id, tag.prompt)}
-              className={`tag rounded-full ${
-                selectedTag === tag.id
-                  ? 'border-accent/40 bg-accent-muted text-accent hover:bg-accent-muted'
-                  : 'text-text-secondary'
-              } ${
-                ('requiresChrome' in tag && tag.requiresChrome) ||
-                ('requiresNotion' in tag && tag.requiresNotion)
-                  ? 'relative'
-                  : ''
-              }`}
-            >
-              <tag.icon
-                className={`w-4 h-4 ${selectedTag === tag.id ? 'text-accent' : 'text-text-muted'}`}
-              />
-              <span>{tag.label}</span>
-              {'requiresChrome' in tag && tag.requiresChrome && (
-                <span className="ml-1 px-1.5 py-px text-caption rounded bg-surface-active text-text-muted">
-                  {t('welcome.chromeRequired')}
-                </span>
-              )}
-              {'requiresNotion' in tag && tag.requiresNotion && (
-                <span className="ml-1 px-1.5 py-px text-caption rounded bg-surface-active text-text-muted">
-                  {t('welcome.notionRequired')}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        {/* Skill cards (from installed skills) with quick-action tags as fallback */}
+        {skills === null ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="card px-4 py-3.5 h-[4.5rem] animate-pulse opacity-60" />
+            ))}
+          </div>
+        ) : skills.length > 0 ? (
+          <div className="space-y-2.5">
+            <div className="text-label font-medium uppercase text-text-muted px-1">
+              {t('welcome.skillsHeading')}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {skills.slice(0, 6).map((skill) => {
+                const Icon = skillIcon(skill.type);
+                return (
+                  <button
+                    key={skill.id}
+                    onClick={() => handleSkillClick(skill)}
+                    className="card px-4 py-3.5 text-left flex items-start gap-3 hover:bg-surface-hover hover:shadow-soft transition-colors"
+                  >
+                    <span className="w-8 h-8 rounded-xl flex items-center justify-center bg-accent-muted flex-shrink-0">
+                      <Icon className="w-4 h-4 text-accent" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-body-sm font-semibold text-text-primary truncate">
+                        {skill.name}
+                      </span>
+                      {skill.description && (
+                        <span className="block text-caption text-text-muted line-clamp-2 leading-snug mt-0.5">
+                          {skill.description}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2 justify-center px-3">
+            {quickTags.map((tag) => (
+              <button
+                key={tag.id}
+                onClick={() => handleTagClick(tag.id, tag.prompt)}
+                className={`tag rounded-full ${
+                  selectedTag === tag.id
+                    ? 'border-accent/40 bg-accent-muted text-accent hover:bg-accent-muted'
+                    : 'text-text-secondary'
+                } ${
+                  ('requiresChrome' in tag && tag.requiresChrome) ||
+                  ('requiresNotion' in tag && tag.requiresNotion)
+                    ? 'relative'
+                    : ''
+                }`}
+              >
+                <tag.icon
+                  className={`w-4 h-4 ${selectedTag === tag.id ? 'text-accent' : 'text-text-muted'}`}
+                />
+                <span>{tag.label}</span>
+                {'requiresChrome' in tag && tag.requiresChrome && (
+                  <span className="ml-1 px-1.5 py-px text-caption rounded bg-surface-active text-text-muted">
+                    {t('welcome.chromeRequired')}
+                  </span>
+                )}
+                {'requiresNotion' in tag && tag.requiresNotion && (
+                  <span className="ml-1 px-1.5 py-px text-caption rounded bg-surface-active text-text-muted">
+                    {t('welcome.notionRequired')}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Main Input Card - Right aligned */}
         <form
