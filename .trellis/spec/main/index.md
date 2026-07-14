@@ -36,4 +36,7 @@ schedule subsystems. It pushes results back to the renderer as `ServerEvent`s.
 - [ ] New extension added to both the GUI and headless `AgentRuntimeExtensionManager`
       lists (they will silently diverge otherwise).
 - [ ] Credential gating preserved on any new run path.
+- [ ] Tool/permission gating **fails closed**: a bridge answering an agent's approval
+      request must default to _deny_ when the decision is missing, the handler is
+      unwired, or it throws — never auto-approve. (See `codex-runtime/codex-permission-bridge.ts`.)
 - [ ] `npx vitest run` passes (mirrors CI; see the build-and-test guide).
