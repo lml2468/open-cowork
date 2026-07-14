@@ -51,6 +51,7 @@ class FakeCodexClient implements CodexClientLike {
   turnStartCalls: CodexTurnStartParams[] = [];
   steerCalls: CodexTurnSteerParams[] = [];
   interruptCalls: CodexTurnInterruptParams[] = [];
+  compactCalls: { threadId: string }[] = [];
 
   isReady(): boolean {
     return this.ready;
@@ -90,6 +91,11 @@ class FakeCodexClient implements CodexClientLike {
 
   async turnInterrupt(params: CodexTurnInterruptParams): Promise<Record<string, never>> {
     this.interruptCalls.push(params);
+    return {};
+  }
+
+  async threadCompactStart(params: { threadId: string }): Promise<Record<string, never>> {
+    this.compactCalls.push(params);
     return {};
   }
 
@@ -365,5 +371,32 @@ describe('CodexRuntime', () => {
     expect(client.disposed).toBe(true);
     expect(client.notificationListener).toBeNull();
     expect(client.serverRequestHandler).toBeNull();
+  });
+
+  it('compacts a session by triggering thread/compact/start for its thread', async () => {
+    const client = new FakeCodexClient();
+    const { runtime } = makeRuntime(client);
+
+    const turn = runtime.runTurn({ sessionId: 's1', input: 'hi' });
+    await flush();
+    client.emit(completedNotification());
+    await turn;
+
+    await runtime.compact('s1');
+    expect(client.compactCalls).toEqual([{ threadId: 'thread-1' }]);
+  });
+
+  it('throws when compacting a session with no thread', async () => {
+    const client = new FakeCodexClient();
+    const { runtime } = makeRuntime(client);
+    await expect(runtime.compact('missing')).rejects.toThrow(/no thread to compact/);
+    expect(client.compactCalls).toHaveLength(0);
+  });
+
+  it('throws when compacting after dispose', async () => {
+    const client = new FakeCodexClient();
+    const { runtime } = makeRuntime(client);
+    runtime.dispose();
+    await expect(runtime.compact('s1')).rejects.toThrow(/disposed/);
   });
 });
