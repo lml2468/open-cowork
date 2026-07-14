@@ -2,6 +2,7 @@
 import { Suspense, lazy, isValidElement, cloneElement, memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../store';
+import { useActiveSessionCwd } from '../../store/selectors';
 import { PanelErrorBoundary } from '../PanelErrorBoundary';
 import {
   splitTextByFileMentions,
@@ -40,12 +41,8 @@ export const ContentBlockView = memo(function ContentBlockView({
   message,
 }: ContentBlockViewProps) {
   const { t } = useTranslation();
-  const activeSessionId = useAppStore((s) => s.activeSessionId);
-  const sessions = useAppStore((s) => s.sessions);
-  const workingDir = useAppStore((s) => s.workingDir);
+  const currentWorkingDir = useActiveSessionCwd();
   const setGlobalNotice = useAppStore((s) => s.setGlobalNotice);
-  const activeSession = activeSessionId ? sessions.find((s) => s.id === activeSessionId) : null;
-  const currentWorkingDir = activeSession?.cwd || workingDir;
 
   const resolveFilePath = (value: string) => resolvePathAgainstWorkspace(value, currentWorkingDir);
 
@@ -258,9 +255,6 @@ export const ContentBlockView = memo(function ContentBlockView({
     case 'text': {
       const textBlock = block as { type: 'text'; text: string };
       const text = textBlock.text || '';
-      const normalizedText = normalizeCitationMarkdownLinks(
-        normalizeLocalFileMarkdownLinks(normalizeLatexDelimiters(text))
-      );
 
       if (!text) {
         return <span className="text-text-muted italic">{t('messageCard.emptyText')}</span>;
@@ -275,6 +269,24 @@ export const ContentBlockView = memo(function ContentBlockView({
           </p>
         );
       }
+
+      // While the assistant message is still streaming, render plain text and
+      // defer the full Markdown pipeline (remark-gfm/math + rehype-sanitize/katex)
+      // until the message is committed. Re-parsing (and re-normalizing) the
+      // growing text every frame is O(n^2) over the response; plain text keeps
+      // streaming cheap and the final output is identical once streaming ends.
+      if (isStreaming) {
+        return (
+          <div className="prose-chat max-w-none text-text-primary whitespace-pre-wrap break-words">
+            {text}
+            <span className="inline-block w-2 h-4 bg-accent ml-1 animate-pulse" />
+          </div>
+        );
+      }
+
+      const normalizedText = normalizeCitationMarkdownLinks(
+        normalizeLocalFileMarkdownLinks(normalizeLatexDelimiters(text))
+      );
 
       return (
         <PanelErrorBoundary

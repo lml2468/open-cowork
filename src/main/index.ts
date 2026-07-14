@@ -34,6 +34,7 @@ import {
   type AppTheme,
   type CreateConfigSetPayload,
 } from './config/config-store';
+import { shouldDisableHardwareAcceleration, isGpuBlocklisted } from './system/gpu-detection';
 import {
   startConfigFileWatcher,
   stopConfigFileWatcher,
@@ -124,8 +125,19 @@ if (configStore.isConfigured()) {
   configStore.applyToEnv();
 }
 
-// Disable hardware acceleration for better compatibility
-app.disableHardwareAcceleration();
+// Hardware acceleration: honor the persisted preference / last GPU probe.
+// disableHardwareAcceleration() must run before app.whenReady(); the probe that
+// refreshes the verdict (app.getGPUFeatureStatus) runs after ready and only
+// affects the *next* launch. Default 'auto' enables acceleration until a probe
+// flags the GPU as blocklisted.
+{
+  const gpuMode = configStore.get('gpuAcceleration');
+  const gpuBlocklisted = configStore.get('gpuBlocklisted');
+  if (shouldDisableHardwareAcceleration(gpuMode, gpuBlocklisted)) {
+    log(`[GPU] Disabling hardware acceleration (mode=${gpuMode}, blocklisted=${gpuBlocklisted})`);
+    app.disableHardwareAcceleration();
+  }
+}
 
 let mainWindow: BrowserWindow | null = null;
 let sessionManager: SessionManager | null = null;
@@ -854,6 +866,20 @@ app
       }
       log('[SmokeTest] PASSED');
       process.exit(0);
+    }
+
+    // Probe the real GPU feature status (only available after ready) and persist
+    // the verdict so the next launch's pre-ready decision can honor it. In 'auto'
+    // mode a blocklisted GPU disables acceleration on the following boot.
+    try {
+      const status = app.getGPUFeatureStatus() as unknown as Record<string, string>;
+      const blocklisted = isGpuBlocklisted(status);
+      if (configStore.get('gpuBlocklisted') !== blocklisted) {
+        configStore.set('gpuBlocklisted', blocklisted);
+        log(`[GPU] Probe updated blocklisted=${blocklisted} (effective next launch)`);
+      }
+    } catch (e) {
+      logWarn('[GPU] getGPUFeatureStatus probe failed:', e);
     }
 
     // ── Headless mode ──────────────────────────────────────────────────
@@ -1969,12 +1995,6 @@ ipcMain.handle('config.save', async (_event, newConfig: Partial<AppConfig>) => {
                 apiKey: newConfig.memoryRuntime.llm.apiKey ? '***' : '',
               }
             : undefined,
-          embedding: newConfig.memoryRuntime.embedding
-            ? {
-                ...newConfig.memoryRuntime.embedding,
-                apiKey: newConfig.memoryRuntime.embedding.apiKey ? '***' : '',
-              }
-            : undefined,
         }
       : undefined,
   });
@@ -3021,11 +3041,11 @@ ipcMain.handle('schedule.runNow', async (_event, id: string) => {
   return scheduledTaskManager.runNow(id);
 });
 
-ipcMain.handle('memory.getOverview', (_event, cwd?: string) => {
+ipcMain.handle('memory.getOverview', () => {
   if (!memoryService) {
     throw new Error('Memory service not initialized');
   }
-  return memoryService.getOverview(cwd);
+  return memoryService.getOverview();
 });
 
 ipcMain.handle(
@@ -3034,9 +3054,6 @@ ipcMain.handle(
     _event,
     payload: {
       query: string;
-      cwd?: string;
-      sourceWorkspace?: string | null;
-      scope?: 'workspace' | 'global' | 'all';
       limit?: number;
     }
   ) => {
@@ -3054,32 +3071,11 @@ ipcMain.handle('memory.read', (_event, id: string) => {
   return memoryService.read(id);
 });
 
-ipcMain.handle('memory.rebuildWorkspace', async (_event, cwd: string) => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.rebuildWorkspace(cwd);
-});
-
-ipcMain.handle('memory.clearWorkspace', (_event, cwd: string) => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.clearWorkspace(cwd);
-});
-
 ipcMain.handle('memory.clearCoreMemory', () => {
   if (!memoryService) {
     throw new Error('Memory service not initialized');
   }
   return memoryService.clearCoreMemory();
-});
-
-ipcMain.handle('memory.rebuildAll', async () => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.rebuildAll();
 });
 
 ipcMain.handle('memory.listFiles', () => {
@@ -3094,13 +3090,6 @@ ipcMain.handle('memory.readFile', (_event, filePath: string) => {
     throw new Error('Memory service not initialized');
   }
   return memoryService.readFile(filePath);
-});
-
-ipcMain.handle('memory.inspectSession', (_event, sessionId: string, workspaceKey?: string) => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.inspectSession(sessionId, workspaceKey);
 });
 
 ipcMain.handle('memory.setEnabled', (_event, enabled: boolean) => {

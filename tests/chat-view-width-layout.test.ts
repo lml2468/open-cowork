@@ -14,9 +14,11 @@ describe('chat view width layout', () => {
     expect(source).toContain('gutter-x');
   });
 
-  it('observes message container via ref instead of hard-coded class selector', () => {
+  it('virtualizes the message list without hard-coded class selectors', () => {
     const source = readChatView();
-    expect(source).toContain('messagesContainerRef');
+    // The message list is virtualized via react-virtuoso; scrolling is handled
+    // by Virtuoso rather than a hard-coded class-selector lookup.
+    expect(source).toContain('Virtuoso');
     expect(source).not.toContain("querySelector('.max-w-3xl')");
   });
 });

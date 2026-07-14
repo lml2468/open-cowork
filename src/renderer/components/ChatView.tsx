@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { useTranslation } from 'react-i18next';
 import {
   useActiveSessionId,
@@ -12,9 +13,11 @@ import {
 } from '../store/selectors';
 import { useAppStore } from '../store';
 import { useIPC } from '../hooks/useIPC';
+import { useSmoothedStreamingText } from '../hooks/useSmoothedStreamingText';
 import { MessageCard } from './MessageCard';
 import { SubagentTracker } from './SubagentTracker';
 import { ContextUsageBar } from './ContextUsageBar';
+import { resolveChatFollowOutput } from './chat-scroll';
 import type { Message, ContentBlock } from '../types';
 import { Send, Square, Plus, Loader2, Plug, X, Clock } from 'lucide-react';
 
@@ -25,6 +28,48 @@ type AttachedFile = {
   type: string;
   inlineDataBase64?: string;
 };
+
+// Context passed to the Virtuoso message list's Header/Footer/Empty components.
+interface ChatListContext {
+  activeSessionId: string | null;
+  showProcessing: boolean;
+  processingText: string;
+  timerText: string | null;
+  startConversationText: string;
+}
+
+/** Top spacer so the first message isn't flush against the top of the viewport. */
+const ChatListHeader = () => <div className="pt-8" />;
+
+/** Renders below the last message (in-scroller): subagent progress + status. */
+const ChatListFooter = ({ context }: { context?: ChatListContext }) => {
+  if (!context) return null;
+  return (
+    <div className="w-full max-w-content mx-auto gutter-x pb-8 space-y-6">
+      <SubagentTracker sessionId={context.activeSessionId} />
+      {context.showProcessing && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-full bg-background/80 border border-border-subtle max-w-fit">
+          <Loader2 className="w-4 h-4 text-accent animate-spin" />
+          <span className="text-body-sm text-text-secondary">{context.processingText}</span>
+        </div>
+      )}
+      {context.timerText && (
+        <div className="flex items-center gap-1.5 text-caption text-text-muted mt-1 ml-0.5">
+          <Clock className="w-3 h-3" />
+          <span>{context.timerText}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Shown when the session has no messages yet. */
+const ChatListEmpty = ({ context }: { context?: ChatListContext }) => (
+  <div className="flex flex-col items-center justify-center py-28 text-text-muted space-y-3 text-center">
+    <p className="text-label uppercase text-text-muted/80">Open Cowork</p>
+    <p className="text-body text-text-secondary">{context?.startConversationText}</p>
+  </div>
+);
 
 export function ChatView() {
   const { t } = useTranslation();
@@ -53,22 +98,20 @@ export function ChatView() {
   >([]);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  // Virtuoso handle + at-bottom tracking drive the stick-to-bottom behavior.
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
   const isUserAtBottomRef = useRef(true);
   const isComposingRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const prevMessageCountRef = useRef(0);
-  const prevPartialLengthRef = useRef(0);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollRequestRef = useRef<number | null>(null);
-  const isScrollingRef = useRef(false);
 
   const hasActiveTurn = Boolean(activeTurn);
   const pendingCount = pendingTurns.length;
   const isSessionRunning = activeSession?.status === 'running';
   const canStop = isSessionRunning || hasActiveTurn || pendingCount > 0;
+
+  // Smooth the streamed answer so the typewriter reads as continuous even when
+  // the provider delivers text in coarse ~8/sec chunks.
+  const smoothedPartial = useSmoothedStreamingText(partialMessage);
 
   const displayedMessages = useMemo(() => {
     if (!activeSessionId) return messages;
@@ -89,7 +132,7 @@ export function ChatView() {
       contentBlocks.push({ type: 'thinking', thinking: partialThinking });
     }
     if (partialMessage) {
-      contentBlocks.push({ type: 'text', text: partialMessage });
+      contentBlocks.push({ type: 'text', text: smoothedPartial });
     }
 
     const streamingMessage: Message = {
@@ -101,7 +144,14 @@ export function ChatView() {
     };
 
     return [...messages.slice(0, insertIndex), streamingMessage, ...messages.slice(insertIndex)];
-  }, [activeSessionId, activeTurn?.userMessageId, messages, partialMessage, partialThinking]);
+  }, [
+    activeSessionId,
+    activeTurn?.userMessageId,
+    messages,
+    partialMessage,
+    smoothedPartial,
+    partialThinking,
+  ]);
 
   // Format execution time for display
   const formatExecutionTime = useCallback((ms: number): string => {
@@ -133,120 +183,24 @@ export function ChatView() {
       : Math.max(0, (executionClock.endAt ?? clockNow) - executionClock.startAt);
   const timerActive = Boolean(executionClock?.startAt && executionClock.endAt === null);
 
-  // Debounced scroll function to prevent scroll conflicts
-  const scrollToBottom = useRef((behavior: ScrollBehavior = 'auto', immediate: boolean = false) => {
-    // Cancel any pending scroll requests
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = null;
-    }
-    if (scrollRequestRef.current) {
-      cancelAnimationFrame(scrollRequestRef.current);
-      scrollRequestRef.current = null;
-    }
-
-    const performScroll = () => {
-      if (!isUserAtBottomRef.current) return;
-
-      // Mark as scrolling to prevent concurrent scrolls
-      isScrollingRef.current = true;
-
-      messagesEndRef.current?.scrollIntoView({ behavior });
-
-      // Reset scrolling flag after a short delay
-      setTimeout(
-        () => {
-          isScrollingRef.current = false;
-        },
-        behavior === 'smooth' ? 300 : 50
-      );
-    };
-
-    if (immediate) {
-      performScroll();
-    } else {
-      // Use RAF + timeout for debouncing
-      scrollRequestRef.current = requestAnimationFrame(() => {
-        scrollTimeoutRef.current = setTimeout(performScroll, 16); // ~1 frame delay
-      });
-    }
-  }).current;
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const updateScrollState = () => {
-      const distanceToBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight;
-      isUserAtBottomRef.current = distanceToBottom <= 80;
-    };
-    updateScrollState();
-    // 用户阅读旧消息时，阻止新消息自动滚动打断视线
-    const onScroll = () => updateScrollState();
-    container.addEventListener('scroll', onScroll, { passive: true });
-    return () => container.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    const messageCount = messages.length;
-    const partialLength = partialMessage.length + partialThinking.length;
-    const hasNewMessage = messageCount !== prevMessageCountRef.current;
-    const isStreamingTick = partialLength !== prevPartialLengthRef.current && !hasNewMessage;
-
-    // Skip scroll if already scrolling (prevent conflicts)
-    if (isScrollingRef.current) {
-      prevMessageCountRef.current = messageCount;
-      prevPartialLengthRef.current = partialLength;
-      return;
-    }
-
-    if (isUserAtBottomRef.current) {
-      if (!isStreamingTick) {
-        // New message - use smooth scroll but with debounce
-        const behavior: ScrollBehavior = hasNewMessage ? 'smooth' : 'auto';
-        scrollToBottom(behavior, false);
-      } else {
-        // Streaming tick - use instant scroll with debounce
-        scrollToBottom('auto', false);
-      }
-    }
-
-    prevMessageCountRef.current = messageCount;
-    prevPartialLengthRef.current = partialLength;
-  }, [messages.length, partialMessage.length, partialThinking.length]);
-
-  // Additional scroll trigger for content height changes (e.g., TodoWrite expand/collapse)
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    const messagesContainer = messagesContainerRef.current;
-    if (!container || !messagesContainer) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      // Don't interfere with ongoing scrolls
-      if (!isScrollingRef.current && isUserAtBottomRef.current) {
-        // Scroll to bottom when content height changes
-        scrollToBottom('auto', false);
-      }
-    });
-
-    resizeObserver.observe(messagesContainer);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []); // ResizeObserver is stable — no need to recreate on message count changes
-
-  // Cleanup scroll timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      if (scrollRequestRef.current) {
-        cancelAnimationFrame(scrollRequestRef.current);
-      }
-    };
-  }, []);
+  const timerText =
+    liveElapsed > 0
+      ? timerActive
+        ? formatExecutionTime(liveElapsed)
+        : t('messageCard.executionTime', { time: formatExecutionTime(liveElapsed) })
+      : null;
+  const showProcessing =
+    hasActiveTurn && (!partialMessage || partialMessage.trim() === '') && !partialThinking;
+  const listContext = useMemo<ChatListContext>(
+    () => ({
+      activeSessionId,
+      showProcessing,
+      processingText: t('chat.processing'),
+      timerText,
+      startConversationText: t('chat.startConversation'),
+    }),
+    [activeSessionId, showProcessing, timerText, t]
+  );
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -672,57 +626,32 @@ export function ChatView() {
       {/* Context Usage Bar */}
       <ContextUsageBar />
 
-      {/* Messages */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-        <div
-          ref={messagesContainerRef}
-          className="w-full max-w-content mx-auto py-8 gutter-x space-y-6"
-        >
-          {displayedMessages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-28 text-text-muted space-y-3 text-center">
-              <p className="text-label uppercase text-text-muted/80">Open Cowork</p>
-              <p className="text-body text-text-secondary">{t('chat.startConversation')}</p>
+      {/* Messages — virtualized so long histories don't inflate the DOM */}
+      <Virtuoso
+        ref={virtuosoRef}
+        className="flex-1 min-h-0"
+        data={displayedMessages}
+        context={listContext}
+        computeItemKey={(_index, message) => message.id}
+        followOutput={(isAtBottom) => resolveChatFollowOutput(isAtBottom)}
+        atBottomThreshold={80}
+        atBottomStateChange={(atBottom) => {
+          isUserAtBottomRef.current = atBottom;
+        }}
+        components={{
+          Header: ChatListHeader,
+          Footer: ChatListFooter,
+          EmptyPlaceholder: ChatListEmpty,
+        }}
+        itemContent={(_index, message) => {
+          const isStreaming = typeof message.id === 'string' && message.id.startsWith('partial-');
+          return (
+            <div className="w-full max-w-content mx-auto gutter-x pb-6">
+              <MessageCard message={message} isStreaming={isStreaming} />
             </div>
-          ) : (
-            displayedMessages.map((message) => {
-              const isStreaming =
-                typeof message.id === 'string' && message.id.startsWith('partial-');
-              return (
-                <div key={message.id}>
-                  <MessageCard message={message} isStreaming={isStreaming} />
-                </div>
-              );
-            })
-          )}
-
-          {/* Subagent progress indicators */}
-          <SubagentTracker sessionId={activeSessionId} />
-
-          {/* Processing indicator - show when we have an active turn but no streaming content yet */}
-          {hasActiveTurn &&
-            (!partialMessage || partialMessage.trim() === '') &&
-            !partialThinking && (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-full bg-background/80 border border-border-subtle max-w-fit">
-                <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                <span className="text-body-sm text-text-secondary">{t('chat.processing')}</span>
-              </div>
-            )}
-
-          {/* Real-time execution timer */}
-          {liveElapsed > 0 && (
-            <div className="flex items-center gap-1.5 text-caption text-text-muted mt-1 ml-0.5">
-              <Clock className="w-3 h-3" />
-              <span>
-                {timerActive
-                  ? formatExecutionTime(liveElapsed)
-                  : t('messageCard.executionTime', { time: formatExecutionTime(liveElapsed) })}
-              </span>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
+          );
+        }}
+      />
 
       {/* Input */}
       <div className="border-t border-border-muted bg-background/92 backdrop-blur-md">
