@@ -38,6 +38,7 @@ import type {
   CodexSandboxMode,
   CodexServerRequest,
   CodexServerRequestHandler,
+  CodexThreadCompactStartParams,
   CodexThreadStartParams,
   CodexThreadStartResponse,
   CodexTurnInterruptParams,
@@ -59,6 +60,7 @@ export interface CodexClientLike {
   turnStart(params: CodexTurnStartParams): Promise<CodexTurnStartResponse>;
   turnSteer(params: CodexTurnSteerParams): Promise<CodexTurnSteerResponse>;
   turnInterrupt(params: CodexTurnInterruptParams): Promise<Record<string, never>>;
+  threadCompactStart(params: CodexThreadCompactStartParams): Promise<Record<string, never>>;
   dispose(): void;
 }
 
@@ -215,6 +217,23 @@ export class CodexRuntime {
   async interrupt(sessionId: string): Promise<void> {
     const active = this.requireActiveTurn(sessionId, 'interrupt');
     await this.client.turnInterrupt({ threadId: active.threadId, turnId: active.turnId as string });
+  }
+
+  /**
+   * Trigger codex-native compaction for a session's thread (`thread/compact/start`). The
+   * resulting `thread/compacted` notification flows through the translator as a
+   * `compaction` action (→ `onCompaction`), replacing pi's `session_before_compact`
+   * extension. This is only the trigger; codex owns the summarization.
+   */
+  async compact(sessionId: string): Promise<void> {
+    if (this.disposed) {
+      throw new Error('CodexRuntime has been disposed');
+    }
+    const threadId = this.sessionToThread.get(sessionId);
+    if (!threadId) {
+      throw new Error(`no thread to compact for session ${sessionId}`);
+    }
+    await this.client.threadCompactStart({ threadId });
   }
 
   /** Forget a session's thread + translator (keeps the app-server warm). */

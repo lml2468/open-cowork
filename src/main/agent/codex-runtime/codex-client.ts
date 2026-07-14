@@ -133,6 +133,15 @@ export interface CodexThreadInjectItemsParams {
 }
 
 /**
+ * Trigger codex-native compaction for a thread (`thread/compact/start`, verified in the
+ * Phase 0 spike). The summary is delivered later as a `thread/compacted`
+ * (`ContextCompactedNotification`) the event translator maps to a `compaction` action.
+ */
+export interface CodexThreadCompactStartParams {
+  threadId: string;
+}
+
+/**
  * Command-execution approval decision (server request
  * `item/commandExecution/requestApproval`). NOT the legacy `ReviewDecision`
  * approved/denied strings.
@@ -610,5 +619,9 @@ export class CodexClient {
 
   injectItems(params: CodexThreadInjectItemsParams): Promise<Record<string, never>> {
     return this.request<Record<string, never>>('thread/inject_items', params);
+  }
+
+  threadCompactStart(params: CodexThreadCompactStartParams): Promise<Record<string, never>> {
+    return this.request<Record<string, never>>('thread/compact/start', params);
   }
 }
