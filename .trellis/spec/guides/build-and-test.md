@@ -20,6 +20,11 @@ npx vitest run
   `src/tests/mcp/foo.test.ts`. A test is required for every `feat` / `fix`.
 - `electron` is aliased to a mock (`tests/mocks/electron.ts`) so tests don't need the
   Electron binary; `electron-store` is inlined. Renderer code is excluded from coverage.
+- Prefer keeping a testable main-process module **electron-free**: don't import the shared
+  logger or other `electron`-pulling deps into transport/runtime logic — inject them
+  (e.g. a `logger` param, and side-effecting deps like `spawn`) so unit tests drive it
+  with fakes and need no electron mock at all. See `src/main/agent/codex-runtime/` +
+  `src/tests/agent/codex-client.test.ts` (a fake child process, no real subprocess/network).
 - Store tests reset with `useAppStore.setState(useAppStore.getInitialState())` in
   `beforeEach` (see `src/tests/store/*.test.ts`).
 - One file: `npx vitest run src/tests/remote/stdio-channel.test.ts`; one test:
