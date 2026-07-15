@@ -6,7 +6,6 @@ import {
   MEMORY_INDEX_FILE,
   buildMemoryPreamble,
   ensureMemoryScaffold,
-  migrateLegacyCoreMemory,
   readMemoryIndex,
 } from '../../main/memory/markdown-memory';
 
@@ -35,25 +34,6 @@ describe('markdown-memory', () => {
     expect(readMemoryIndex(root)).toBeNull();
     ensureMemoryScaffold(root);
     expect(readMemoryIndex(root)).toContain('# Memory');
-  });
-
-  it('migrateLegacyCoreMemory folds core_memory.json into MEMORY.md and renames the json', () => {
-    const root = path.join(tmp, 'memory');
-    fs.mkdirSync(root, { recursive: true });
-    fs.writeFileSync(
-      path.join(root, 'core_memory.json'),
-      JSON.stringify([{ category: 'identity', key: 'name', value: 'Merlin' }]),
-      'utf8'
-    );
-    migrateLegacyCoreMemory(root);
-    const index = readMemoryIndex(root) ?? '';
-    expect(index).toContain('Imported');
-    expect(index).toContain('Merlin');
-    expect(fs.existsSync(path.join(root, 'core_memory.json'))).toBe(false);
-    expect(fs.existsSync(path.join(root, 'core_memory.json.migrated'))).toBe(true);
-    // idempotent: a second run is a no-op (no json to migrate)
-    migrateLegacyCoreMemory(root);
-    expect((readMemoryIndex(root)?.match(/Imported/g) || []).length).toBe(1);
   });
 
   it('buildMemoryPreamble teaches paths and embeds present indexes', () => {

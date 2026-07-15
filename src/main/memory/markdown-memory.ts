@@ -12,14 +12,13 @@ import { configStore } from '../config/config-store';
  *   <root>/topic-<slug>.md      — per-topic notes
  *
  * Two scopes: a global root (persists across all workspaces) and a per-project root (in cwd).
- * This module resolves the roots, seeds/reads MEMORY.md, migrates the legacy
- * `core_memory.json`, and builds the context preamble + the agent instructions injected each
- * session. No LLM extractor, no custom tools — the agent manages the files itself.
+ * This module resolves the roots, seeds/reads MEMORY.md, and builds the context preamble +
+ * the agent instructions injected each session. No LLM extractor, no custom tools — the agent
+ * manages the files itself.
  */
 
 export const MEMORY_DIR_NAME = 'memory';
 export const MEMORY_INDEX_FILE = 'MEMORY.md';
-const LEGACY_CORE_FILE = 'core_memory.json';
 const DEFAULT_INDEX_BUDGET_CHARS = 8000;
 
 const DEFAULT_INDEX_TEMPLATE = `# Memory
@@ -63,62 +62,6 @@ export function ensureMemoryScaffold(root: string): void {
     if (!fs.existsSync(file)) fs.writeFileSync(file, DEFAULT_INDEX_TEMPLATE, 'utf8');
   } catch {
     // best-effort: a read-only / inaccessible root just yields no memory injection
-  }
-}
-
-/**
- * One-time migration: fold a legacy `core_memory.json` (from the old JSON memory system) into
- * MEMORY.md so users don't lose durable facts. Idempotent: renames the JSON to `.migrated`.
- */
-export function migrateLegacyCoreMemory(root: string): void {
-  try {
-    const jsonPath = path.join(root, LEGACY_CORE_FILE);
-    if (!fs.existsSync(jsonPath)) return;
-    const raw = fs.readFileSync(jsonPath, 'utf8').trim();
-    const lines = raw ? extractLegacyLines(raw) : [];
-    if (lines.length > 0) {
-      ensureMemoryScaffold(root);
-      const file = indexPath(root);
-      const existing = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : DEFAULT_INDEX_TEMPLATE;
-      const block = [
-        '',
-        '## Imported (from core_memory.json)',
-        ...lines.map((l) => `- ${l}`),
-        '',
-      ].join('\n');
-      fs.writeFileSync(file, `${existing.trimEnd()}\n${block}`, 'utf8');
-    }
-    fs.renameSync(jsonPath, `${jsonPath}.migrated`);
-  } catch {
-    // best-effort migration; never block a session on it
-  }
-}
-
-function extractLegacyLines(raw: string): string[] {
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    const entries = Array.isArray(parsed)
-      ? parsed
-      : parsed &&
-          typeof parsed === 'object' &&
-          Array.isArray((parsed as { entries?: unknown }).entries)
-        ? (parsed as { entries: unknown[] }).entries
-        : [];
-    return entries
-      .map((e) => {
-        if (e && typeof e === 'object') {
-          const rec = e as { key?: unknown; value?: unknown; category?: unknown };
-          const key = typeof rec.key === 'string' ? rec.key : '';
-          const value = typeof rec.value === 'string' ? rec.value : '';
-          const cat = typeof rec.category === 'string' ? `${rec.category}: ` : '';
-          const text = [key, value].filter(Boolean).join(' — ');
-          return text ? `${cat}${text}` : '';
-        }
-        return typeof e === 'string' ? e : '';
-      })
-      .filter((l): l is string => l.length > 0);
-  } catch {
-    return [];
   }
 }
 

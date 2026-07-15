@@ -10,7 +10,6 @@ import {
   ensureMemoryScaffold,
   getGlobalMemoryRoot,
   getProjectMemoryRoot,
-  migrateLegacyCoreMemory,
   readMemoryIndex,
 } from './markdown-memory';
 
@@ -22,8 +21,6 @@ import {
  * preamble, and (3) backs the memory Settings view (overview + file browser).
  */
 export class MemoryService {
-  private migratedGlobal = false;
-
   // `db` retained for signature compatibility with existing call sites; not used now that
   // memory is file-based and agent-managed.
   constructor(_db: DatabaseInstance) {}
@@ -46,10 +43,6 @@ export class MemoryService {
     if (!this.isEnabled()) return '';
 
     const globalRoot = getGlobalMemoryRoot();
-    if (!this.migratedGlobal) {
-      migrateLegacyCoreMemory(globalRoot);
-      this.migratedGlobal = true;
-    }
     ensureMemoryScaffold(globalRoot);
 
     const projectRoot = getProjectMemoryRoot(session.cwd);

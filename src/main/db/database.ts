@@ -301,18 +301,6 @@ function initializeSchema(database: Database.Database): void {
     ON trace_steps(session_id, timestamp)
   `);
 
-    // Create memory_entries table (for future use)
-    database.exec(`
-    CREATE TABLE IF NOT EXISTS memory_entries (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      content TEXT NOT NULL,
-      metadata TEXT,
-      created_at INTEGER NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
-  `);
-
     // Create skills table (for future use)
     database.exec(`
     CREATE TABLE IF NOT EXISTS skills (
