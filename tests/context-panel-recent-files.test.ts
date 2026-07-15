@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import path from 'node:path';
 import fs from 'node:fs';
 
-const contextPanelPath = path.resolve(process.cwd(), 'src/renderer/components/ContextPanel.tsx');
+const contextPanelPath = path.resolve(
+  process.cwd(),
+  'src/renderer/components/context/ArtifactsTab.tsx'
+);
 
 describe('ContextPanel recent workspace files integration', () => {
   it('loads recent workspace files through electron artifacts API', () => {

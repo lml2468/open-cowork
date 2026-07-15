@@ -187,6 +187,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
       limit = 50
     ): Promise<Array<{ path: string; modifiedAt: number; size: number }>> =>
       ipcRenderer.invoke('artifacts.listRecentFiles', cwd, sinceMs, Math.min(limit, 500)),
+    listDir: (
+      cwd: string,
+      relPath = ''
+    ): Promise<
+      Array<{
+        name: string;
+        relPath: string;
+        path: string;
+        isDirectory: boolean;
+        size: number;
+        modifiedAt: number;
+      }>
+    > => ipcRenderer.invoke('artifacts.listDir', cwd, relPath),
+    readFile: (
+      cwd: string,
+      relPath: string
+    ): Promise<{
+      relPath: string;
+      path: string;
+      content: string;
+      truncated: boolean;
+      isBinary: boolean;
+      size: number;
+    } | null> => ipcRenderer.invoke('artifacts.readFile', cwd, relPath),
+    getChanges: (
+      cwd: string
+    ): Promise<{ isGitRepo: boolean; files: Array<{ path: string; diff: string }> }> =>
+      ipcRenderer.invoke('artifacts.getChanges', cwd),
   },
 
   // Config methods
@@ -489,6 +517,33 @@ declare global {
           sinceMs: number,
           limit?: number
         ) => Promise<Array<{ path: string; modifiedAt: number; size: number }>>;
+        listDir: (
+          cwd: string,
+          relPath?: string
+        ) => Promise<
+          Array<{
+            name: string;
+            relPath: string;
+            path: string;
+            isDirectory: boolean;
+            size: number;
+            modifiedAt: number;
+          }>
+        >;
+        readFile: (
+          cwd: string,
+          relPath: string
+        ) => Promise<{
+          relPath: string;
+          path: string;
+          content: string;
+          truncated: boolean;
+          isBinary: boolean;
+          size: number;
+        } | null>;
+        getChanges: (
+          cwd: string
+        ) => Promise<{ isGitRepo: boolean; files: Array<{ path: string; diff: string }> }>;
       };
       config: {
         get: () => Promise<AppConfig>;
