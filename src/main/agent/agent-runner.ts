@@ -100,7 +100,7 @@ function escapeXmlText(value: string): string {
  * Serialize a message's content blocks into the XML representation used inside the
  * cold-start `<conversation_history>` preamble.
  *
- * Why this exists: when the cached pi-coding-agent SDK session is disposed (cwd
+ * Why this exists: when the codex thread is disposed (cwd
  * change or runtime-signature change), agent-runner rebuilds history from
  * DB-persisted messages. The previous implementation only kept `text` blocks,
  * which silently dropped `thinking`, `tool_use`, and `tool_result` blocks.

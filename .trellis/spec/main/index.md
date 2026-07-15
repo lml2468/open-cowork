@@ -23,7 +23,7 @@ schedule subsystems. It pushes results back to the renderer as `ServerEvent`s.
       `AgentRuntimeExtension` and register it in **both** manager instances (GUI +
       headless) in `src/main/index.ts`.
 - [ ] Provider/model/auth logic belongs in `src/main/config/config-store.ts` +
-      `src/main/agent/pi-model-resolution.ts`, not scattered.
+      `src/main/agent/codex-runtime/codex-model-config.ts`, not scattered.
 - [ ] Any work path that runs the agent must first gate on configured credentials
       (`hasUsableCredentialsForActiveSet`).
 - [ ] TypeScript strict, no `any` (`catch (e: unknown)`, not `catch (e: any)`).

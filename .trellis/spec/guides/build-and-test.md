@@ -55,7 +55,7 @@ vite build`.
 ## Vite externalization (ESM vs CJS)
 
 `vite.config.ts` `rollupOptions.external` decides what stays bundled: **ESM-only**
-packages (`@mariozechner/pi-coding-agent`, `pi-ai`, `electron-store`, `uuid`) must stay
+packages (`electron-store`, `uuid`) must stay
 **bundled**; CJS ones are externalized. Check that list before changing an import of a
 heavy main-process dependency.
 

@@ -2,13 +2,20 @@
 
 ## Execution path
 
-The agent loop is provided by the `@mariozechner/pi-coding-agent` / `pi-ai` SDK — this
-repo integrates and orchestrates it, it does not implement the LLM loop from scratch.
+The agent loop runs on an embedded **OpenAI Codex `app-server`** backend (Codex CLI's
+JSON-RPC `codex app-server`), driven from `src/main/agent/codex-runtime/`. This repo
+integrates and orchestrates that backend; it does not implement the LLM loop from
+scratch. (The former `@mariozechner/pi-coding-agent` / `pi-ai` SDK was removed in the
+codex-runtime migration.)
 
 - `SessionManager` (`src/main/session/session-manager.ts`) owns session CRUD + chat
   history (persisted in SQLite) and drives the runner.
-- `CoworkAgentRunner` (`src/main/agent/agent-runner.ts`, class at
-  `agent-runner.ts:555`) wraps the pi-coding-agent SDK and runs a turn.
+- `CoworkAgentRunner` (`src/main/agent/agent-runner.ts`) owns a long-lived `CodexRuntime`
+  (`codex-runtime/codex-runtime.ts`) via `ensureCodexRuntime()` and runs each turn with
+  `runtime.runTurn({...})`. The runtime wraps a `CodexClient` (JSON-RPC over the
+  app-server child), a `CodexEventTranslator` (codex events → `ServerEvent`s), a
+  `CodexPermissionBridge` (per-tool approval), and a `CodexToolBridge` (extension + MCP
+  host `dynamic_tools`).
 - Streaming output and tool traces flow back to the renderer as `ServerEvent`s (see the
   IPC dispatch guide).
 
@@ -21,14 +28,18 @@ All provider routing, auth, and env-var projection is centralized — put change
 not inline at call sites:
 
 - `src/main/config/config-store.ts`:
-  - `applyToEnv()` (`config-store.ts:1514`) — projects config into process env for the
-    SDK/providers.
-  - `hasUsableCredentialsForActiveSet()` (`config-store.ts:1479`) — the credential gate.
-  - `EXPORTABLE_FIELDS` (`config-store.ts:181`) — the non-sensitive subset that
-    round-trips to the plaintext `config.public.json`. API keys live in an
-    Electron-`safeStorage`-encrypted store and are **not** exportable.
-- `src/main/agent/pi-model-resolution.ts` — resolves the active provider/model to the
-  pi-ai model.
+  - `applyToEnv()` — projects config into process env for the app-server/providers.
+  - `hasUsableCredentialsForActiveSet()` — the credential gate.
+  - `EXPORTABLE_FIELDS` — the non-sensitive subset that round-trips to the plaintext
+    `config.public.json`. API keys live in an Electron-`safeStorage`-encrypted store and
+    are **not** exportable.
+- `src/main/agent/codex-runtime/codex-model-config.ts` — `buildCodexModelConfig()` maps
+  the active app config to a codex model/provider config (`model`, `modelProvider`,
+  `configOverrides`, and the env vars codex reads the key from). Under the
+  OpenAI-Responses-only constraint, unsupported providers fail closed with a user-facing
+  configuration error (no silent fallback). One-shot utility calls (title-gen,
+  connectivity probe, memory LLM) resolve via `codex-one-shot-config.ts` and share the
+  process-wide client from `codex-shared-client.ts`.
 
 ## Credential gating
 
@@ -44,9 +55,9 @@ guide for the ABI rebuild caveat that affects running tests.
 
 ## Anti-patterns
 
-- Re-implementing the LLM/agent loop instead of using the pi SDK via
-  `CoworkAgentRunner`.
+- Re-implementing the LLM/agent loop instead of using the codex runtime via
+  `CoworkAgentRunner` / `CodexRuntime`.
 - Reading provider keys / building model configs inline instead of via `config-store` +
-  `pi-model-resolution`.
+  `codex-runtime/codex-model-config`.
 - Adding a run path that skips the credential gate.
 - Trying to persist API keys through `config.public.json` / `EXPORTABLE_FIELDS`.
