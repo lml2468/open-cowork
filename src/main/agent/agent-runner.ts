@@ -1,47 +1,30 @@
 /**
  * @module main/agent/agent-runner
  *
- * AI query execution engine (1514 lines).
+ * AI query execution engine.
  *
  * Responsibilities:
- * - Runs AI conversations via the Open Cowork agent SDK (createAgentSession)
- * - Routes providers via pi-ai SDK for model resolution
- * - Bridges MCP tools into SDK ToolDefinition format
+ * - Drives AI conversations through the OpenAI Codex `app-server` backend (CodexRuntime)
+ * - Resolves the codex provider/model config via codex-runtime/codex-model-config
+ * - Bridges extension + MCP tools into codex host `dynamic_tools`
  * - Streams responses back as ServerEvents (stream.message, stream.partial, trace.step)
- * - Skills injection, system prompt assembly, permission handling
+ * - Skills injection, system prompt assembly, permission handling, loop guard, sandbox sync
  *
- * Dependencies: session-manager, mcp-manager, config-store, skills-manager
+ * Dependencies: session-manager, mcp-manager, config-store, skills-manager, codex-runtime
  */
-import {
-  createAgentSession,
-  SessionManager as PiSessionManager,
-  SettingsManager as PiSettingsManager,
-  createCodingTools,
-  type BashToolOptions,
-  type AgentSession as PiAgentSession,
-  type ToolDefinition,
-} from '@mariozechner/pi-coding-agent';
+import { type ToolDefinition } from '@mariozechner/pi-coding-agent';
 import { Type, type TSchema } from '@sinclair/typebox';
-import { getSharedAuthStorage, ModelRegistry } from './shared-auth';
 import type { Session, Message, TraceStep, ServerEvent, ContentBlock } from '../../renderer/types';
 import { v4 as uuidv4 } from 'uuid';
 import { decidePermission, rememberAlwaysAllow } from '../config/permission-rules-store';
 import { PathResolver } from '../sandbox/path-resolver';
 import { MCPManager } from '../mcp/mcp-manager';
 import { mcpConfigStore } from '../mcp/mcp-config-store';
-import {
-  log,
-  logWarn,
-  logError,
-  logCtx,
-  logCtxWarn,
-  logCtxError,
-  logTiming,
-} from '../utils/logger';
+import { log, logWarn, logError, logCtx, logCtxError, logTiming } from '../utils/logger';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { execFileSync, spawn } from 'child_process';
+import { execFileSync } from 'child_process';
 import { app } from 'electron';
 import { setMaxListeners } from 'node:events';
 import { getSandboxAdapter } from '../sandbox/sandbox-adapter';
@@ -53,25 +36,12 @@ import { PluginRuntimeService } from '../skills/plugin-runtime-service';
 import type { SkillsAdapter } from '../skills/skills-adapter';
 import { AgentRuntimeExtensionManager } from '../extensions/agent-runtime-extension-manager';
 import { configStore } from '../config/config-store';
-import { normalizeOpenAICompatibleBaseUrl } from '../config/auth-utils';
 import {
-  buildTerminalErrorEmissionDetails,
   buildTerminalErrorMessage,
   resolveAbortDisposition,
-  resolveAssistantStreamErrorText,
-  resolveMessageEndPayload,
   shouldPreserveExistingTrace,
   toUserFacingErrorText,
 } from './agent-runner-message-end';
-import {
-  applyPiModelRuntimeOverrides,
-  buildSyntheticPiModel,
-  resolvePiRegistryModel,
-  resolvePiRouteProtocol,
-  resolveSyntheticPiModelFallback,
-} from './pi-model-resolution';
-import { buildPiSessionRuntimeSignature } from './pi-session-runtime';
-import { ThinkTagStreamParser } from './think-tag-parser';
 import {
   LoopGuard,
   buildAbortUserMessage,
@@ -80,13 +50,14 @@ import {
   type LoopGuardDecision,
   type ToolCallDescriptor,
 } from './agent-runner-loop-guard';
-import {
-  normalizeMcpToolResultForModel,
-  normalizeToolExecutionResultForUi,
-} from './tool-result-utils';
-import { fetchOllamaModelInfo } from '../config/ollama-api';
-import { createWindowsBashOperations } from './windows-bash-operations';
-import { createCompactionExtensionFactory } from './compaction-extension';
+import { normalizeMcpToolResultForModel } from './tool-result-utils';
+import { CodexClient, type CodexLogger } from './codex-runtime/codex-client';
+import { CodexRuntime, type CodexRuntimeEmitters } from './codex-runtime/codex-runtime';
+import { CodexPermissionBridge } from './codex-runtime/codex-permission-bridge';
+import { CodexToolBridge } from './codex-runtime/codex-tool-bridge';
+import { CodexEventTranslator } from './codex-runtime/codex-event-translator';
+import { adaptPiToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter';
+import { buildCodexModelConfig } from './codex-runtime/codex-model-config';
 
 // Virtual workspace path shown to the model (hides real sandbox path)
 const VIRTUAL_WORKSPACE_PATH = '/workspace';
@@ -392,8 +363,6 @@ async function enrichProcessPathForBuild(): Promise<void> {
   );
 }
 
-// Shared pi-ai auth storage — created once, reused across sessions.
-
 /**
  * Bridge MCP tools from MCPManager into ToolDefinition[] format for the agent SDK.
  * Each MCP tool becomes a customTool whose execute() delegates to mcpManager.callTool().
@@ -446,35 +415,6 @@ function safeStringify(value: unknown, space = 0): string {
   }
 }
 
-function summarizeMessageForLog(message: unknown): Record<string, unknown> {
-  if (!message || typeof message !== 'object') {
-    return { present: false };
-  }
-
-  const typedMessage = message as {
-    role?: unknown;
-    stopReason?: unknown;
-    content?: unknown[];
-    usage?: unknown;
-  };
-  const content = Array.isArray(typedMessage.content) ? typedMessage.content : [];
-
-  return {
-    present: true,
-    role: typeof typedMessage.role === 'string' ? typedMessage.role : undefined,
-    stopReason: typedMessage.stopReason ?? undefined,
-    contentBlocks: content.length,
-    contentTypes: content.slice(0, 8).map((block) => {
-      if (!block || typeof block !== 'object') {
-        return typeof block;
-      }
-      const type = (block as { type?: unknown }).type;
-      return typeof type === 'string' ? type : 'unknown';
-    }),
-    usage: normalizeTokenUsage(typedMessage.usage),
-  };
-}
-
 function toErrorText(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -495,30 +435,6 @@ function toErrorText(error: unknown): string {
   return serialized;
 }
 
-function normalizeTokenUsage(usage: unknown): Message['tokenUsage'] | undefined {
-  if (!usage || typeof usage !== 'object') {
-    return undefined;
-  }
-
-  const raw = usage as {
-    input?: unknown;
-    output?: unknown;
-    input_tokens?: unknown;
-    output_tokens?: unknown;
-    inputTokens?: unknown;
-    outputTokens?: unknown;
-  };
-
-  const input = raw.input ?? raw.input_tokens ?? raw.inputTokens;
-  const output = raw.output ?? raw.output_tokens ?? raw.outputTokens;
-
-  if (typeof input !== 'number' || typeof output !== 'number') {
-    return undefined;
-  }
-
-  return { input, output };
-}
-
 interface AgentRunnerOptions {
   sendToRenderer: (event: ServerEvent) => void;
   saveMessage?: (message: Message) => void;
@@ -535,31 +451,36 @@ interface AgentRunnerOptions {
   ) => Promise<'allow' | 'deny' | 'allow_always'>;
 }
 
-interface CachedPiSession {
-  session: PiAgentSession;
-  modelId: string;
-  thinkingLevel: string;
+/** Per-session codex bookkeeping (replaces the pi `CachedPiSession` cache). */
+interface CodexSessionMeta {
   runtimeSignature: string;
   skillsSignature?: string;
-  ollamaNumCtx?: { value: number };
 }
 
 /**
- * CoworkAgentRunner - Uses @mariozechner/pi-coding-agent SDK
- *
- * Environment variables should be set before running:
- *   ANTHROPIC_BASE_URL=https://openrouter.ai/api
- *   ANTHROPIC_AUTH_TOKEN=your_openrouter_api_key
- *   ANTHROPIC_API_KEY="" (must be empty)
+ * Context for a single in-flight `run()` turn, keyed by session id. The shared, warm
+ * `CodexRuntime` dispatches translator actions to the runner's singleton emitters; those
+ * emitters look this up by session id to reach the per-run output sanitizer, loop guard,
+ * and error/trace bookkeeping.
+ */
+interface CodexRunContext {
+  sanitizeOutputPaths: (content: string) => string;
+  loopGuard: LoopGuard;
+  handleLoopGuardDecision: (decision: LoopGuardDecision, context: string) => void;
+  markError: (message: string, willRetry: boolean) => void;
+  /** Resets the per-turn activity timeout — called on each meaningful codex event. */
+  onActivity: () => void;
+}
+
+/**
+ * CoworkAgentRunner - drives the OpenAI Codex `app-server` backend (see
+ * `src/main/agent/codex-runtime/`). Session CRUD + history live in SessionManager; this
+ * class owns runtime-agnostic prompt assembly, skills / path resolution, sandbox sync,
+ * the loop guard, and the codex turn lifecycle.
  */
 export class CoworkAgentRunner {
   private sendToRenderer: (event: ServerEvent) => void;
   private saveMessage?: (message: Message) => void;
-  private requestSudoPassword?: (
-    sessionId: string,
-    toolUseId: string,
-    command: string
-  ) => Promise<string | null>;
   private requestPermission?: (
     sessionId: string,
     toolUseId: string,
@@ -572,33 +493,41 @@ export class CoworkAgentRunner {
   private _skillsAdapter?: SkillsAdapter;
   private extensionManager?: AgentRuntimeExtensionManager;
   private activeControllers: Map<string, AbortController> = new Map();
-  private piSessions: Map<string, CachedPiSession> = new Map();
   private toolDisplayNameCache: Map<string, string> = new Map();
-  private static readonly MAX_CACHED_SESSIONS = 50;
+
+  // Codex runtime (lazy singleton — the app-server child is kept warm across turns).
+  private codexRuntime?: CodexRuntime;
+  private codexToolBridge?: CodexToolBridge;
+  private readonly codexSessionMeta: Map<string, CodexSessionMeta> = new Map();
+  private readonly codexRunContexts: Map<string, CodexRunContext> = new Map();
+  private readonly codexContextUsage: Map<
+    string,
+    { tokens: number | null; contextWindow: number; percent: number | null }
+  > = new Map();
 
   // Per-instance caches — invalidated when the underlying config changes.
   private _mcpServersCache: { fingerprint: string; servers: Record<string, unknown> } | null = null;
   private _skillsSetupDone = false;
 
   /**
-   * Clear SDK session cache for a session
-   * Called when session's cwd changes - SDK sessions are bound to cwd
+   * Forget a session's codex thread (keeps the app-server warm).
+   * Called when the session's cwd changes — the working directory is bound to the thread.
    */
   clearSdkSession(sessionId: string): void {
-    const cached = this.piSessions.get(sessionId);
-    if (cached) {
+    this.codexSessionMeta.delete(sessionId);
+    this.codexContextUsage.delete(sessionId);
+    if (this.codexRuntime) {
       try {
-        cached.session.dispose();
+        this.codexRuntime.disposeSession(sessionId);
+        log('[CoworkAgentRunner] Disposed codex thread for:', sessionId);
       } catch (e) {
-        logWarn('[CoworkAgentRunner] dispose error:', e);
+        logWarn('[CoworkAgentRunner] disposeSession error:', e);
       }
-      this.piSessions.delete(sessionId);
-      log('[CoworkAgentRunner] Disposed pi session for:', sessionId);
     }
   }
 
   clearAllSdkSessions(): void {
-    for (const sessionId of Array.from(this.piSessions.keys())) {
+    for (const sessionId of Array.from(this.codexSessionMeta.keys())) {
       this.clearSdkSession(sessionId);
     }
   }
@@ -891,7 +820,6 @@ ${hints.join('\n')}
   ) {
     this.sendToRenderer = options.sendToRenderer;
     this.saveMessage = options.saveMessage;
-    this.requestSudoPassword = options.requestSudoPassword;
     this.requestPermission = options.requestPermission;
     this.pathResolver = pathResolver;
     this.mcpManager = mcpManager;
@@ -907,116 +835,189 @@ ${hints.join('\n')}
   }
 
   /**
-   * Install a permission-gating hook on the pi-coding-agent session via
-   * `agent.setBeforeToolCall`. This is the only interception point that
-   * fires for built-in tools (read, bash, edit, write) — the SDK ignores
-   * wrapped `execute` functions on built-in tools passed via `options.tools`.
-   *
-   * The hook consults `decidePermission` from the main-process rules cache:
-   *  - 'allow' → delegate to SDK's original hook (proceeds normally)
-   *  - 'deny'  → return { block: true, reason } (SDK treats as tool error)
-   *  - 'ask'   → await requestPermission() IPC round-trip to PermissionDialog
-   *
-   * Known limitation: the async requestPermission wait (user dialog) causes
-   * the renderer to miss UI update events. The tool executes correctly on
-   * the backend, but the renderer's loading spinner may not clear. This is
-   * a renderer-side issue tracked as a follow-up.
+   * Lazily build the shared, warm codex runtime: one `CodexClient` (app-server child),
+   * a `CodexPermissionBridge` (replaces the pi `agent.setBeforeToolCall` reach-in), a
+   * `CodexToolBridge` (host `dynamic_tools`), and the `CodexRuntime` that occupies pi's
+   * former turn role. Emitters + the translator factory are wired to the runner's private
+   * `send*` helpers and the per-run context looked up by session id.
    */
-  private installPermissionHook(piSession: PiAgentSession, sessionId: string): void {
-    if (!this.requestPermission) {
-      log('[CoworkAgentRunner] No requestPermission callback — skipping permission hook');
-      return;
-    }
+  private ensureCodexRuntime(): CodexRuntime {
+    if (this.codexRuntime) return this.codexRuntime;
 
-    // Access the Agent instance (public readonly property on AgentSession)
-    // and wrap its beforeToolCall hook with our permission gate.
-    //
-    // We must chain to the SDK's original beforeToolCall hook because it
-    // fires extension tool_call events and manages the _agentEventQueue.
-    // Without chaining, the renderer misses completion events.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const agent = (piSession as any).agent;
-    if (!agent || typeof agent.setBeforeToolCall !== 'function') {
-      logWarn(
-        '[CoworkAgentRunner] Cannot access agent.setBeforeToolCall — skipping permission hook'
-      );
-      return;
-    }
+    const logger: CodexLogger = {
+      log: (...args: unknown[]) => log('[codex]', ...args),
+      warn: (...args: unknown[]) => logWarn('[codex]', ...args),
+      error: (...args: unknown[]) => logError('[codex]', ...args),
+    };
 
-    // Capture the SDK's hook before we overwrite it
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sdkBeforeToolCall: ((ctx: any, signal?: AbortSignal) => Promise<any>) | undefined =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (agent as any)._beforeToolCall;
+    const client = new CodexClient({
+      clientInfo: { name: 'open-cowork', version: app.getVersion() },
+      // `dynamicTools` on `thread/start` is an experimental app-server field; codex ignores
+      // it unless the initialize handshake opts into the experimental API. Without this the
+      // memory/config/subagent host tools never register and the agent can't call them.
+      capabilities: { experimentalApi: true, requestAttestation: false },
+      logger,
+    });
+
+    const toolBridge = new CodexToolBridge();
 
     const requestPermission = this.requestPermission;
-    const getDisplayName = (name: string): string => this.getToolDisplayName(name);
-
-    agent.setBeforeToolCall(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async (ctx: any, signal?: AbortSignal): Promise<any> => {
-        const toolName: string = ctx.toolCall?.name ?? '';
-        const input: Record<string, unknown> = ctx.args ?? {};
-
-        const decision = decidePermission(sessionId, toolName, input);
-        // Human-readable name for prompts/messages (e.g. MCP sanitized
-        // 'mcp__chrome__chrome_screenshot__ab12' → 'chrome_screenshot').
-        // Rule matching and rememberAlwaysAllow still use the canonical
-        // `toolName` so allow-once decisions stay stable across calls.
-        const displayName = getDisplayName(toolName);
-
-        if (decision === 'deny') {
-          log(`[CoworkAgentRunner] Tool '${toolName}' denied by rule`);
-          return {
-            block: true,
-            reason: `Tool '${displayName}' is denied by your permission rules.`,
-          };
-        }
-
-        if (decision === 'ask') {
-          const toolUseId = `${ctx.toolCall?.id ?? 'unknown'}-perm-${uuidv4().slice(0, 8)}`;
-          let result: 'allow' | 'deny' | 'allow_always';
-          try {
-            // Send the display name to the renderer so the dialog shows a
-            // human-readable tool name; canonical `toolName` is still used
-            // for rule matching above and "always allow" memory below.
-            result = await requestPermission(sessionId, toolUseId, displayName, input);
-          } catch (permErr) {
-            logError(
-              `[CoworkAgentRunner] Permission request failed for '${toolName}' — failing closed`,
-              permErr
+    const permissionBridge = new CodexPermissionBridge({
+      decide: decidePermission,
+      rememberAlwaysAllow,
+      prompt: requestPermission
+        ? async (context) => {
+            // Round-trips to the renderer PermissionDialog via SessionManager.
+            const toolUseId = `codex-perm-${uuidv4().slice(0, 8)}`;
+            const displayName = this.getToolDisplayName(context.toolName);
+            const result = await requestPermission(
+              context.sessionId,
+              toolUseId,
+              displayName,
+              context.input
             );
-            return {
-              block: true,
-              reason: `Permission request failed for '${displayName}'; tool not executed.`,
-            };
+            // Enum adapter: app 'allow_always' → bridge 'always' (→ codex acceptForSession).
+            return result === 'allow_always' ? 'always' : result;
           }
+        : undefined,
+      logger,
+    });
 
-          if (result === 'deny') {
-            log(`[CoworkAgentRunner] Tool '${toolName}' denied by user`);
-            return { block: true, reason: `User denied permission for '${displayName}'.` };
-          }
+    const runtime = new CodexRuntime({
+      client,
+      emitters: this.buildCodexEmitters(),
+      permissionBridge,
+      toolBridge,
+      createTranslator: (sessionId: string) =>
+        new CodexEventTranslator({
+          sessionId,
+          getToolDisplayName: (name) => this.getToolDisplayName(name),
+          // Per-run sandbox-path sanitizer, resolved from the active run context.
+          sanitizeToolOutput: (output) =>
+            this.codexRunContexts.get(sessionId)?.sanitizeOutputPaths(output) ?? output,
+        }),
+      logger,
+    });
 
-          if (result === 'allow_always') {
-            rememberAlwaysAllow(sessionId, toolName);
-          }
-        }
-
-        // Allowed — delegate to SDK's original hook for event pipeline
-        return sdkBeforeToolCall ? sdkBeforeToolCall(ctx, signal) : undefined;
-      }
-    );
-
-    log(
-      `[CoworkAgentRunner] Permission hook installed on session ${sessionId} via agent.setBeforeToolCall`
-    );
+    this.codexToolBridge = toolBridge;
+    this.codexRuntime = runtime;
+    log('[CoworkAgentRunner] Codex runtime initialized');
+    return runtime;
   }
 
   /**
-   * Check if a command contains sudo
+   * The singleton emitter set the codex runtime dispatches translator actions to. These
+   * reuse the runner's private `send*` helpers (so `sendMessage` keeps its `saveMessage`
+   * persistence side effect) and consult the per-run context by session id for the loop
+   * guard, output sanitizing, token-usage aggregation, and error handling.
    */
-  private static isSudoCommand(command: string): boolean {
-    return /\bsudo\b/.test(command);
+  private buildCodexEmitters(): CodexRuntimeEmitters {
+    return {
+      sendPartial: (sessionId, delta) => {
+        this.codexRunContexts.get(sessionId)?.onActivity();
+        this.sendPartial(sessionId, delta);
+      },
+      sendToRenderer: (event) => this.sendToRenderer(event),
+      sendTraceStep: (sessionId, step) => {
+        // Loop guard layer 2 (per-tool frequency) — codex streams each tool as its own item.
+        const ctx = this.codexRunContexts.get(sessionId);
+        ctx?.onActivity();
+        if (ctx && step.type === 'tool_call' && step.status === 'running' && step.toolName) {
+          ctx.handleLoopGuardDecision(
+            ctx.loopGuard.recordToolInvocation(step.toolName),
+            'tool_start'
+          );
+        }
+        this.sendTraceStep(sessionId, step);
+      },
+      sendTraceUpdate: (sessionId, stepId, updates) =>
+        this.sendTraceUpdate(sessionId, stepId, updates),
+      sendMessage: (sessionId, message) => {
+        const ctx = this.codexRunContexts.get(sessionId);
+        ctx?.onActivity();
+        this.sendMessage(
+          sessionId,
+          ctx ? this.postProcessCodexMessage(sessionId, message, ctx) : message
+        );
+      },
+      onTokenUsage: ({ sessionId, tokenUsage, contextWindow }) => {
+        if (typeof contextWindow === 'number' && contextWindow > 0) {
+          this.sendToRenderer({
+            type: 'session.contextInfo',
+            payload: { sessionId, contextWindow },
+          });
+        }
+        // Track for the pull-based getContextUsage(); the translator already attaches the
+        // per-message tokenUsage to the assembled assistant message.
+        const tokens = tokenUsage.input + tokenUsage.output;
+        const window =
+          typeof contextWindow === 'number' && contextWindow > 0
+            ? contextWindow
+            : (this.codexContextUsage.get(sessionId)?.contextWindow ?? 0);
+        this.codexContextUsage.set(sessionId, {
+          tokens,
+          contextWindow: window,
+          percent: window > 0 ? Math.min(100, Math.round((tokens / window) * 100)) : null,
+        });
+      },
+      onCompaction: ({ sessionId, turnId }) => {
+        // Open item (a): codex owns summarization, so the summary / read+modified files pi
+        // surfaced are not available from the codex event — emit a reduced compaction.result.
+        log('[CoworkAgentRunner] Codex compaction completed for turn:', turnId);
+        this.sendToRenderer({
+          type: 'compaction.result',
+          payload: { sessionId, summary: '', tokensBefore: 0, readFiles: [], modifiedFiles: [] },
+        });
+      },
+      onError: ({ sessionId, message, willRetry }) => {
+        this.codexRunContexts.get(sessionId)?.markError(message, willRetry);
+      },
+    };
+  }
+
+  /**
+   * Post-process a codex-assembled assistant message before it reaches the renderer:
+   * sanitize sandbox paths in text, extract inline artifacts into trace steps, and feed
+   * the message's tool-call group into loop guard layer 1 (hash detection). Tool-result
+   * output is already sanitized by the translator, so only assistant text is touched.
+   */
+  private postProcessCodexMessage(
+    sessionId: string,
+    message: Message,
+    ctx: CodexRunContext
+  ): Message {
+    if (message.role !== 'assistant' || !Array.isArray(message.content)) {
+      return message;
+    }
+    const toolDescriptors: ToolCallDescriptor[] = [];
+    const newContent: ContentBlock[] = [];
+    for (const block of message.content) {
+      if (block.type === 'text') {
+        const { cleanText, artifacts } = extractArtifactsFromText(block.text);
+        if (cleanText) {
+          newContent.push({ type: 'text', text: ctx.sanitizeOutputPaths(cleanText) });
+        }
+        if (artifacts.length > 0) {
+          for (const step of buildArtifactTraceSteps(artifacts)) {
+            this.sendTraceStep(sessionId, step);
+          }
+        }
+      } else {
+        if (block.type === 'tool_use') {
+          toolDescriptors.push({
+            name: block.name || '',
+            input: (block.input as Record<string, unknown>) || undefined,
+          });
+        }
+        newContent.push(block);
+      }
+    }
+    if (toolDescriptors.length > 0) {
+      ctx.handleLoopGuardDecision(ctx.loopGuard.recordAssistantMessage(toolDescriptors), 'message');
+    }
+    // Never drop an assistant message to an empty bubble; keep original blocks if the
+    // artifact extraction consumed everything (rare — artifact-only responses).
+    return { ...message, content: newContent.length > 0 ? newContent : message.content };
   }
 
   private getToolDisplayName(toolName: string): string {
@@ -1041,137 +1042,6 @@ ${hints.join('\n')}
 
     this.toolDisplayNameCache.set(toolName, displayName);
     return displayName;
-  }
-
-  /**
-   * Wrap the bash tool in the coding tools array to intercept sudo commands.
-   * When a sudo command is detected, prompts the user for a password,
-   * then rewrites the command to pipe the password into sudo -S.
-   */
-  private wrapBashToolForSudo(
-    tools: ToolDefinition[],
-    sessionId: string,
-    effectiveCwd: string
-  ): ToolDefinition[] {
-    if (!this.requestSudoPassword) return tools;
-
-    const requestSudoPassword = this.requestSudoPassword;
-
-    return tools.map((tool) => {
-      if (tool.name !== 'bash') return tool;
-
-      const originalExecute = tool.execute;
-      return {
-        ...tool,
-        execute: async (
-          toolCallId: string,
-          params: { command: string; timeout?: number },
-          signal: AbortSignal | undefined,
-          onUpdate: ((update: unknown) => void) | undefined,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ctx: any
-        ) => {
-          const command = params.command;
-
-          if (CoworkAgentRunner.isSudoCommand(command)) {
-            log('[CoworkAgentRunner] Sudo command detected, requesting password');
-            const password = await requestSudoPassword(sessionId, toolCallId, command);
-
-            if (!password) {
-              log('[CoworkAgentRunner] Sudo password cancelled by user');
-              return {
-                content: [
-                  { type: 'text' as const, text: 'Command cancelled: user denied sudo password.' },
-                ],
-                details: undefined as unknown,
-              };
-            }
-
-            // Add -S flag to sudo invocations that don't already have it
-            const rewrittenCommand = command.replace(/\bsudo\b(?!\s+-S)/g, 'sudo -S');
-
-            // Pass password via stdin pipe so it never appears in process args
-            // or environment variables. Uses async spawn with stdio: 'pipe'.
-            log(
-              '[CoworkAgentRunner] Executing sudo command with password injection (via stdin pipe)'
-            );
-            try {
-              const shell = process.platform === 'win32' ? 'cmd.exe' : '/bin/sh';
-              const shellArgs =
-                process.platform === 'win32' ? ['/c', rewrittenCommand] : ['-c', rewrittenCommand];
-              const timeoutMs = (params.timeout ?? 120) * 1000;
-              const output = await new Promise<string>((resolve, reject) => {
-                const child = spawn(shell, shellArgs, {
-                  stdio: ['pipe', 'pipe', 'pipe'],
-                  cwd: effectiveCwd,
-                });
-                let stdout = '';
-                let stderr = '';
-                const timer = setTimeout(() => {
-                  child.kill('SIGKILL');
-                  reject(new Error(`Sudo command timed out after ${timeoutMs}ms`));
-                }, timeoutMs);
-                child.stdout.on('data', (chunk: Buffer) => {
-                  stdout += chunk.toString();
-                });
-                child.stderr.on('data', (chunk: Buffer) => {
-                  stderr += chunk.toString();
-                });
-                child.on('error', (err) => {
-                  clearTimeout(timer);
-                  reject(err);
-                });
-                child.on('close', () => {
-                  clearTimeout(timer);
-                  resolve(stdout + stderr);
-                });
-                child.stdin.write(password + '\n');
-                child.stdin.end();
-              });
-              return {
-                content: [{ type: 'text' as const, text: output || '(no output)' }],
-                details: undefined as unknown,
-              };
-            } catch (sudoErr) {
-              logError('[CoworkAgentRunner] Sudo command failed:', sudoErr);
-              throw sudoErr instanceof Error ? sudoErr : new Error(String(sudoErr));
-            }
-          }
-
-          return originalExecute(toolCallId, params, signal, onUpdate, ctx);
-        },
-      } as ToolDefinition;
-    });
-  }
-
-  /**
-   * Wrap the bash tool to inject a default timeout when the model omits one.
-   * The agent SDK's bash tool has no default timeout, which means
-   * commands can run indefinitely if the model doesn't specify a timeout.
-   */
-  private static wrapBashToolWithDefaultTimeout(tools: ToolDefinition[]): ToolDefinition[] {
-    const DEFAULT_BASH_TIMEOUT_SECONDS = 120;
-
-    return tools.map((tool) => {
-      if (tool.name !== 'bash') return tool;
-
-      const originalExecute = tool.execute;
-      return {
-        ...tool,
-        execute: async (
-          toolCallId: string,
-          params: { command: string; timeout?: number },
-          signal: AbortSignal | undefined,
-          onUpdate: ((update: unknown) => void) | undefined,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ctx: any
-        ) => {
-          const effectiveParams =
-            params.timeout != null ? params : { ...params, timeout: DEFAULT_BASH_TIMEOUT_SECONDS };
-          return originalExecute(toolCallId, effectiveParams, signal, onUpdate, ctx);
-        },
-      } as ToolDefinition;
-    });
   }
 
   /**
@@ -1586,134 +1456,65 @@ ${hints.join('\n')}
         log('[CoworkAgentRunner] User message contains images');
       }
 
-      logTiming('before pi-ai model resolution', runStartTime);
+      logTiming('before codex model resolution', runStartTime);
 
-      // Resolve model via pi-ai
+      // Resolve the codex model/provider config from the app config. Under D4/D4a only
+      // OpenAI + OpenAI-Responses-compatible endpoints are supported; anything else is a
+      // hard, user-facing error (no silent fallback — pi's synthetic-model path is gone).
       const runtimeConfig = configStore.getAll();
+      const provider = runtimeConfig.provider || 'openai';
       const modelString = this.getCurrentModelString(runtimeConfig.model);
-      const configProtocol = resolvePiRouteProtocol(
-        runtimeConfig.provider,
-        runtimeConfig.customProtocol
-      );
-
-      // Normalize base URL for OpenAI-compatible providers (strips copy-pasted endpoint suffixes)
-      const rawBaseUrl = runtimeConfig.baseUrl?.trim() || undefined;
-      const effectiveBaseUrl =
-        configProtocol === 'openai' && runtimeConfig.provider !== 'ollama'
-          ? normalizeOpenAICompatibleBaseUrl(rawBaseUrl) || rawBaseUrl
-          : rawBaseUrl;
-
-      let usedSyntheticModel = false;
-      let piModel = resolvePiRegistryModel(modelString, {
-        configProvider: configProtocol,
-        customBaseUrl: effectiveBaseUrl,
-        rawProvider: runtimeConfig.provider,
+      const modelConfigResult = buildCodexModelConfig({
+        provider,
+        model: modelString,
+        baseUrl: runtimeConfig.baseUrl,
+        apiKey: runtimeConfig.apiKey,
         customProtocol: runtimeConfig.customProtocol,
       });
-
-      if (!piModel) {
-        usedSyntheticModel = true;
-        // Synthetic fallback: construct a Model for unknown/custom models
-        const synthetic = resolveSyntheticPiModelFallback({
-          rawModel: runtimeConfig.model,
-          resolvedModelString: modelString,
-          rawProvider: runtimeConfig.provider,
-          routeProtocol: configProtocol,
-          baseUrl: effectiveBaseUrl,
-        });
-        piModel = buildSyntheticPiModel(
-          synthetic.modelId,
-          synthetic.provider,
-          configProtocol,
-          effectiveBaseUrl,
-          undefined,
-          undefined,
-          runtimeConfig.contextWindow,
-          runtimeConfig.maxTokens
+      if (!modelConfigResult.supported) {
+        logWarn(
+          '[CoworkAgentRunner] Unsupported provider for codex runtime:',
+          modelConfigResult.reason
         );
-        // Apply the same runtime overrides (developer role compat, base URL, API downgrade)
-        // that resolvePiRegistryModel applies to registry models
-        piModel = applyPiModelRuntimeOverrides(piModel, {
-          configProvider: configProtocol,
-          customBaseUrl: effectiveBaseUrl,
-          rawProvider: runtimeConfig.provider,
-          customProtocol: runtimeConfig.customProtocol,
+        this.sendMessage(session.id, {
+          id: uuidv4(),
+          sessionId: session.id,
+          role: 'assistant',
+          content: [{ type: 'text', text: `**Configuration error**: ${modelConfigResult.reason}` }],
+          timestamp: Date.now(),
         });
-        logCtxWarn(
-          '[CoworkAgentRunner] Model not in pi-ai registry, using synthetic model:',
-          modelString,
-          '→',
-          piModel.api
-        );
+        this.sendTraceUpdate(session.id, thinkingStepId, {
+          status: 'error',
+          title: 'Provider not supported',
+        });
+        return;
       }
-      logCtx('[CoworkAgentRunner] Resolved pi-ai model:', piModel.provider, piModel.id);
+      const modelConfig = modelConfigResult.config;
+      logCtx(
+        '[CoworkAgentRunner] Resolved codex model:',
+        modelConfig.providerId,
+        modelConfig.model
+      );
 
-      // For Ollama: query actual context window from /api/show if user hasn't configured one
-      const provider = runtimeConfig.provider || 'anthropic';
-      if (provider === 'ollama' && !runtimeConfig.contextWindow) {
-        const ollamaBaseUrl =
-          piModel.baseUrl || runtimeConfig.baseUrl || 'http://localhost:11434/v1';
-        const ollamaInfo = await fetchOllamaModelInfo({
-          baseUrl: ollamaBaseUrl,
-          model: piModel.id,
-          apiKey: runtimeConfig.apiKey,
-        });
-        if (ollamaInfo.contextWindow) {
-          log(
-            '[CoworkAgentRunner] Ollama /api/show reported contextWindow:',
-            ollamaInfo.contextWindow,
-            '(was:',
-            piModel.contextWindow,
-            ')'
-          );
-          piModel = { ...piModel, contextWindow: ollamaInfo.contextWindow };
-        }
+      // Project the API key into the environment so the (warm) app-server child can read it
+      // via the provider's env_key. Keys never round-trip through config files.
+      for (const [key, value] of Object.entries(modelConfig.env)) {
+        process.env[key] = value;
       }
 
-      // Send context window info to renderer for UI display
+      // Context window drives the cold-start history budget + the config summary prompt.
+      const codexContextWindow =
+        runtimeConfig.contextWindow && runtimeConfig.contextWindow > 0
+          ? runtimeConfig.contextWindow
+          : 128000;
+
+      // Seed the context bar; onTokenUsage refines it once codex reports real usage.
       this.sendToRenderer({
         type: 'session.contextInfo',
-        payload: {
-          sessionId: session.id,
-          contextWindow: piModel.contextWindow || 128000,
-        },
+        payload: { sessionId: session.id, contextWindow: codexContextWindow },
       });
 
-      // Set up API keys via AuthStorage
-      const authStorage = getSharedAuthStorage();
-      const apiKey = runtimeConfig.apiKey?.trim();
-      if (apiKey) {
-        // Map our config provider to pi-ai provider name
-        const piProvider =
-          provider === 'custom' ? runtimeConfig.customProtocol || 'anthropic' : provider;
-        authStorage.setRuntimeApiKey(piProvider, apiKey);
-        // Also set the key for the model's native provider (e.g., when using
-        // google/gemini via openrouter, pi-ai looks up "google" not "openrouter")
-        if (piModel.provider !== piProvider) {
-          authStorage.setRuntimeApiKey(piModel.provider, apiKey);
-          log('[CoworkAgentRunner] Set runtime API key for model provider:', piModel.provider);
-        }
-        log('[CoworkAgentRunner] Set runtime API key for config provider:', piProvider);
-      } else {
-        if (provider === 'ollama') {
-          log(
-            '[CoworkAgentRunner] Ollama configured without explicit API key; relying on OpenAI-compatible placeholder/env auth path',
-            safeStringify({
-              provider,
-              modelProvider: piModel.provider,
-              modelId: piModel.id,
-              baseUrl: piModel.baseUrl || runtimeConfig.baseUrl || '',
-            })
-          );
-        } else {
-          logWarn('[CoworkAgentRunner] No API key configured for provider:', provider);
-        }
-      }
-
-      // baseUrl is now embedded in the model object via resolvePiModel()
-      logCtx('[CoworkAgentRunner] Model baseUrl:', piModel.baseUrl, 'api:', piModel.api);
-
-      logTiming('after pi-ai model resolution', runStartTime);
+      logTiming('after codex model resolution', runStartTime);
 
       // the agent SDK handles path sandboxing via its own tools
       const imageCapable = true; // pi-ai models generally support images; let the model handle unsupported cases
@@ -1796,75 +1597,62 @@ ${hints.join('\n')}
         this.syncConfiguredSkillsToRuntimeDir(appSkillsDir);
       }
 
-      // Build available skills section dynamically — now handled by pi's DefaultResourceLoader
-      // via additionalSkillPaths. No custom prompt building needed.
+      // Skill directories are resolved on disk (resolveSkillPaths) and surfaced to the
+      // model through the assembled system prompt; codex discovers them via cwd/config.
 
       log('[CoworkAgentRunner] App agent dir:', userAgentDir);
       log('[CoworkAgentRunner] User working directory:', workingDir);
 
       logTiming('before building conversation context', runStartTime);
 
-      // pi-ai handles auth and model routing natively — no proxy, no env overrides needed.
-      logCtx('[CoworkAgentRunner] Using pi-ai native routing for:', piModel.provider, piModel.id);
-
-      // Resolve thinking level early — needed for session reuse check below
+      // Resolve thinking level early. pi's discrete levels collapse to a codex reasoning
+      // effort: enabled → 'medium', disabled → omitted (codex default).
       const enableThinking = configStore.get('enableThinking') ?? false;
       logCtx('[CoworkAgentRunner] Enable thinking mode:', enableThinking);
-      type PiThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
-      const thinkingLevel: PiThinkingLevel = enableThinking ? 'medium' : 'off';
-      const sessionRuntimeSignature = buildPiSessionRuntimeSignature({
-        configProvider: runtimeConfig.provider,
-        customProtocol: runtimeConfig.customProtocol,
-        modelProvider: piModel.provider,
-        modelApi: piModel.api,
-        modelBaseUrl: piModel.baseUrl,
+      const effort: string | undefined = enableThinking ? 'medium' : undefined;
+
+      // Runtime signature — a change (provider/model/base URL/key/cwd) invalidates the
+      // warm codex thread so a fresh thread is started with the new settings.
+      const sessionRuntimeSignature = JSON.stringify({
+        provider,
+        model: modelConfig.model,
+        providerId: modelConfig.providerId,
+        baseUrl: modelConfig.provider.base_url,
+        hasKey: Object.keys(modelConfig.env).length > 0,
         effectiveCwd,
-        apiKey,
       });
       const skillPaths = await this.resolveSkillPaths(session.id);
       const skillsSignature = JSON.stringify(skillPaths);
-      log('[CoworkAgentRunner] Skill paths for pi ResourceLoader:', skillPaths);
+      log('[CoworkAgentRunner] Skill paths:', skillPaths);
 
-      // Build contextual prompt — if reusing an existing SDK session, the SDK
-      // already has conversation history so we only pass the new prompt.
-      // For cold starts (new SDK session with existing DB history), we inject
-      // a token-budgeted summary of recent history as a preamble.
-      let cachedSession = this.piSessions.get(session.id);
-      if (cachedSession && cachedSession.runtimeSignature !== sessionRuntimeSignature) {
-        logCtx('[CoworkAgentRunner] Runtime changed, recreating cached pi session:', session.id);
-        try {
-          cachedSession.session.dispose();
-        } catch (disposeError) {
-          logWarn('[CoworkAgentRunner] dispose error while recreating pi session:', disposeError);
-        }
-        this.piSessions.delete(session.id);
-        cachedSession = undefined;
+      // Cold vs warm: a warm codex thread already holds the conversation server-side, so
+      // the <conversation_history> preamble is only seeded into a NEW thread (open item c).
+      let sessionMeta = this.codexSessionMeta.get(session.id);
+      if (sessionMeta && sessionMeta.runtimeSignature !== sessionRuntimeSignature) {
+        logCtx('[CoworkAgentRunner] Runtime changed, disposing codex thread:', session.id);
+        this.codexRuntime?.disposeSession(session.id);
+        this.codexSessionMeta.delete(session.id);
+        sessionMeta = undefined;
       }
-      if (cachedSession && cachedSession.skillsSignature !== skillsSignature) {
-        logCtx('[CoworkAgentRunner] Skills changed, recreating cached pi session:', session.id);
-        try {
-          cachedSession.session.dispose();
-        } catch (disposeError) {
-          logWarn(
-            '[CoworkAgentRunner] dispose error while recreating pi session for skills:',
-            disposeError
-          );
-        }
-        this.piSessions.delete(session.id);
-        cachedSession = undefined;
+      if (sessionMeta && sessionMeta.skillsSignature !== skillsSignature) {
+        logCtx('[CoworkAgentRunner] Skills changed, disposing codex thread:', session.id);
+        this.codexRuntime?.disposeSession(session.id);
+        this.codexSessionMeta.delete(session.id);
+        sessionMeta = undefined;
       }
+      const isColdStart = !sessionMeta;
 
       const extensionResult = this.extensionManager
         ? await this.extensionManager.beforeSessionRun({
             session,
             prompt,
             existingMessages,
-            isColdStart: !cachedSession,
+            isColdStart,
           })
         : { promptPrefix: undefined, customTools: [] };
 
       let contextualPrompt = prompt;
-      if (!cachedSession) {
+      if (isColdStart) {
         // Cold start: inject recent history into prompt if available
         const conversationMessages = existingMessages.filter(
           (msg) => msg.role === 'user' || msg.role === 'assistant'
@@ -1881,7 +1669,7 @@ ${hints.join('\n')}
 
         if (historyMessages.length > 0) {
           // Content-aware chars-per-token estimation (CJK text uses ~1.5 chars/token vs ~4 for English)
-          const contextWindow = piModel.contextWindow || 128000;
+          const contextWindow = codexContextWindow;
           const historyBudgetRatio = provider === 'ollama' && contextWindow < 16384 ? 0.15 : 0.3;
           const historyTokenBudget = Math.floor(contextWindow * historyBudgetRatio);
 
@@ -2102,10 +1890,10 @@ This is an isolated sandbox environment. Use ${VIRTUAL_WORKSPACE_PATH} as the ro
       // Build a concise summary of the agent's own runtime configuration.
       // Intentionally excludes API keys, base URLs, and any other sensitive data.
       const configSummaryPrompt = `<your_configuration>
-- Model: ${piModel.id}
+- Model: ${modelConfig.model}
 - Provider: ${provider}
-- Context Window: ${piModel.contextWindow || 'unknown'} tokens
-- Max Output Tokens: ${piModel.maxTokens || 'default'}
+- Context Window: ${codexContextWindow} tokens
+- Max Output Tokens: ${runtimeConfig.maxTokens || 'default'}
 - Thinking: ${enableThinking ? 'enabled' : 'disabled'}
 - Sandbox: ${runtimeConfig.sandboxEnabled ? 'enabled' : 'disabled'}
 - Memory: ${runtimeConfig.memoryEnabled ? 'enabled' : 'disabled'}
@@ -2134,267 +1922,45 @@ Tool routing:
         .filter((section): section is string => Boolean(section && section.trim()))
         .join('\n\n');
 
-      logTiming('before agent session creation', runStartTime);
+      logTiming('before codex turn', runStartTime);
 
-      // Create or reuse agent session
-      // Bridge MCP tools as customTools for the agent SDK.
-      // Re-read every query so newly added/removed MCP servers take effect immediately.
+      // Bridge extension + MCP custom tools into codex host `dynamic_tools`. Rebuilt per
+      // turn (open item d) so newly added / removed tools take effect on the next turn.
       const mcpCustomTools = this.mcpManager ? buildMcpCustomTools(this.mcpManager) : [];
       const extensionCustomTools = extensionResult.customTools || [];
       const customTools = [...mcpCustomTools, ...extensionCustomTools];
       if (mcpCustomTools.length > 0) {
         log(
-          `[CoworkAgentRunner] Registered ${mcpCustomTools.length} MCP tools as customTools:`,
+          `[CoworkAgentRunner] Registered ${mcpCustomTools.length} MCP tools as codex host tools:`,
           mcpCustomTools.map((t) => t.name).join(', ')
         );
       }
       if (extensionCustomTools.length > 0) {
         log(
-          `[CoworkAgentRunner] Registered ${extensionCustomTools.length} extension tools as customTools:`,
+          `[CoworkAgentRunner] Registered ${extensionCustomTools.length} extension tools as codex host tools:`,
           extensionCustomTools.map((t) => t.name).join(', ')
         );
       }
 
-      // Enrich process.env.PATH for build mode — ensures Skill commands (python3, node)
-      // executed via Pi SDK's Bash tool can find bundled and user-installed executables.
+      // Enrich process.env.PATH for build mode so bundled/user executables resolve.
       await enrichProcessPathForBuild();
 
-      const bashOptions: BashToolOptions | undefined =
-        process.platform === 'win32' ? { operations: createWindowsBashOperations() } : undefined;
-      const codingTools = createCodingTools(
-        effectiveCwd,
-        bashOptions ? { bash: bashOptions } : undefined
-      );
-
-      // Inject a default 120s timeout for bash commands when the model omits one
-      const withTimeout = CoworkAgentRunner.wrapBashToolWithDefaultTimeout(
-        codingTools as ToolDefinition[]
-      );
-
-      // Wrap the bash tool to intercept sudo commands and request passwords
-      // Note: wrapBashToolForSudo returns ToolDefinition[] (5-param execute) but
-      // createAgentSession.tools expects Tool[] (4-param execute). The extra ctx
-      // parameter is simply not passed by the session runner — safe to cast.
-      const wrappedTools = this.wrapBashToolForSudo(withTimeout, session.id, effectiveCwd);
-
-      // Diagnostic: log tools being passed to SDK (helps debug Ollama tool use)
-      logCtx(`[CoworkAgentRunner] Session reuse check: cached=${!!cachedSession}`);
-      logCtx(`[CoworkAgentRunner] Model=${piModel.id}, thinkingLevel=${thinkingLevel}`);
-      log(
-        `[CoworkAgentRunner] Built-in tools (${wrappedTools.length}): ${wrappedTools.map((t: { name?: string; type?: string }) => t.name || t.type).join(', ')}`
-      );
-      log(
-        `[CoworkAgentRunner] Custom tools (${customTools.length}): ${customTools.map((t) => t.name).join(', ')}`
-      );
-
-      let piSession: PiAgentSession;
-      if (cachedSession) {
-        // Reuse existing session — SDK retains full conversation history and handles compaction
-        piSession = cachedSession.session;
-
-        // Hot-swap model/thinking if changed — SDK supports this natively
-        if (cachedSession.modelId !== piModel.id) {
-          logCtx(
-            '[CoworkAgentRunner] Model changed, hot-swapping:',
-            cachedSession.modelId,
-            '→',
-            piModel.id
-          );
-          await piSession.setModel(piModel);
-          cachedSession.modelId = piModel.id;
-          // Update Ollama num_ctx ref if present
-          if (cachedSession.ollamaNumCtx) {
-            cachedSession.ollamaNumCtx.value = piModel.contextWindow || 128000;
-            log(
-              '[CoworkAgentRunner] Updated Ollama num_ctx on hot-swap:',
-              cachedSession.ollamaNumCtx.value
-            );
-          }
-        }
-        if (cachedSession.thinkingLevel !== thinkingLevel) {
-          logCtx(
-            '[CoworkAgentRunner] Thinking level changed, hot-swapping:',
-            cachedSession.thinkingLevel,
-            '→',
-            thinkingLevel
-          );
-          piSession.setThinkingLevel(thinkingLevel);
-          cachedSession.thinkingLevel = thinkingLevel;
-        }
-
-        logCtx('[CoworkAgentRunner] Reusing cached pi session for:', session.id);
-        logTiming('agent session reused', runStartTime);
-      } else {
-        // First query in this session — create new agent session
-        // ResourceLoader + ModelRegistry only needed for session creation — skip on reuse
-        const { DefaultResourceLoader } = await import('@mariozechner/pi-coding-agent');
-
-        // Per-session compaction instructions (from session metadata if present).
-        // Capped at 2000 chars to limit prompt injection surface — this field
-        // is only set programmatically (not from external user input).
-        let sessionCompactInstructions: string | undefined =
-          'compactInstructions' in session &&
-          typeof (session as Record<string, unknown>).compactInstructions === 'string'
-            ? ((session as Record<string, unknown>).compactInstructions as string)
-            : undefined;
-        if (sessionCompactInstructions && sessionCompactInstructions.length > 2000) {
-          sessionCompactInstructions = sessionCompactInstructions.slice(0, 2000);
-        }
-
-        const resourceLoader = new DefaultResourceLoader({
-          cwd: effectiveCwd,
-          additionalSkillPaths: skillPaths,
-          appendSystemPrompt: coworkAppendPrompt,
-          extensionFactories: [
-            createCompactionExtensionFactory({
-              customInstructions: sessionCompactInstructions,
-              pruneToolOutputAbove: 500,
-              keepRecentToolResults: 3,
-            }),
-          ],
-        });
-        await resourceLoader.reload();
-
-        const modelRegistry = new ModelRegistry(authStorage);
-
-        // Ollama-specific compaction tuning based on actual context window
-        const contextWindow = piModel.contextWindow || 128000;
-        let compactionSettings: {
-          enabled: boolean;
-          reserveTokens?: number;
-          keepRecentTokens?: number;
-        };
-        if (provider === 'ollama' && contextWindow < 16384) {
-          // Very small context: disable compaction (weak models produce unreliable summaries)
-          compactionSettings = { enabled: false };
-          log(
-            '[CoworkAgentRunner] Ollama small context model, disabling auto-compaction (contextWindow:',
-            contextWindow,
-            ')'
-          );
-        } else if (provider === 'ollama' && contextWindow < 65536) {
-          // Medium context: scale reserves proportionally
-          compactionSettings = {
-            enabled: true,
-            reserveTokens: Math.floor(contextWindow * 0.15),
-            keepRecentTokens: Math.floor(contextWindow * 0.25),
-          };
-          log(
-            '[CoworkAgentRunner] Ollama medium context, scaled compaction:',
-            JSON.stringify(compactionSettings)
-          );
-        } else {
-          compactionSettings = { enabled: true };
-        }
-
-        const { session: newPiSession } = await createAgentSession({
-          model: piModel,
-          thinkingLevel,
-          authStorage,
-          modelRegistry,
-          tools: wrappedTools as unknown as ReturnType<typeof createCodingTools>,
-          customTools,
-          sessionManager: PiSessionManager.inMemory(),
-          settingsManager: PiSettingsManager.inMemory({
-            compaction: compactionSettings,
-            retry: { enabled: true, maxRetries: 2 },
-          }),
-          resourceLoader,
-          cwd: effectiveCwd,
-        });
-        piSession = newPiSession;
-
-        // Install permission-gating hook via the SDK's tool_call extension event.
-        // This must happen once per new session — the hook persists across reuses.
-        this.installPermissionHook(piSession, session.id);
-
-        // Store session for reuse — evict oldest if cache is full
-        if (this.piSessions.size >= CoworkAgentRunner.MAX_CACHED_SESSIONS) {
-          const oldestKey = this.piSessions.keys().next().value;
-          if (oldestKey) {
-            const oldest = this.piSessions.get(oldestKey);
-            if (oldest) {
-              try {
-                oldest.session.dispose();
-              } catch (e) {
-                logWarn('[CoworkAgentRunner] dispose error on eviction:', e);
-              }
-            }
-            this.piSessions.delete(oldestKey);
-            log('[CoworkAgentRunner] Evicted oldest cached session:', oldestKey);
-          }
-        }
-        this.piSessions.set(session.id, {
-          session: piSession,
-          modelId: piModel.id,
-          thinkingLevel,
-          runtimeSignature: sessionRuntimeSignature,
-          skillsSignature,
-        });
-
-        // Ollama: wrap _onPayload to inject num_ctx into every request
-        if (provider === 'ollama') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const agent = piSession.agent as any;
-          // Guard: only patch if the SDK exposes _onPayload (private API)
-          if (!('_onPayload' in agent)) {
-            logWarn(
-              '[CoworkAgentRunner] SDK agent does not expose _onPayload — skipping Ollama num_ctx patch'
-            );
-          } else {
-            const originalOnPayload = agent._onPayload as
-              | ((
-                  payload: Record<string, unknown>,
-                  modelArg: unknown
-                ) => Promise<Record<string, unknown>>)
-              | undefined;
-            const ollamaNumCtx = {
-              value: piModel.contextWindow || 128000,
-            };
-            agent._onPayload = async (payload: Record<string, unknown>, modelArg: unknown) => {
-              let result = originalOnPayload
-                ? await originalOnPayload.call(agent, payload, modelArg)
-                : payload;
-              if (result === undefined) result = payload;
-              return { ...result, num_ctx: ollamaNumCtx.value };
-            };
-            this.piSessions.get(session.id)!.ollamaNumCtx = ollamaNumCtx;
-            log(
-              '[CoworkAgentRunner] Ollama _onPayload wrapper installed, num_ctx:',
-              ollamaNumCtx.value
-            );
-          } // end else (_onPayload exists)
-        }
-
-        logTiming('agent session created', runStartTime);
-      }
-
-      // Set up event handler to bridge agent SDK events → our ServerEvent protocol
-
-      // Accumulate streamed text deltas in case message_end.content is empty (pi SDK streaming behaviour)
-      let streamedText = '';
-      let compactionStepId: string | undefined;
-      let hasEmittedError = false;
-      let terminalErrorText: string | undefined;
-      const thinkParser = new ThinkTagStreamParser();
-      const promptStartedAt = Date.now();
-      const streamEventCounts = new Map<string, number>();
+      const runtime = this.ensureCodexRuntime();
+      this.codexToolBridge?.setTools(adaptPiToolsToCodexHostTools(customTools));
 
       // ── Loop guard: protect against runaway tool-call loops ──
-      // (e.g. gemini-3.1-pro with thinking=off has been observed producing hundreds
-      //  of empty-text + single-tool-call responses in a single turn)
-      // Two layers: hash of whole tool-call group (window=20, warn=3/halt=5/abort=8)
-      //             + per-tool frequency (warn=30/halt=50/abort=80).
+      // Layer 1 (hash of a message's tool-call group) fires when the final assistant
+      // message is assembled; layer 2 (per-tool frequency) fires on each tool item start.
       const loopGuard = new LoopGuard();
+      let hasEmittedError = false;
+      let terminalErrorText: string | undefined;
+
       const handleLoopGuardDecision = (decision: LoopGuardDecision, context: string): void => {
         if (decision.action === 'none' || controller.signal.aborted) return;
         logWarn(`[LoopGuard] ${context}: action=${decision.action} reason=${decision.reason}`);
 
         if (decision.action === 'hash_abort' || decision.action === 'freq_abort') {
-          // Always surface the loop-guard explanation, even if an earlier
-          // error already set hasEmittedError — the user must see why the
-          // session stopped. Mark the flag afterward to suppress duplicate
-          // generic-error chatter from later paths in this turn.
+          // Always surface the loop-guard explanation so the user sees why it stopped.
           this.sendMessage(session.id, {
             id: uuidv4(),
             sessionId: session.id,
@@ -2407,15 +1973,12 @@ Tool routing:
             status: 'error',
             title: 'Stopped: tool-call loop detected',
           });
-          try {
-            // Mark BEFORE calling abort() so the AbortError handler in the
-            // outer catch can distinguish a loop-guard abort from a user
-            // cancel and skip the "Cancelled" trace overwrite.
-            abortedByLoopGuard = true;
-            controller.abort();
-          } catch (abortErr) {
-            logWarn('[LoopGuard] abort error:', abortErr);
-          }
+          abortedByLoopGuard = true;
+          controller.abort();
+          // Stop the in-flight codex turn — the clean replacement for pi's abort().
+          void runtime.interrupt(session.id).catch((err: unknown) => {
+            logWarn('[LoopGuard] interrupt failed:', err);
+          });
           return;
         }
 
@@ -2423,601 +1986,150 @@ Tool routing:
           decision.action === 'hash_halt' || decision.action === 'freq_halt'
             ? buildHaltSteerMessage(decision)
             : buildWarnSteerMessage(decision);
-        // fire-and-forget: SDK queues the steering message for the next turn
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const sessionAny = piSession as any;
-          if (typeof sessionAny.sendUserMessage === 'function') {
-            Promise.resolve(sessionAny.sendUserMessage(steerText, { deliverAs: 'steer' })).catch(
-              (err: unknown) => {
-                logWarn('[LoopGuard] sendUserMessage(steer) failed:', err);
-              }
-            );
-          } else {
-            logWarn('[LoopGuard] piSession.sendUserMessage is not available; skipping steer');
-          }
-        } catch (steerErr) {
-          logWarn('[LoopGuard] sendUserMessage(steer) threw:', steerErr);
-        }
+        // Loop-guard steering — first-class codex mid-turn user-message injection
+        // (replaces pi's private sendUserMessage(..., { deliverAs: 'steer' })).
+        void runtime.steer(session.id, steerText).catch((err: unknown) => {
+          logWarn('[LoopGuard] steer failed:', err);
+        });
       };
 
-      // Ollama cold-start feedback: if provider is 'ollama' and no stream event arrives
-      // within 10 seconds, show a "model loading" trace update so users know what's happening.
-      let ollamaColdStartTimerId: ReturnType<typeof setTimeout> | undefined;
-      let receivedFirstStreamEvent = false;
-      let firstStreamEventAt: number | undefined;
-      if (provider === 'ollama') {
-        ollamaColdStartTimerId = setTimeout(() => {
-          if (!receivedFirstStreamEvent && !controller.signal.aborted) {
-            this.sendTraceUpdate(session.id, thinkingStepId, {
-              title: 'Waiting for model to load into memory...',
-            });
-          }
-        }, 10000);
-      }
-
-      const markFirstStreamEvent = (eventType: string) => {
-        if (receivedFirstStreamEvent) {
+      const markError = (message: string, willRetry: boolean): void => {
+        if (willRetry) {
+          logWarn('[CoworkAgentRunner] Codex stream error (will retry):', message);
           return;
         }
-        receivedFirstStreamEvent = true;
-        firstStreamEventAt = Date.now();
-        if (ollamaColdStartTimerId) {
-          clearTimeout(ollamaColdStartTimerId);
-        }
-        this.sendTraceUpdate(session.id, thinkingStepId, {
-          title: 'Processing request...',
-        });
-        if (provider === 'ollama') {
-          log(
-            '[CoworkAgentRunner] Ollama first stream event received',
-            safeStringify({
-              sessionId: session.id,
-              eventType,
-              modelId: piModel.id,
-              modelProvider: piModel.provider,
-              baseUrl: piModel.baseUrl || runtimeConfig.baseUrl || '',
-              latencyMs: firstStreamEventAt - promptStartedAt,
-            })
-          );
-        }
-      };
-
-      // Activity-based timeout: reset the 5-min timer whenever the SDK sends events
-      const PROMPT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-      let activityTimeoutId: ReturnType<typeof setTimeout> | undefined;
-      const resetActivityTimeout = () => {
-        if (activityTimeoutId) clearTimeout(activityTimeoutId);
-        activityTimeoutId = setTimeout(() => {
-          logWarn('[CoworkAgentRunner] Prompt timed out (no activity for 5 min), aborting');
-          abortedByTimeout = true;
-          controller.abort();
-        }, PROMPT_TIMEOUT_MS);
-      };
-
-      const recordStreamEvent = (eventType: string) => {
-        streamEventCounts.set(eventType, (streamEventCounts.get(eventType) ?? 0) + 1);
-      };
-
-      const getStreamEventSummary = () =>
-        Object.fromEntries(
-          Array.from(streamEventCounts.entries()).sort(([left], [right]) =>
-            left.localeCompare(right)
-          )
-        );
-
-      const emitTerminalError = (
-        errorText: string,
-        options: { abort?: boolean; includePartialText?: boolean } = {}
-      ): void => {
-        terminalErrorText = errorText;
-
-        let flushedThinking = '';
-        let flushedText = '';
-
-        if (options.includePartialText) {
-          const flushed = thinkParser.flush();
-          flushedThinking = flushed.thinking;
-          flushedText = flushed.text;
-        }
-
-        const emission = buildTerminalErrorEmissionDetails({
-          errorText,
-          streamedText,
-          flushedThinking,
-          flushedText,
-        });
-
-        if (emission.thinkingDelta) {
-          this.sendToRenderer({
-            type: 'stream.thinking',
-            payload: { sessionId: session.id, delta: emission.thinkingDelta },
-          });
-        }
-        if (emission.textDelta) {
-          this.sendPartial(session.id, emission.textDelta);
-        }
-
-        const partialText = emission.partialText ? sanitizeOutputPaths(emission.partialText) : '';
-        const messageText = buildTerminalErrorMessage(errorText, partialText);
-        streamedText = '';
-        this.sendToRenderer({
-          type: 'stream.partial',
-          payload: { sessionId: session.id, delta: '' },
-        });
-
+        // A terminal stream error not already covered by an intentional stop. A user
+        // cancel aborts the controller (with no flag set) and calls runtime.interrupt(),
+        // which can surface a late turn/failed — mirror the old subscribe guard and ignore
+        // any error once the turn has been intentionally aborted (cancel/timeout/loop guard).
+        if (controller.signal.aborted || abortedByTimeout || abortedByLoopGuard) return;
+        terminalErrorText = message;
+        abortedByStreamError = true;
         if (!hasEmittedError) {
           hasEmittedError = true;
           this.sendMessage(session.id, {
             id: uuidv4(),
             sessionId: session.id,
             role: 'assistant',
-            content: [{ type: 'text', text: messageText }],
+            content: [
+              { type: 'text', text: buildTerminalErrorMessage(toUserFacingErrorText(message), '') },
+            ],
             timestamp: Date.now(),
           });
         }
-
         this.sendTraceUpdate(session.id, thinkingStepId, {
           status: 'error',
           title: 'Request failed',
         });
-
-        if (options.abort && !controller.signal.aborted) {
-          try {
-            // Mark BEFORE calling abort() so AbortError handling preserves the
-            // 'Request failed' state instead of treating this as a user cancel.
-            abortedByStreamError = true;
-            controller.abort();
-          } catch (abortErr) {
-            logWarn('[CoworkAgentRunner] stream-error abort failed:', abortErr);
-          }
-        }
       };
 
-      const unsubscribe = piSession.subscribe((event) => {
-        try {
-          if (controller.signal.aborted) return;
+      // Activity-based timeout: interrupt the turn after 5 min with no codex events.
+      const PROMPT_TIMEOUT_MS = 5 * 60 * 1000;
+      let activityTimeoutId: ReturnType<typeof setTimeout> | undefined;
+      const resetActivityTimeout = () => {
+        if (activityTimeoutId) clearTimeout(activityTimeoutId);
+        activityTimeoutId = setTimeout(() => {
+          logWarn('[CoworkAgentRunner] Codex turn timed out (no activity for 5 min), interrupting');
+          abortedByTimeout = true;
+          controller.abort();
+          void runtime.interrupt(session.id).catch(() => {});
+        }, PROMPT_TIMEOUT_MS);
+      };
 
-          // Reset activity timeout on meaningful events
-          resetActivityTimeout();
-
-          if (event.type === 'message_update') {
-            const updateType = event.assistantMessageEvent.type;
-            recordStreamEvent(updateType);
-            if (updateType !== 'text_delta' && updateType !== 'thinking_delta') {
-              log(`[CoworkAgentRunner] Event: ${event.type} → ${updateType}`);
-            }
-          } else if (event.type === 'message_start') {
-            log(
-              '[CoworkAgentRunner] Event: message_start',
-              safeStringify(summarizeMessageForLog(event.message), 2)
-            );
-          } else if (event.type === 'message_end') {
-            log(
-              '[CoworkAgentRunner] Event: message_end',
-              safeStringify(
-                {
-                  message: summarizeMessageForLog(event.message),
-                  messageUpdateCounts: getStreamEventSummary(),
-                },
-                2
-              )
-            );
-          } else if (event.type === 'turn_end') {
-            log(`[CoworkAgentRunner] Event: ${event.type}`);
-          } else {
-            log(`[CoworkAgentRunner] Event: ${event.type}`);
-          }
-
-          switch (event.type) {
-            case 'message_update': {
-              if (controller.signal.aborted) break;
-              const ame = event.assistantMessageEvent;
-              if (ame.type === 'text_delta') {
-                markFirstStreamEvent(ame.type);
-                const parsed = thinkParser.push(ame.delta);
-                if (parsed.thinking) {
-                  this.sendToRenderer({
-                    type: 'stream.thinking',
-                    payload: { sessionId: session.id, delta: parsed.thinking },
-                  });
-                }
-                if (parsed.text) {
-                  streamedText += parsed.text;
-                  this.sendPartial(session.id, parsed.text);
-                }
-              } else if (ame.type === 'thinking_delta') {
-                markFirstStreamEvent(ame.type);
-                // Forward thinking delta to renderer for real-time display
-                this.sendToRenderer({
-                  type: 'stream.thinking',
-                  payload: { sessionId: session.id, delta: ame.delta },
-                });
-              } else if (ame.type === 'toolcall_start') {
-                markFirstStreamEvent(ame.type);
-                const partial = ame.partial;
-                const toolContent = partial?.content?.[ame.contentIndex];
-                const toolName = toolContent?.type === 'toolCall' ? toolContent.name : 'unknown';
-                const toolCallId = toolContent?.type === 'toolCall' ? toolContent.id : uuidv4();
-                const toolDisplayName = this.getToolDisplayName(toolName);
-                this.sendTraceStep(session.id, {
-                  id: toolCallId,
-                  type: 'tool_call',
-                  status: 'running',
-                  title: toolDisplayName,
-                  toolName,
-                  toolInput:
-                    toolContent?.type === 'toolCall'
-                      ? (toolContent.arguments as Record<string, unknown>) || {}
-                      : undefined,
-                  timestamp: Date.now(),
-                });
-              } else if (ame.type === 'done') {
-                // Some providers emit 'done' via message_update — we handle it
-                // in message_end below as a unified path for all providers.
-                log('[CoworkAgentRunner] message_update done event (handled in message_end)');
-              } else if (ame.type === 'error') {
-                markFirstStreamEvent(ame.type);
-                const errorDetail = JSON.stringify(ame.error?.content || 'no content');
-                logCtxError('[CoworkAgentRunner] pi-ai stream error:', ame.reason, errorDetail);
-                emitTerminalError(resolveAssistantStreamErrorText(ame), {
-                  abort: true,
-                  includePartialText: true,
-                });
-              }
-              break;
-            }
-
-            case 'message_end': {
-              // Unified handler: send the final assistant message to the renderer.
-              // Works for all providers (some emit 'done' via message_update, others don't).
-              if (controller.signal.aborted) break;
-
-              // Flush any buffered content from the think-tag parser
-              const flushed = thinkParser.flush();
-              if (flushed.thinking) {
-                this.sendToRenderer({
-                  type: 'stream.thinking',
-                  payload: { sessionId: session.id, delta: flushed.thinking },
-                });
-              }
-              if (flushed.text) {
-                streamedText += flushed.text;
-                this.sendPartial(session.id, flushed.text);
-              }
-
-              const msg = event.message;
-              if (process.env.COWORK_LOG_SDK_MESSAGES_FULL === '1') {
-                log('[CoworkAgentRunner] message_end raw message:', safeStringify(msg, 2));
-              }
-              const resolvedPayload = resolveMessageEndPayload({
-                message: msg as Parameters<typeof resolveMessageEndPayload>[0]['message'],
-                streamedText,
-              });
-              streamedText = resolvedPayload.nextStreamedText;
-              if (provider === 'ollama') {
-                log(
-                  '[CoworkAgentRunner] Ollama message_end diagnostics',
-                  safeStringify({
-                    sessionId: session.id,
-                    modelId: piModel.id,
-                    modelProvider: piModel.provider,
-                    usedSyntheticModel,
-                    receivedFirstStreamEvent,
-                    firstStreamLatencyMs: firstStreamEventAt
-                      ? firstStreamEventAt - promptStartedAt
-                      : null,
-                    stopReason: (msg as { stopReason?: unknown })?.stopReason ?? null,
-                    contentBlocks: Array.isArray((msg as { content?: unknown[] })?.content)
-                      ? ((msg as { content?: unknown[] }).content?.length ?? 0)
-                      : 0,
-                    emittedError: Boolean(resolvedPayload.errorText),
-                  })
-                );
-              }
-              if (resolvedPayload.errorText) {
-                emitTerminalError(resolvedPayload.errorText, { includePartialText: true });
-                break;
-              }
-              if (resolvedPayload.shouldEmitMessage) {
-                const contentBlocks: ContentBlock[] = [];
-                for (const block of resolvedPayload.effectiveContent) {
-                  if (block.type === 'text') {
-                    const { cleanText, artifacts } = extractArtifactsFromText(block.text);
-                    if (cleanText) {
-                      contentBlocks.push({ type: 'text', text: sanitizeOutputPaths(cleanText) });
-                    }
-                    if (artifacts.length > 0) {
-                      for (const step of buildArtifactTraceSteps(artifacts)) {
-                        this.sendTraceStep(session.id, step);
-                      }
-                    }
-                  } else if (block.type === 'toolCall') {
-                    const displayName = this.getToolDisplayName(block.name);
-                    contentBlocks.push({
-                      type: 'tool_use',
-                      id: block.id,
-                      name: block.name,
-                      displayName,
-                      input: block.arguments,
-                    });
-                  } else if (block.type === 'thinking') {
-                    // Include thinking blocks in the final message for UI display
-                    contentBlocks.push({
-                      type: 'thinking',
-                      thinking: block.thinking,
-                    });
-                  } else {
-                    // Unknown block type — pass through as text so content isn't silently lost
-                    const unknownBlock = block as { type?: string; text?: string };
-                    log(`[CoworkAgentRunner] Unknown content block type: ${unknownBlock.type}`);
-                    const text = unknownBlock.text || JSON.stringify(block);
-                    if (text) contentBlocks.push({ type: 'text', text });
-                  }
-                }
-                // Always clear partial text; send message even if only artifacts were extracted
-                this.sendToRenderer({
-                  type: 'stream.partial',
-                  payload: { sessionId: session.id, delta: '' },
-                });
-
-                // ── Loop guard layer 1: hash of this message's tool-call group ──
-                const toolUseDescriptors: ToolCallDescriptor[] = [];
-                for (const block of resolvedPayload.effectiveContent) {
-                  if (block.type === 'toolCall') {
-                    toolUseDescriptors.push({
-                      name: block.name || '',
-                      input: (block.arguments as Record<string, unknown>) || undefined,
-                    });
-                  }
-                }
-                if (toolUseDescriptors.length > 0) {
-                  handleLoopGuardDecision(
-                    loopGuard.recordAssistantMessage(toolUseDescriptors),
-                    'message_end'
-                  );
-                  if (controller.signal.aborted) break;
-                }
-
-                if (contentBlocks.length > 0) {
-                  const msgWithUsage = msg as { usage?: unknown };
-                  const tokenUsage = normalizeTokenUsage(msgWithUsage.usage);
-                  if (msgWithUsage.usage) {
-                    log(
-                      '[CoworkAgentRunner] normalized usage:',
-                      safeStringify(
-                        {
-                          raw: msgWithUsage.usage,
-                          normalized: tokenUsage,
-                        },
-                        2
-                      )
-                    );
-                  }
-                  const assistantMsg: Message = {
-                    id: uuidv4(),
-                    sessionId: session.id,
-                    role: 'assistant',
-                    content: contentBlocks,
-                    timestamp: Date.now(),
-                    api: piModel.api,
-                    provider: piModel.provider,
-                    model: piModel.id,
-                    tokenUsage,
-                  };
-                  this.sendMessage(session.id, assistantMsg);
-                }
-              }
-              break;
-            }
-
-            case 'tool_execution_start': {
-              logCtx(`[CoworkAgentRunner] Tool execution start: ${event.toolName}`);
-              // ── Loop guard layer 2: per-tool cumulative frequency ──
-              handleLoopGuardDecision(
-                loopGuard.recordToolInvocation(event.toolName),
-                'tool_execution_start'
-              );
-              break;
-            }
-
-            case 'tool_execution_end': {
-              if (controller.signal.aborted) break;
-              const toolCallId = event.toolCallId;
-              const isError = event.isError;
-              const normalizedToolResult = normalizeToolExecutionResultForUi(event.result);
-              const outputText = normalizedToolResult.content;
-              const toolDisplayName = this.getToolDisplayName(event.toolName);
-              this.sendTraceUpdate(session.id, toolCallId, {
-                status: isError ? 'error' : 'completed',
-                title: toolDisplayName,
-                toolName: event.toolName,
-                toolOutput: sanitizeOutputPaths(outputText).slice(0, 800),
-              });
-
-              // Send tool result message
-              const toolResultMsg: Message = {
-                id: uuidv4(),
-                sessionId: session.id,
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'tool_result',
-                    toolUseId: toolCallId,
-                    content: sanitizeOutputPaths(outputText),
-                    isError,
-                    ...(normalizedToolResult.images.length > 0
-                      ? { images: normalizedToolResult.images }
-                      : {}),
-                  },
-                ],
-                timestamp: Date.now(),
-              };
-              this.sendMessage(session.id, toolResultMsg);
-              break;
-            }
-
-            case 'agent_end': {
-              logCtx('[CoworkAgentRunner] Agent finished');
-              break;
-            }
-
-            case 'auto_compaction_start': {
-              log('[CoworkAgentRunner] Auto-compaction started, reason:', event.reason);
-              compactionStepId = `compaction-${Date.now()}`;
-              this.sendTraceStep(session.id, {
-                id: compactionStepId,
-                type: 'thinking',
-                status: 'running',
-                title: `Compacting context (${event.reason})...`,
-                timestamp: Date.now(),
-              });
-              break;
-            }
-
-            case 'auto_compaction_end': {
-              const status = event.aborted ? 'error' : event.errorMessage ? 'error' : 'completed';
-              const title = event.aborted
-                ? 'Context compaction aborted'
-                : event.errorMessage
-                  ? `Context compaction failed: ${event.errorMessage}`
-                  : 'Context compaction completed';
-              log(
-                '[CoworkAgentRunner] Auto-compaction ended:',
-                title,
-                'willRetry:',
-                event.willRetry
-              );
-
-              // Surface compaction result details to the renderer (skip if retrying)
-              if (event.result && !event.willRetry) {
-                const compactionDetails = event.result.details as
-                  | { readFiles?: string[]; modifiedFiles?: string[] }
-                  | undefined;
-                this.sendToRenderer({
-                  type: 'compaction.result',
-                  payload: {
-                    sessionId: session.id,
-                    summary: event.result.summary,
-                    tokensBefore: event.result.tokensBefore,
-                    readFiles: compactionDetails?.readFiles || [],
-                    modifiedFiles: compactionDetails?.modifiedFiles || [],
-                  },
-                });
-                log(
-                  '[CoworkAgentRunner] Compaction result surfaced:',
-                  JSON.stringify({
-                    summaryLen: event.result.summary.length,
-                    tokensBefore: event.result.tokensBefore,
-                    readFiles: compactionDetails?.readFiles?.length || 0,
-                    modifiedFiles: compactionDetails?.modifiedFiles?.length || 0,
-                  })
-                );
-              }
-
-              if (compactionStepId) {
-                this.sendTraceUpdate(session.id, compactionStepId, { status, title });
-                compactionStepId = undefined;
-              } else {
-                // Fallback: no matching start event, send as new step
-                this.sendTraceStep(session.id, {
-                  id: `compaction-end-${Date.now()}`,
-                  type: 'thinking',
-                  status,
-                  title,
-                  timestamp: Date.now(),
-                });
-              }
-              break;
-            }
-          }
-        } catch (subscribeErr) {
-          logError('[CoworkAgentRunner] Error in subscribe callback:', subscribeErr);
-          if (compactionStepId) {
-            this.sendTraceUpdate(session.id, compactionStepId, {
-              status: 'error',
-              title: 'Error during context compaction',
-            });
-            compactionStepId = undefined;
-          }
-          if (!hasEmittedError) {
-            hasEmittedError = true;
-            const errorText = toUserFacingErrorText(toErrorText(subscribeErr));
-            this.sendMessage(session.id, {
-              id: uuidv4(),
-              sessionId: session.id,
-              role: 'assistant',
-              content: [{ type: 'text', text: `**Error**: ${errorText}` }],
-              timestamp: Date.now(),
-            });
-          }
-        }
+      // Register the per-run context the singleton codex emitters consult by session id.
+      this.codexRunContexts.set(session.id, {
+        sanitizeOutputPaths,
+        loopGuard,
+        handleLoopGuardDecision,
+        markError,
+        onActivity: resetActivityTimeout,
       });
 
-      // Execute the prompt — unsubscribe in finally to prevent event listener leak
+      logTiming('before codex turn start', runStartTime);
       try {
         resetActivityTimeout();
-        if (provider === 'ollama') {
-          log(
-            '[CoworkAgentRunner] Starting Ollama prompt',
-            safeStringify({
-              sessionId: session.id,
-              modelId: piModel.id,
-              modelProvider: piModel.provider,
-              baseUrl: piModel.baseUrl || runtimeConfig.baseUrl || '',
-              usedSyntheticModel,
-              hasExplicitApiKey: Boolean(apiKey),
-              thinkingLevel,
-            })
-          );
+        await runtime.runTurn({
+          sessionId: session.id,
+          input: contextualPrompt,
+          model: modelConfig.model,
+          modelProvider: modelConfig.providerId,
+          cwd: effectiveCwd,
+          ...(effort ? { effort } : {}),
+          // System prompt seeds a NEW thread only; a warm thread already holds it.
+          developerInstructions: coworkAppendPrompt,
+          config: modelConfig.configOverrides,
+        });
+        // Turn completed — record the session as warm so the next turn reuses the codex
+        // thread (server-side history) and skips the <conversation_history> preamble.
+        this.codexSessionMeta.set(session.id, {
+          runtimeSignature: sessionRuntimeSignature,
+          skillsSignature,
+        });
+      } catch (turnErr: unknown) {
+        // runTurn rejects on turn/failed or an intentional interrupt (loop guard / timeout /
+        // user cancel / dispose). Only surface a fresh error when nothing already did.
+        if (abortedByTimeout || abortedByLoopGuard || abortedByStreamError || hasEmittedError) {
+          logCtx('[CoworkAgentRunner] Codex turn ended after an intentional stop');
+        } else if (controller.signal.aborted) {
+          logCtx('[CoworkAgentRunner] Codex turn ended after user cancel');
+        } else {
+          const errorText = toUserFacingErrorText(toErrorText(turnErr));
+          terminalErrorText = errorText;
+          hasEmittedError = true;
+          this.sendMessage(session.id, {
+            id: uuidv4(),
+            sessionId: session.id,
+            role: 'assistant',
+            content: [{ type: 'text', text: `**Error**: ${errorText}` }],
+            timestamp: Date.now(),
+          });
+          this.sendTraceUpdate(session.id, thinkingStepId, {
+            status: 'error',
+            title: 'Request failed',
+          });
         }
-        const promptResult = await piSession.prompt(contextualPrompt);
-        log(
-          '[CoworkAgentRunner] prompt() returned:',
-          JSON.stringify(promptResult ?? 'void').substring(0, 1000)
-        );
       } finally {
-        try {
-          unsubscribe();
-        } catch (e) {
-          logWarn('[CoworkAgentRunner] unsubscribe error:', e);
-        }
         if (activityTimeoutId) clearTimeout(activityTimeoutId);
-        if (ollamaColdStartTimerId) clearTimeout(ollamaColdStartTimerId);
+        this.codexRunContexts.delete(session.id);
       }
 
-      logTiming('agent prompt completed', runStartTime);
+      logTiming('codex turn completed', runStartTime);
 
-      // If the SDK swallowed the AbortError and returned void, detect timeout here
-      if (controller.signal.aborted && abortedByTimeout) {
-        logCtx('[CoworkAgentRunner] Aborted due to timeout (detected after prompt returned)');
-        const errorMsg: Message = {
+      // Timeout: surface the timeout message + trace state.
+      if (abortedByTimeout) {
+        logCtx('[CoworkAgentRunner] Aborted due to timeout');
+        this.sendMessage(session.id, {
           id: uuidv4(),
           sessionId: session.id,
           role: 'assistant',
           content: [{ type: 'text', text: '**请求超时**：长时间未收到响应，操作已中止。' }],
           timestamp: Date.now(),
-        };
-        this.sendMessage(session.id, errorMsg);
+        });
         this.sendTraceUpdate(session.id, thinkingStepId, {
           status: 'error',
           title: 'Request timed out',
         });
         return;
       }
-      // If the SDK swallowed the AbortError after a loop-guard abort, preserve
-      // the 'error' trace status that handleLoopGuardDecision already published.
-      // The user-facing message and trace step are already set; do not overwrite
-      // them with the default "Task completed" below.
+      // Loop-guard / stream-error already published their user-facing message + trace state.
       const abortDisposition = resolveAbortDisposition({
         abortedByTimeout,
         abortedByLoopGuard,
         abortedByStreamError,
       });
-      if (controller.signal.aborted && shouldPreserveExistingTrace(abortDisposition)) {
+      if (shouldPreserveExistingTrace(abortDisposition)) {
         logCtx(
-          `[CoworkAgentRunner] Aborted by ${abortDisposition === 'loop_guard' ? 'loop guard' : 'stream error'} (detected after prompt returned)`
+          `[CoworkAgentRunner] Turn stopped by ${abortDisposition === 'loop_guard' ? 'loop guard' : 'stream error'}`
         );
+        return;
+      }
+      // User cancel: mark the trace cancelled (no error message).
+      if (controller.signal.aborted) {
+        logCtx('[CoworkAgentRunner] Aborted by user');
+        this.sendTraceUpdate(session.id, thinkingStepId, {
+          status: 'completed',
+          title: 'Cancelled',
+        });
         return;
       }
       // Complete - update the initial thinking step
@@ -3135,50 +2247,29 @@ Tool routing:
   }
 
   /**
-   * Manually trigger context compaction for a session.
-   * Delegates to the SDK's AgentSession.compact() method.
-   *
-   * @returns CompactionResult if successful, null if no session cached
+   * Manually trigger codex-native context compaction for a session's thread. Codex owns
+   * the summarization; the resulting `thread/compacted` notification flows through the
+   * runtime → `onCompaction` emitter → `compaction.result` (reduced payload, open item a).
+   * The pi return shape is preserved for the interface but is always null now (there is no
+   * synchronous summary/tokensBefore to return, and custom instructions are unsupported).
    */
   async compact(
     sessionId: string,
-    customInstructions?: string
+    _customInstructions?: string
   ): Promise<{
     summary: string;
     firstKeptEntryId: string;
     tokensBefore: number;
     details?: unknown;
   } | null> {
-    const cached = this.piSessions.get(sessionId);
-    if (!cached) {
-      logWarn('[CoworkAgentRunner] No cached pi session for compact:', sessionId);
+    if (!this.codexRuntime) {
+      logWarn('[CoworkAgentRunner] No codex runtime for compact:', sessionId);
       return null;
     }
     log('[CoworkAgentRunner] Manual compact triggered for session:', sessionId);
     try {
-      const result = await cached.session.compact(customInstructions);
-      log(
-        '[CoworkAgentRunner] Manual compact completed:',
-        JSON.stringify({
-          summaryLen: result.summary.length,
-          tokensBefore: result.tokensBefore,
-        })
-      );
-      const compactionDetails = result.details as
-        | { readFiles?: string[]; modifiedFiles?: string[] }
-        | undefined;
-      this.sendToRenderer({
-        type: 'compaction.result',
-        payload: {
-          sessionId,
-          summary: result.summary,
-          tokensBefore: result.tokensBefore,
-          isManual: true,
-          readFiles: compactionDetails?.readFiles || [],
-          modifiedFiles: compactionDetails?.modifiedFiles || [],
-        },
-      });
-      return result;
+      await this.codexRuntime.compact(sessionId);
+      return null;
     } catch (err) {
       logError('[CoworkAgentRunner] compact error:', err);
       return null;
@@ -3186,31 +2277,21 @@ Tool routing:
   }
 
   /**
-   * Get current context usage for a session.
-   * Delegates to the SDK's AgentSession.getContextUsage() method.
-   *
-   * @returns ContextUsage { tokens, contextWindow, percent } or null
+   * Get current context usage for a session. Codex has no synchronous context-usage API,
+   * so this returns the last value aggregated from `thread/tokenUsage/updated`
+   * notifications (see the onTokenUsage emitter), or null if none seen yet.
    */
   getContextUsage(
     sessionId: string
   ): { tokens: number | null; contextWindow: number; percent: number | null } | null {
-    const cached = this.piSessions.get(sessionId);
-    if (!cached) {
-      return null;
-    }
-    try {
-      const usage = cached.session.getContextUsage();
-      log('[CoworkAgentRunner] getContextUsage:', sessionId, JSON.stringify(usage));
-      return usage ?? null;
-    } catch (err) {
-      logError('[CoworkAgentRunner] getContextUsage error:', err);
-      return null;
-    }
+    return this.codexContextUsage.get(sessionId) ?? null;
   }
 
   cancel(sessionId: string): void {
     const controller = this.activeControllers.get(sessionId);
     if (controller) controller.abort();
+    // Stop the in-flight codex turn on the shared app-server (no-op if no active turn).
+    void this.codexRuntime?.interrupt(sessionId).catch(() => {});
   }
 
   private sendTraceStep(sessionId: string, step: TraceStep): void {

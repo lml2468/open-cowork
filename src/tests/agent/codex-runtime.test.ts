@@ -348,7 +348,7 @@ describe('CodexRuntime', () => {
       method: TOOL_CALL_METHOD,
       params: { threadId: 'thread-1', tool: 'echo', arguments: { v: 42 } },
     });
-    expect(res).toEqual({ content_items: [{ type: 'text', text: 'got:42' }], success: true });
+    expect(res).toEqual({ contentItems: [{ type: 'inputText', text: 'got:42' }], success: true });
   });
 
   it('rejects an unhandled server-request method', async () => {

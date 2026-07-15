@@ -282,6 +282,10 @@ export class CodexRuntime {
     const existing = this.sessionToThread.get(options.sessionId);
     if (existing) return existing;
 
+    // Register host function tools for this thread's turns. Codex only calls tools it
+    // was told about at thread start; the bridge is (re)populated by the caller per turn.
+    const dynamicTools = this.toolBridge.buildDynamicToolSpecs();
+
     const params: CodexThreadStartParams = {
       approvalPolicy: this.approvalPolicy,
       sandbox: this.sandbox,
@@ -293,6 +297,7 @@ export class CodexRuntime {
         ? { developerInstructions: options.developerInstructions }
         : {}),
       ...(options.config ? { config: options.config } : {}),
+      ...(dynamicTools.length > 0 ? { dynamicTools } : {}),
     };
 
     const res = await this.client.threadStart(params);
