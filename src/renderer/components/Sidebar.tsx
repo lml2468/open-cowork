@@ -16,9 +16,7 @@ import {
   ListChecks,
   Check,
   Sparkles,
-  GraduationCap,
   Clock3,
-  Folder,
   Plug,
   MessageSquarePlus,
 } from 'lucide-react';
@@ -28,6 +26,9 @@ import type { ActiveView } from '../store';
 import { EmptyState } from './EmptyState';
 
 import sidebarLogoSrc from '../assets/logo.png';
+
+const IS_MAC = typeof window !== 'undefined' && window.electronAPI?.platform === 'darwin';
+const searchShortcut = IS_MAC ? '⌘K' : 'Ctrl K';
 
 type SessionGroup = {
   key: string;
@@ -51,6 +52,7 @@ export function Sidebar() {
   const showSettings = useAppStore((s) => s.showSettings);
   const activeView = useAppStore((s) => s.activeView);
   const setActiveView = useAppStore((s) => s.setActiveView);
+  const setShowGlobalSearch = useAppStore((s) => s.setShowGlobalSearch);
   const {
     deleteSession,
     batchDeleteSessions,
@@ -68,9 +70,7 @@ export function Sidebar() {
   const navItems: { id: ActiveView; label: string; icon: LucideIcon }[] = useMemo(
     () => [
       { id: 'skills', label: t('nav.skills'), icon: Sparkles },
-      { id: 'experts', label: t('nav.experts'), icon: GraduationCap },
       { id: 'tasks', label: t('nav.tasks'), icon: Clock3 },
-      { id: 'files', label: t('nav.files'), icon: Folder },
       { id: 'connectors', label: t('nav.connectors'), icon: Plug },
     ],
     [t]
@@ -276,6 +276,13 @@ export function Sidebar() {
           >
             <Plus className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => setShowGlobalSearch(true)}
+            className="icon-btn w-9 h-9"
+            title={t('search.open')}
+          >
+            <SearchIcon className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="flex-1 flex flex-col items-center gap-1.5 px-3 py-4">
@@ -348,6 +355,15 @@ export function Sidebar() {
         >
           <Plus className="w-4 h-4 text-text-secondary flex-shrink-0" />
           <span className="text-body-sm font-medium">{t('sidebar.newTask')}</span>
+        </button>
+
+        <button
+          onClick={() => setShowGlobalSearch(true)}
+          className="mt-2 w-full flex items-center gap-2 rounded-xl bg-background/40 px-3 py-2 text-left text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors"
+        >
+          <SearchIcon className="w-4 h-4 text-text-muted flex-shrink-0" />
+          <span className="text-body-sm">{t('search.open')}</span>
+          <kbd className="ml-auto text-caption text-text-muted font-sans">{searchShortcut}</kbd>
         </button>
 
         {sessions.length > 0 && (

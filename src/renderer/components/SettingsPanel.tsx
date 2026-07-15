@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   X,
   Settings,
-  Plug,
   Shield,
-  Package,
-  Clock3,
   Wifi,
   AlertCircle,
   Globe,
@@ -18,49 +15,18 @@ import { RemoteControlPanel } from './RemoteControlPanel';
 import { useAppStore } from '../store';
 import { SettingsAPI } from './settings/SettingsAPI';
 import { SettingsSandbox } from './settings/SettingsSandbox';
-import { SettingsConnectors } from './settings/SettingsConnectors';
-import { SettingsSkills } from './settings/SettingsSkills';
-import { SettingsSchedule } from './settings/SettingsSchedule';
 import { SettingsGeneral } from './settings/SettingsGeneral';
 import { SettingsLogs } from './settings/SettingsLogs';
 import { SettingsMemory } from './settings/SettingsMemory';
 
 interface SettingsPanelProps {
   onClose: () => void;
-  initialTab?:
-    | 'api'
-    | 'sandbox'
-    | 'connectors'
-    | 'skills'
-    | 'memory'
-    | 'schedule'
-    | 'remote'
-    | 'logs'
-    | 'general';
+  initialTab?: 'api' | 'sandbox' | 'memory' | 'remote' | 'logs' | 'general';
 }
 
-type TabId =
-  | 'api'
-  | 'sandbox'
-  | 'connectors'
-  | 'skills'
-  | 'memory'
-  | 'schedule'
-  | 'remote'
-  | 'logs'
-  | 'general';
+type TabId = 'api' | 'sandbox' | 'memory' | 'remote' | 'logs' | 'general';
 
-const VALID_TABS = new Set<TabId>([
-  'api',
-  'sandbox',
-  'connectors',
-  'skills',
-  'memory',
-  'schedule',
-  'remote',
-  'logs',
-  'general',
-]);
+const VALID_TABS = new Set<TabId>(['api', 'sandbox', 'memory', 'remote', 'logs', 'general']);
 
 export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProps) {
   const { t } = useTranslation();
@@ -116,28 +82,10 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
       description: t('settings.sandboxDesc'),
     },
     {
-      id: 'connectors' as TabId,
-      label: t('settings.connectors'),
-      icon: Plug,
-      description: t('settings.connectorsDesc'),
-    },
-    {
-      id: 'skills' as TabId,
-      label: t('settings.skills'),
-      icon: Package,
-      description: t('settings.skillsDesc'),
-    },
-    {
       id: 'memory' as TabId,
       label: t('settings.memory'),
       icon: BrainCircuit,
       description: t('settings.memoryDesc'),
-    },
-    {
-      id: 'schedule' as TabId,
-      label: t('settings.schedule'),
-      icon: Clock3,
-      description: t('settings.scheduleDesc'),
     },
     {
       id: 'remote' as TabId,
@@ -246,21 +194,8 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
             <div className={activeTab === 'sandbox' ? '' : 'hidden'}>
               {viewedTabs.has('sandbox') && <SettingsSandbox />}
             </div>
-            <div className={activeTab === 'connectors' ? '' : 'hidden'}>
-              {viewedTabs.has('connectors') && (
-                <SettingsConnectors isActive={activeTab === 'connectors'} />
-              )}
-            </div>
-            <div className={activeTab === 'skills' ? '' : 'hidden'}>
-              {viewedTabs.has('skills') && <SettingsSkills isActive={activeTab === 'skills'} />}
-            </div>
             <div className={activeTab === 'memory' ? '' : 'hidden'}>
               {viewedTabs.has('memory') && <SettingsMemory />}
-            </div>
-            <div className={activeTab === 'schedule' ? '' : 'hidden'}>
-              {viewedTabs.has('schedule') && (
-                <SettingsSchedule isActive={activeTab === 'schedule'} />
-              )}
             </div>
             <div className={activeTab === 'remote' ? '' : 'hidden'}>
               {viewedTabs.has('remote') && <RemoteControlPanel isActive={activeTab === 'remote'} />}

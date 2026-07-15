@@ -2,22 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
-// SettingsPanel was split — schedule content lives in settings/SettingsSchedule.tsx
+// SettingsPanel was split — schedule content lives in settings/SettingsSchedule.tsx.
+// Per the B4 IA consolidation, the schedule management surface is reached through
+// the Tasks nav page (single source of truth) rather than a duplicated settings tab.
 const settingsPanelPath = path.resolve(process.cwd(), 'src/renderer/components/SettingsPanel.tsx');
 const settingsDir = path.resolve(process.cwd(), 'src/renderer/components/settings');
+const navDir = path.resolve(process.cwd(), 'src/renderer/components/nav');
 const settingsPanelContent = [
   readFileSync(settingsPanelPath, 'utf8'),
   ...readdirSync(settingsDir).map((f) => readFileSync(path.join(settingsDir, f), 'utf8')),
+  ...readdirSync(navDir).map((f) => readFileSync(path.join(navDir, f), 'utf8')),
 ].join('\n');
 
 describe('SettingsPanel schedule tab entry', () => {
-  it('renders schedule tab id', () => {
-    expect(settingsPanelContent).toContain("id: 'schedule' as TabId");
+  it('surfaces schedule management via the Tasks nav page', () => {
+    expect(settingsPanelContent).toContain('<SettingsSchedule');
   });
 
   it('uses schedule i18n keys', () => {
-    expect(settingsPanelContent).toContain("t('settings.schedule'");
     expect(settingsPanelContent).toContain("t('settings.scheduleDesc'");
+    expect(settingsPanelContent).toContain("t('nav.tasks')");
   });
 
   it('handles null nextRunAt explicitly', () => {

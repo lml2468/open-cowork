@@ -39,7 +39,7 @@ describe('activeView routing', () => {
   });
 
   it('new task (setActiveSession(null)) resets to home', () => {
-    useAppStore.getState().setActiveView('files');
+    useAppStore.getState().setActiveView('skills');
     useAppStore.getState().setActiveSession(null);
 
     const state = useAppStore.getState();
@@ -48,13 +48,13 @@ describe('activeView routing', () => {
   });
 
   it('opening/closing settings preserves the active nav view (overlay semantics)', () => {
-    useAppStore.getState().setActiveView('experts');
+    useAppStore.getState().setActiveView('tasks');
     // setActiveView already cleared showSettings; now open settings as an overlay
     useAppStore.getState().setShowSettings(true);
-    expect(useAppStore.getState().activeView).toBe('experts');
+    expect(useAppStore.getState().activeView).toBe('tasks');
 
     // closing settings returns to the same nav view
     useAppStore.getState().setShowSettings(false);
-    expect(useAppStore.getState().activeView).toBe('experts');
+    expect(useAppStore.getState().activeView).toBe('tasks');
   });
 });

@@ -21,16 +21,10 @@ export type GlobalNoticeAction = 'open_api_settings';
  * (driven by activeSessionId); the rest are nav-rail destinations rendered
  * full-width. Settings remains a separate overlay flag (showSettings).
  */
-export type ActiveView = 'home' | 'skills' | 'connectors' | 'tasks' | 'files' | 'experts';
+export type ActiveView = 'home' | 'skills' | 'connectors' | 'tasks';
 
 /** All nav-rail views (excludes 'home'), for whitelist checks. */
-export const NAV_VIEWS: readonly ActiveView[] = [
-  'skills',
-  'connectors',
-  'tasks',
-  'files',
-  'experts',
-];
+export const NAV_VIEWS: readonly ActiveView[] = ['skills', 'connectors', 'tasks'];
 
 export interface GlobalNotice {
   id: string;
@@ -126,6 +120,7 @@ interface AppState {
   showSettings: boolean;
   settingsTab: string | null;
   activeView: ActiveView;
+  showGlobalSearch: boolean;
 
   // Permission
   pendingPermission: PermissionRequest | null;
@@ -195,6 +190,7 @@ interface AppState {
   setShowSettings: (show: boolean) => void;
   setSettingsTab: (tab: string | null) => void;
   setActiveView: (view: ActiveView) => void;
+  setShowGlobalSearch: (show: boolean) => void;
 
   setPendingPermission: (permission: PermissionRequest | null) => void;
 
@@ -275,6 +271,7 @@ export const useAppStore = create<AppState>((set) => ({
   showSettings: false,
   settingsTab: null,
   activeView: 'home',
+  showGlobalSearch: false,
   pendingPermission: null,
   pendingSudoPassword: null,
   settings: defaultSettings,
@@ -595,6 +592,8 @@ export const useAppStore = create<AppState>((set) => ({
   // Opening a nav destination closes Settings but preserves activeSessionId so
   // returning to chat is just setActiveView('home').
   setActiveView: (view) => set({ activeView: view, showSettings: false }),
+
+  setShowGlobalSearch: (show) => set({ showGlobalSearch: show }),
 
   // Permission actions
   setPendingPermission: (permission) => set({ pendingPermission: permission }),

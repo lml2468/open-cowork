@@ -20,8 +20,8 @@ interface EmptyStateProps {
 
 /**
  * Reusable friendly empty-state: centered line-icon + encouragement + one CTA.
- * Mirrors the ComingSoonPage composition so default (unconfigured) surfaces read
- * as intentional rather than as a blank void.
+ * Gives default (unconfigured) surfaces an intentional look rather than a blank
+ * void.
  */
 export const EmptyState = memo(function EmptyState({
   icon: Icon,
