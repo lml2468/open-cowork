@@ -9,7 +9,7 @@
 <!-- @@@auto:current-status -->
 
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 2
+- **Total Sessions**: 3
 - **Last Active**: 2026-07-15
 <!-- @@@/auto:current-status -->
 
@@ -21,7 +21,7 @@
 
 | File           | Lines | Status |
 | -------------- | ----- | ------ |
-| `journal-1.md` | ~77   | Active |
+| `journal-1.md` | ~113  | Active |
 
 <!-- @@@/auto:active-documents -->
 
@@ -33,6 +33,7 @@
 
 | #   | Date       | Title                                                | Commits                                                          | Branch |
 | --- | ---------- | ---------------------------------------------------- | ---------------------------------------------------------------- | ------ |
+| 3   | 2026-07-15 | Codex-native MCP servers + elicitation approval      | `174f3a5`, `3443219`, `9e2cdd1`, `c661a86`, `3b66f3c`            | `main` |
 | 2   | 2026-07-15 | Fix API config (Responses-only) + de-brand Claude UI | `5f6fe3b`, `a1ac041`                                             | `main` |
 | 1   | 2026-07-15 | Codex runtime migration — Phase 6 (remove pi)        | `fe1dba2`, `fd5c8b8`, `2e1828e`, `5844c56`, `d32b2a1`, `8d2ee42` | `main` |
 
