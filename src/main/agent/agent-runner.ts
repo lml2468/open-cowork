@@ -1682,21 +1682,34 @@ ${hints.join('\n')}
         sessionMeta = undefined;
       }
       const isColdStart = !sessionMeta;
+      const runtime = this.ensureCodexRuntime();
 
       // Resume path: on a cold start, if this session has a persisted codex thread created
       // under the SAME runtime signature (survives app restarts — codexSessionMeta is
-      // in-memory), resume it. codex restores the thread's server-side history, so we skip
-      // the hand-built <conversation_history> preamble. (Optimistic: if resume fails inside
-      // runTurn it falls back to a fresh thread; preamble-on-resume-miss is a follow-up.)
-      const canResumeThread =
+      // in-memory), try to resume it NOW, authoritatively, before the turn is built. On
+      // success codex restores the thread's server-side history, so we skip the hand-built
+      // <conversation_history> preamble; on a resume MISS we fall through and build the
+      // preamble below, so history is never lost (the miss then starts a fresh thread inside
+      // runTurn). Host `dynamic_tools` can't be re-sent on resume — whether they survive
+      // depends on codex restoring them from the rollout (see the live resume gate).
+      let resumedThread = false;
+      if (
         isColdStart &&
         !!session.openaiThreadId &&
-        session.codexRuntimeSignature === sessionRuntimeSignature;
-      if (canResumeThread) {
-        logCtx(
-          '[CoworkAgentRunner] Resuming persisted codex thread (skipping history preamble):',
-          session.openaiThreadId
-        );
+        session.codexRuntimeSignature === sessionRuntimeSignature
+      ) {
+        resumedThread = await runtime.tryResumeThread(session.id, session.openaiThreadId, {
+          model: modelConfig.model,
+          modelProvider: modelConfig.providerId,
+          cwd: effectiveCwd,
+          config: { ...modelConfig.configOverrides, ...mcpServersConfig },
+        });
+        if (resumedThread) {
+          logCtx(
+            '[CoworkAgentRunner] Resumed persisted codex thread (skipping history preamble):',
+            session.openaiThreadId
+          );
+        }
       }
 
       const extensionResult = this.extensionManager
@@ -1709,7 +1722,7 @@ ${hints.join('\n')}
         : { promptPrefix: undefined, customTools: [] };
 
       let contextualPrompt = prompt;
-      if (isColdStart && !canResumeThread) {
+      if (isColdStart && !resumedThread) {
         // Cold start: inject recent history into prompt if available
         const conversationMessages = existingMessages.filter(
           (msg) => msg.role === 'user' || msg.role === 'assistant'
@@ -1997,7 +2010,6 @@ Tool routing:
       // Enrich process.env.PATH for build mode so bundled/user executables resolve.
       await enrichProcessPathForBuild();
 
-      const runtime = this.ensureCodexRuntime();
       this.codexToolBridge?.setTools(adaptCustomToolsToCodexHostTools(customTools));
 
       // ── Loop guard: protect against runaway tool-call loops ──
@@ -2110,9 +2122,8 @@ Tool routing:
           // System prompt seeds a NEW thread only; a warm thread already holds it.
           developerInstructions: coworkAppendPrompt,
           config: { ...modelConfig.configOverrides, ...mcpServersConfig },
-          ...(canResumeThread && session.openaiThreadId
-            ? { resumeThreadId: session.openaiThreadId }
-            : {}),
+          // Resume (if any) already happened via tryResumeThread above, which mapped the
+          // session→thread; runTurn's ensureThread reuses that mapping. No resumeThreadId here.
         });
         // Turn completed — record the session as warm so the next turn reuses the codex
         // thread (server-side history) and skips the <conversation_history> preamble.

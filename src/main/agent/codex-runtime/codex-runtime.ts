@@ -119,6 +119,16 @@ export interface CodexRunTurnOptions {
   resumeThreadId?: string;
 }
 
+/** Subset of turn options relevant to a `thread/resume` RPC (no history preamble involved). */
+export interface ResumeThreadOptions {
+  model?: string;
+  modelProvider?: string;
+  cwd?: string;
+  config?: Record<string, unknown>;
+  baseInstructions?: string;
+  developerInstructions?: string;
+}
+
 export interface CodexTurnResult {
   turnId: string | null;
 }
@@ -306,39 +316,80 @@ export class CodexRuntime {
     if (existing) return { threadId: existing, resumed: false };
 
     if (options.resumeThreadId) {
-      try {
-        const res = await this.client.threadResume({
-          threadId: options.resumeThreadId,
-          approvalPolicy: this.approvalPolicy,
-          sandbox: this.sandbox,
-          ...(options.model ? { model: options.model } : {}),
-          ...(options.modelProvider ? { modelProvider: options.modelProvider } : {}),
-          ...(options.cwd ? { cwd: options.cwd } : {}),
-          ...(options.baseInstructions ? { baseInstructions: options.baseInstructions } : {}),
-          ...(options.developerInstructions
-            ? { developerInstructions: options.developerInstructions }
-            : {}),
-          ...(options.config ? { config: options.config } : {}),
-        });
-        const threadId = res.thread.id;
-        this.sessionToThread.set(options.sessionId, threadId);
-        this.threadToSession.set(threadId, options.sessionId);
-        this.logger.log(
-          `[CodexRuntime] resumed thread ${threadId} for session ${options.sessionId}`
-        );
-        return { threadId, resumed: true };
-      } catch (err: unknown) {
-        // Thread evicted / not found / resume error → fall back to a fresh thread. The caller
-        // then rebuilds the <conversation_history> preamble so history is not lost.
-        this.logger.warn(
-          '[CodexRuntime] thread/resume failed; starting a fresh thread:',
-          err instanceof Error ? err.message : String(err)
-        );
+      const resolved = await this.resumeThreadInternal(options.resumeThreadId, options);
+      if (resolved) {
+        this.mapResumedThread(options.sessionId, resolved);
+        return { threadId: resolved, resumed: true };
       }
+      // Resume failed (thread evicted / not found) → fall through to a fresh thread. The caller
+      // must supply the <conversation_history> preamble in this case; see tryResumeThread.
     }
 
     const threadId = await this.startFreshThread(options);
     return { threadId, resumed: false };
+  }
+
+  /**
+   * Authoritatively attempt `thread/resume` for a session BEFORE the turn is built, so the
+   * caller can decide — based on the real outcome, never optimistically — whether to skip the
+   * hand-built `<conversation_history>` preamble (resume succeeded, codex holds the history) or
+   * build it (resume missed → a fresh thread starts, history must be re-injected). Returns true
+   * and maps session→thread on success; on failure returns false and maps nothing, so the
+   * subsequent runTurn starts a fresh thread.
+   *
+   * NOTE: `thread/resume` has no field for host `dynamic_tools`, so they are not re-sent here.
+   * Whether host tools (memory/config/subagent) work on a resumed thread depends on codex
+   * restoring their specs from the thread's on-disk rollout — that is validated by the live
+   * resume gate, not guaranteed by this code.
+   */
+  async tryResumeThread(
+    sessionId: string,
+    threadId: string,
+    options: ResumeThreadOptions
+  ): Promise<boolean> {
+    await this.ensureStarted();
+    if (this.sessionToThread.has(sessionId)) return true;
+    const resolved = await this.resumeThreadInternal(threadId, options);
+    if (!resolved) return false;
+    this.mapResumedThread(sessionId, resolved);
+    return true;
+  }
+
+  /** Issue `thread/resume`; return the resolved threadId, or null on any failure. Maps nothing. */
+  private async resumeThreadInternal(
+    threadId: string,
+    options: ResumeThreadOptions
+  ): Promise<string | null> {
+    try {
+      const res = await this.client.threadResume({
+        threadId,
+        approvalPolicy: this.approvalPolicy,
+        sandbox: this.sandbox,
+        ...(options.model ? { model: options.model } : {}),
+        ...(options.modelProvider ? { modelProvider: options.modelProvider } : {}),
+        ...(options.cwd ? { cwd: options.cwd } : {}),
+        ...(options.baseInstructions ? { baseInstructions: options.baseInstructions } : {}),
+        ...(options.developerInstructions
+          ? { developerInstructions: options.developerInstructions }
+          : {}),
+        ...(options.config ? { config: options.config } : {}),
+      });
+      return res.thread.id;
+    } catch (err: unknown) {
+      // Thread evicted / not found / resume error → caller falls back to a fresh thread and
+      // rebuilds the <conversation_history> preamble so history is not lost.
+      this.logger.warn(
+        '[CodexRuntime] thread/resume failed; starting a fresh thread with history preamble:',
+        err instanceof Error ? err.message : String(err)
+      );
+      return null;
+    }
+  }
+
+  private mapResumedThread(sessionId: string, threadId: string): void {
+    this.sessionToThread.set(sessionId, threadId);
+    this.threadToSession.set(threadId, sessionId);
+    this.logger.log(`[CodexRuntime] resumed thread ${threadId} for session ${sessionId}`);
   }
 
   /** Start a brand-new codex thread (with host `dynamic_tools` registered) and map it. */

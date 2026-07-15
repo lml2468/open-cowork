@@ -211,6 +211,53 @@ describe('CodexRuntime', () => {
     });
   });
 
+  describe('tryResumeThread (authoritative pre-turn resume)', () => {
+    it('resumes and maps the session→thread, returning true', async () => {
+      const client = new FakeCodexClient();
+      const { runtime } = makeRuntime(client);
+
+      const ok = await runtime.tryResumeThread('s1', 'persisted-thread', {
+        model: 'gpt',
+        cwd: '/w',
+      });
+
+      expect(ok).toBe(true);
+      expect(client.threadResumeCalls).toHaveLength(1);
+      expect(client.threadStartCalls).toHaveLength(0);
+      // Mapped so a later runTurn reuses the resumed thread instead of starting fresh.
+      expect(runtime.getThreadId('s1')).toBe('persisted-thread');
+    });
+
+    it('returns false and maps nothing when resume fails (caller rebuilds preamble)', async () => {
+      const client = new FakeCodexClient();
+      client.resumeShouldFail = true;
+      const { runtime } = makeRuntime(client);
+
+      const ok = await runtime.tryResumeThread('s1', 'evicted-thread', {});
+
+      expect(ok).toBe(false);
+      expect(client.threadResumeCalls).toHaveLength(1);
+      // No fresh thread is started here — that happens later inside runTurn.
+      expect(client.threadStartCalls).toHaveLength(0);
+      expect(runtime.getThreadId('s1')).toBeUndefined();
+    });
+
+    it('short-circuits to true without a resume RPC when the session is already warm', async () => {
+      const client = new FakeCodexClient();
+      const { runtime } = makeRuntime(client);
+
+      // Warm the session with a fresh thread first.
+      await runtime.prepareThread({ sessionId: 's1', input: '' });
+      expect(client.threadStartCalls).toHaveLength(1);
+
+      const ok = await runtime.tryResumeThread('s1', 'persisted-thread', {});
+
+      expect(ok).toBe(true);
+      expect(client.threadResumeCalls).toHaveLength(0);
+      expect(runtime.getThreadId('s1')).toBe(client.threadId);
+    });
+  });
+
   it('starts the client, opens a thread, and streams a turn to the emitters', async () => {
     const client = new FakeCodexClient();
     const { runtime, emitters } = makeRuntime(client);

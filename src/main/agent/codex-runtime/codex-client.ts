@@ -92,8 +92,10 @@ export interface CodexThreadStartResponse {
 /**
  * Params for `thread/resume` — reload a persisted thread from codex's on-disk rollout by id
  * and rejoin it, restoring its server-side history (text + reasoning + tool calls). Unlike
- * `thread/start`, there is **no `dynamicTools` field** (host tools are re-registered by the
- * runtime after resume, see codex-runtime). Config overrides (incl. `mcp_servers`) re-apply.
+ * `thread/start`, there is **no `dynamicTools` field**: host tools cannot be re-registered on
+ * resume. Host tools work on a resumed thread only if codex restored their specs from the
+ * rollout (validated by the live resume gate, not guaranteed here). Config overrides (incl.
+ * `mcp_servers`) do re-apply.
  */
 export interface CodexThreadResumeParams {
   threadId: string;
