@@ -12,8 +12,6 @@
  *
  * Dependencies: session-manager, mcp-manager, config-store, skills-manager, codex-runtime
  */
-import { Type } from '@sinclair/typebox';
-import { type AgentRuntimeCustomTool } from '../extensions/agent-runtime-extension';
 import type { Session, Message, TraceStep, ServerEvent, ContentBlock } from '../../renderer/types';
 import { v4 as uuidv4 } from 'uuid';
 import { decidePermission, rememberAlwaysAllow } from '../config/permission-rules-store';
@@ -50,7 +48,7 @@ import {
   type LoopGuardDecision,
   type ToolCallDescriptor,
 } from './agent-runner-loop-guard';
-import { normalizeMcpToolResultForModel } from './tool-result-utils';
+
 import { CodexClient, type CodexLogger } from './codex-runtime/codex-client';
 import { CodexRuntime, type CodexRuntimeEmitters } from './codex-runtime/codex-runtime';
 import { CodexPermissionBridge } from './codex-runtime/codex-permission-bridge';
@@ -58,6 +56,7 @@ import { CodexToolBridge } from './codex-runtime/codex-tool-bridge';
 import { CodexEventTranslator } from './codex-runtime/codex-event-translator';
 import { adaptPiToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter';
 import { buildCodexModelConfig } from './codex-runtime/codex-model-config';
+import { buildCodexMcpServersConfig } from './codex-runtime/codex-mcp-config';
 
 // Virtual workspace path shown to the model (hides real sandbox path)
 const VIRTUAL_WORKSPACE_PATH = '/workspace';
@@ -367,40 +366,6 @@ async function enrichProcessPathForBuild(): Promise<void> {
  * Bridge MCP tools from MCPManager into ToolDefinition[] format for the agent SDK.
  * Each MCP tool becomes a customTool whose execute() delegates to mcpManager.callTool().
  */
-function buildMcpCustomTools(mcpManager: MCPManager): AgentRuntimeCustomTool[] {
-  const mcpTools = mcpManager.getTools();
-  return mcpTools.map((mcpTool) => {
-    // Wrap the raw JSON Schema inputSchema as a TypeBox TSchema
-    const parameters = Type.Unsafe<Record<string, unknown>>(
-      mcpTool.inputSchema as Record<string, unknown>
-    );
-
-    const toolDef: AgentRuntimeCustomTool = {
-      name: mcpTool.name,
-      label: `${mcpTool.serverName} → ${mcpTool.originalName || mcpTool.name}`,
-      description: mcpTool.description || `MCP tool from ${mcpTool.serverName}`,
-      parameters,
-      async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-        try {
-          const result = await mcpManager.callTool(mcpTool.name, params as Record<string, unknown>);
-          const normalizedResult = normalizeMcpToolResultForModel(result);
-          return {
-            content: [{ type: 'text' as const, text: normalizedResult.text }],
-            details:
-              normalizedResult.images.length > 0
-                ? { openCoworkImages: normalizedResult.images }
-                : undefined,
-          };
-        } catch (err: unknown) {
-          logError(`[CoworkAgentRunner] MCP tool ${mcpTool.name} failed:`, err);
-          throw err instanceof Error ? err : new Error(String(err));
-        }
-      },
-    };
-    return toolDef;
-  });
-}
-
 /**
  * Get shell environment with proper PATH (including node, npm, etc.)
  * GUI apps on macOS don't inherit shell PATH, so we need to extract it
@@ -1502,6 +1467,13 @@ ${hints.join('\n')}
         process.env[key] = value;
       }
 
+      // Register enabled MCP servers with codex NATIVELY (codex owns the `mcp__` tool
+      // namespace and spawns/connects the servers itself), rather than proxying each MCP
+      // tool as a host `dynamic_tools` entry. Flattened into `mcp_servers.*` config that
+      // rides the same thread-config channel as `model_providers.*`. Included in the
+      // runtime signature below so adding/removing a server re-creates the codex thread.
+      const mcpServersConfig = buildCodexMcpServersConfig(mcpConfigStore.getEnabledServers());
+
       // Context window drives the cold-start history budget + the config summary prompt.
       const codexContextWindow =
         runtimeConfig.contextWindow && runtimeConfig.contextWindow > 0
@@ -1620,6 +1592,8 @@ ${hints.join('\n')}
         baseUrl: modelConfig.provider.base_url,
         hasKey: Object.keys(modelConfig.env).length > 0,
         effectiveCwd,
+        // Re-create the thread when the MCP server set changes so codex reconnects.
+        mcpServers: Object.keys(mcpServersConfig).sort().join('|'),
       });
       const skillPaths = await this.resolveSkillPaths(session.id);
       const skillsSignature = JSON.stringify(skillPaths);
@@ -1924,17 +1898,12 @@ Tool routing:
 
       logTiming('before codex turn', runStartTime);
 
-      // Bridge extension + MCP custom tools into codex host `dynamic_tools`. Rebuilt per
-      // turn (open item d) so newly added / removed tools take effect on the next turn.
-      const mcpCustomTools = this.mcpManager ? buildMcpCustomTools(this.mcpManager) : [];
+      // Only the app's OWN host tools (memory / config / spawn_subagent) go through codex
+      // `dynamic_tools`. MCP server tools are NOT proxied here — codex connects to the MCP
+      // servers natively (see mcpServersConfig / the `mcp_servers.*` thread config), which
+      // avoids the reserved `mcp__` dynamic-tool namespace collision.
       const extensionCustomTools = extensionResult.customTools || [];
-      const customTools = [...mcpCustomTools, ...extensionCustomTools];
-      if (mcpCustomTools.length > 0) {
-        log(
-          `[CoworkAgentRunner] Registered ${mcpCustomTools.length} MCP tools as codex host tools:`,
-          mcpCustomTools.map((t) => t.name).join(', ')
-        );
-      }
+      const customTools = [...extensionCustomTools];
       if (extensionCustomTools.length > 0) {
         log(
           `[CoworkAgentRunner] Registered ${extensionCustomTools.length} extension tools as codex host tools:`,
@@ -2057,7 +2026,7 @@ Tool routing:
           ...(effort ? { effort } : {}),
           // System prompt seeds a NEW thread only; a warm thread already holds it.
           developerInstructions: coworkAppendPrompt,
-          config: modelConfig.configOverrides,
+          config: { ...modelConfig.configOverrides, ...mcpServersConfig },
         });
         // Turn completed — record the session as warm so the next turn reuses the codex
         // thread (server-side history) and skips the <conversation_history> preamble.
