@@ -42,12 +42,14 @@ export class MemoryService {
   buildPromptPrefix(session: { cwd?: string }, _prompt: string): string {
     if (!this.isEnabled()) return '';
 
+    // Scaffold ONLY the global root (under userData). Do NOT create the project dir — that
+    // would drop an untracked ./memory/ into every workspace the user opens (git clutter).
+    // The agent is given the project path and creates it on demand when it decides to write
+    // project-scoped memory; we only read a project MEMORY.md if one already exists.
     const globalRoot = getGlobalMemoryRoot();
     ensureMemoryScaffold(globalRoot);
 
     const projectRoot = getProjectMemoryRoot(session.cwd);
-    if (projectRoot) ensureMemoryScaffold(projectRoot);
-
     return buildMemoryPreamble({ globalRoot, projectRoot });
   }
 

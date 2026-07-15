@@ -283,8 +283,6 @@ export interface MemoryMetadata {
   tags: string[];
 }
 
-export type MemorySearchKind = 'core';
-
 export interface MemoryTranscriptTurn {
   role: string;
   content: string;
@@ -319,25 +317,6 @@ export interface MemoryOverview {
   failedSessionCount: number;
   latestIngestionAt: number | null;
   latestError: string | null;
-}
-
-export interface MemorySearchResult {
-  id: string;
-  recordId: string;
-  kind: MemorySearchKind;
-  title: string;
-  summary: string;
-  contentPreview: string;
-  category?: 'identity' | 'preferences' | 'skills' | 'interests';
-  score: number;
-  createdAt: number;
-  updatedAt?: number;
-  keywords?: string[];
-  sourceFile?: string;
-}
-
-export interface MemoryReadResult extends MemorySearchResult {
-  rawText?: string;
 }
 
 // Permission types

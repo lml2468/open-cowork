@@ -19,8 +19,6 @@ import type {
   ProviderModelInfo,
   LocalOllamaDiscoveryResult,
   MemoryOverview,
-  MemorySearchResult,
-  MemoryReadResult,
   MemoryDebugFileInfo,
   MemoryDebugFileContent,
 } from '../renderer/types';
@@ -686,8 +684,6 @@ declare global {
       };
       memory: {
         getOverview: () => Promise<MemoryOverview>;
-        search: (payload: { query: string; limit?: number }) => Promise<MemorySearchResult[]>;
-        read: (id: string) => Promise<MemoryReadResult | null>;
         clearCoreMemory: () => Promise<{ success: boolean }>;
         listFiles: () => Promise<MemoryDebugFileInfo[]>;
         readFile: (filePath: string) => Promise<MemoryDebugFileContent>;

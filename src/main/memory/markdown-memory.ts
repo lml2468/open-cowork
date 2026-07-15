@@ -73,8 +73,9 @@ export interface MemoryPreambleInput {
 
 /**
  * Build the memory preamble injected into the turn: the agent instructions (paths + how to
- * manage memory) plus the current MEMORY.md contents for each scope (budget-trimmed). Returns
- * '' when there is nothing to inject and memory is effectively empty.
+ * manage memory) plus the current MEMORY.md contents for each scope (budget-trimmed). Always
+ * returns the `<memory>` instructions block — even with empty indexes it teaches the agent the
+ * paths and that it can persist memory; scope content sections are added only when present.
  */
 export function buildMemoryPreamble(input: MemoryPreambleInput): string {
   const budget = input.budgetChars ?? DEFAULT_INDEX_BUDGET_CHARS;
@@ -121,7 +122,11 @@ function scopeBlock(scope: string, root: string, index: string): string {
 
 function clip(text: string, budget: number): string {
   if (text.length <= budget) return text;
-  return `${text.slice(0, budget)}\n… [truncated — Read the file for the rest]`;
+  // Avoid slicing through a surrogate pair (would emit a lone surrogate / U+FFFD).
+  let end = budget;
+  const code = text.charCodeAt(end - 1);
+  if (code >= 0xd800 && code <= 0xdbff) end -= 1;
+  return `${text.slice(0, end)}\n… [truncated — Read the file for the rest]`;
 }
 
 function escapeAttr(v: string): string {
