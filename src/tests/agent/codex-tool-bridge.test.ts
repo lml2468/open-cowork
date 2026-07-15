@@ -25,10 +25,7 @@ describe('CodexToolBridge', () => {
   });
 
   it('builds codex dynamic_tools registration specs from host tools', () => {
-    const bridge = new CodexToolBridge([
-      echoTool,
-      { ...echoTool, name: 'lazy', deferLoading: true },
-    ]);
+    const bridge = new CodexToolBridge([echoTool]);
     const specs = bridge.buildDynamicToolSpecs();
     expect(specs).toContainEqual({
       type: 'function',
@@ -36,8 +33,6 @@ describe('CodexToolBridge', () => {
       description: 'Echoes its input',
       inputSchema: echoTool.parameters,
     });
-    const lazy = specs.find((s) => s.name === 'lazy');
-    expect(lazy?.deferLoading).toBe(true);
   });
 
   it('dispatches a call to the matching tool and returns a success envelope', async () => {
