@@ -102,3 +102,12 @@ adapter + runtime wiring must apply to both (keep in sync; see spec/main runtime
 - **(g) Runner/shared-client consolidation [low].** Process currently runs two codex
   app-servers (per-runner + shared one-shot) to avoid dispose-ownership ambiguity. Optional
   later consolidation onto one warm app-server.
+- **(h) Provider auto-coercion + migration notice [medium — descoped from 5.4].** 5.4 landed
+  as **UI-picker narrowing only** (`SettingsAPI` + `ConfigModal` show only `openai`/`custom`;
+  custom protocol = `openai`/Responses). The type unions were deliberately **kept broad**
+  (narrowing them cascades across ~60 sites and repeatedly stalled sub-agents). Existing
+  users persisted on a dropped provider (anthropic/gemini/openrouter/ollama) are handled by
+  the runtime **failing closed** (`buildCodexModelConfig` → clear "unsupported provider"
+  error), not a crash. Still TODO: auto-coerce a persisted dropped provider → `openai` on
+  load + a one-time notice (i18n en+zh), and a Phase-6 clean removal of the dead union
+  members once pi is gone.

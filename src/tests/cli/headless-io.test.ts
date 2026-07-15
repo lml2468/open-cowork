@@ -233,4 +233,39 @@ describe('headless-io', () => {
       expect(parsed.sessionId).toBe('sid-2');
     });
   });
+
+  describe('resolveHeadlessPermissionAction', () => {
+    it('allows a codex permission.request when auto-approve is on', async () => {
+      const { resolveHeadlessPermissionAction } = await import('../../main/cli/headless-io');
+      const action = resolveHeadlessPermissionAction(
+        {
+          type: 'permission.request',
+          payload: { toolUseId: 'codex-perm-abc', toolName: 'bash', input: {}, sessionId: 's1' },
+        },
+        true
+      );
+      expect(action).toEqual({ toolUseId: 'codex-perm-abc', result: 'allow' });
+    });
+
+    it('denies (fail-closed) a permission.request when auto-approve is off', async () => {
+      const { resolveHeadlessPermissionAction } = await import('../../main/cli/headless-io');
+      const action = resolveHeadlessPermissionAction(
+        {
+          type: 'permission.request',
+          payload: { toolUseId: 'codex-perm-xyz', toolName: 'bash', input: {}, sessionId: 's1' },
+        },
+        false
+      );
+      expect(action).toEqual({ toolUseId: 'codex-perm-xyz', result: 'deny' });
+    });
+
+    it('returns null for non-permission events (forwarded normally)', async () => {
+      const { resolveHeadlessPermissionAction } = await import('../../main/cli/headless-io');
+      const action = resolveHeadlessPermissionAction(
+        { type: 'stream.partial', payload: { sessionId: 's1', delta: 'hi' } },
+        true
+      );
+      expect(action).toBeNull();
+    });
+  });
 });

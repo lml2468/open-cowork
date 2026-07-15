@@ -15,6 +15,40 @@
 import * as readline from 'readline';
 import type { ServerEvent, ClientEvent } from '../../renderer/types';
 
+// ── Permission auto-answer (headless) ──
+
+/**
+ * The auto-answer a headless run gives to a permission prompt.
+ * `toolUseId` identifies the pending request; `result` is what to reply with.
+ */
+export interface HeadlessPermissionAction {
+  toolUseId: string;
+  result: 'allow' | 'deny';
+}
+
+/**
+ * Decide how a headless run should answer a `permission.request` ServerEvent.
+ *
+ * Under the codex runtime a tool-approval request surfaces as a `permission.request`
+ * ServerEvent; headless has no interactive prompt, so it must answer programmatically:
+ *   --auto-approve → 'allow'   (opt-in, loud warning at startup)
+ *   default        → 'deny'    (fail-closed; codex maps 'deny' → 'decline')
+ *
+ * Returns `null` for any non-permission event so the caller can forward it normally.
+ * Extracted as a pure function so the auto-answer policy is unit-testable without
+ * booting the whole main process.
+ */
+export function resolveHeadlessPermissionAction(
+  event: ServerEvent,
+  autoApprove: boolean
+): HeadlessPermissionAction | null {
+  if (event.type !== 'permission.request') return null;
+  return {
+    toolUseId: event.payload.toolUseId,
+    result: autoApprove ? 'allow' : 'deny',
+  };
+}
+
 // ── Headless JSONL event types ──
 
 export interface HeadlessEvent {
