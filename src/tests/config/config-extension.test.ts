@@ -219,7 +219,7 @@ describe('config-extension', () => {
 
   describe('config_read tool execution', () => {
     let configReadTool: {
-      execute: (id: string, params: unknown, ...rest: unknown[]) => Promise<unknown>;
+      execute: (params: unknown) => Promise<unknown>;
     };
 
     beforeEach(async () => {
@@ -232,7 +232,7 @@ describe('config-extension', () => {
     });
 
     it('returns all non-sensitive fields when no key is specified', async () => {
-      const result = (await configReadTool.execute('test-call', {})) as {
+      const result = (await configReadTool.execute({})) as {
         content: { type: string; text: string }[];
       };
 
@@ -256,7 +256,7 @@ describe('config-extension', () => {
     });
 
     it('reads activeProfileKey individually', async () => {
-      const result = (await configReadTool.execute('test-call', { key: 'activeProfileKey' })) as {
+      const result = (await configReadTool.execute({ key: 'activeProfileKey' })) as {
         content: { type: string; text: string }[];
       };
       const parsed = JSON.parse(result.content[0].text);
@@ -264,7 +264,7 @@ describe('config-extension', () => {
     });
 
     it('reads activeConfigSetId individually', async () => {
-      const result = (await configReadTool.execute('test-call', {
+      const result = (await configReadTool.execute({
         key: 'activeConfigSetId',
       })) as {
         content: { type: string; text: string }[];
@@ -274,7 +274,7 @@ describe('config-extension', () => {
     });
 
     it('returns a specific field when key is provided', async () => {
-      const result = (await configReadTool.execute('test-call', { key: 'provider' })) as {
+      const result = (await configReadTool.execute({ key: 'provider' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -283,7 +283,7 @@ describe('config-extension', () => {
     });
 
     it('returns contextWindow when requested', async () => {
-      const result = (await configReadTool.execute('test-call', { key: 'contextWindow' })) as {
+      const result = (await configReadTool.execute({ key: 'contextWindow' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -292,7 +292,7 @@ describe('config-extension', () => {
     });
 
     it('rejects reading apiKey', async () => {
-      const result = (await configReadTool.execute('test-call', { key: 'apiKey' })) as {
+      const result = (await configReadTool.execute({ key: 'apiKey' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -300,7 +300,7 @@ describe('config-extension', () => {
     });
 
     it('rejects reading profiles', async () => {
-      const result = (await configReadTool.execute('test-call', { key: 'profiles' })) as {
+      const result = (await configReadTool.execute({ key: 'profiles' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -308,7 +308,7 @@ describe('config-extension', () => {
     });
 
     it('rejects reading configSets', async () => {
-      const result = (await configReadTool.execute('test-call', { key: 'configSets' })) as {
+      const result = (await configReadTool.execute({ key: 'configSets' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -316,7 +316,7 @@ describe('config-extension', () => {
     });
 
     it('rejects reading memoryRuntime', async () => {
-      const result = (await configReadTool.execute('test-call', { key: 'memoryRuntime' })) as {
+      const result = (await configReadTool.execute({ key: 'memoryRuntime' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -324,7 +324,7 @@ describe('config-extension', () => {
     });
 
     it('rejects reading keys with sensitive patterns', async () => {
-      const result = (await configReadTool.execute('test-call', { key: 'authToken' })) as {
+      const result = (await configReadTool.execute({ key: 'authToken' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -332,7 +332,7 @@ describe('config-extension', () => {
     });
 
     it('handles null/undefined params gracefully', async () => {
-      const result = (await configReadTool.execute('test-call', null)) as {
+      const result = (await configReadTool.execute(null)) as {
         content: { type: string; text: string }[];
       };
 
@@ -415,7 +415,7 @@ describe('config-extension', () => {
   describe('config_write tool execution', () => {
     let mockStore: ReturnType<typeof createMockConfigStore>;
     let configWriteTool: {
-      execute: (id: string, params: unknown, ...rest: unknown[]) => Promise<unknown>;
+      execute: (params: unknown) => Promise<unknown>;
     };
 
     beforeEach(async () => {
@@ -428,7 +428,7 @@ describe('config-extension', () => {
     });
 
     it('writes a safe field and reports old -> new value', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'theme',
         value: 'light',
       })) as { content: { type: string; text: string }[] };
@@ -441,7 +441,7 @@ describe('config-extension', () => {
     });
 
     it('writes sandboxEnabled (boolean field) and reports old -> new value', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'sandboxEnabled',
         value: false,
       })) as { content: { type: string; text: string }[] };
@@ -451,7 +451,7 @@ describe('config-extension', () => {
     });
 
     it('rejects writing apiKey', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'apiKey',
         value: 'sk-should-not-work',
       })) as { content: { type: string; text: string }[] };
@@ -461,7 +461,7 @@ describe('config-extension', () => {
     });
 
     it('rejects writing profiles', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'profiles',
         value: {},
       })) as { content: { type: string; text: string }[] };
@@ -471,7 +471,7 @@ describe('config-extension', () => {
     });
 
     it('rejects writing configSets', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'configSets',
         value: [],
       })) as { content: { type: string; text: string }[] };
@@ -481,7 +481,7 @@ describe('config-extension', () => {
     });
 
     it('rejects writing memoryRuntime', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'memoryRuntime',
         value: {},
       })) as { content: { type: string; text: string }[] };
@@ -491,7 +491,7 @@ describe('config-extension', () => {
     });
 
     it('rejects writing a field with a sensitive-pattern name not in AppConfig', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'authToken',
         value: 'x',
       })) as { content: { type: string; text: string }[] };
@@ -501,7 +501,7 @@ describe('config-extension', () => {
     });
 
     it('rejects a field not in the writable allow-list with a generic message', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'provider',
         value: 'anthropic',
       })) as { content: { type: string; text: string }[] };
@@ -511,7 +511,7 @@ describe('config-extension', () => {
     });
 
     it('rejects an invalid type for a boolean field', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'sandboxEnabled',
         value: 'yes',
       })) as { content: { type: string; text: string }[] };
@@ -521,7 +521,7 @@ describe('config-extension', () => {
     });
 
     it('rejects an invalid type for a numeric field', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'contextWindow',
         value: 'a lot',
       })) as { content: { type: string; text: string }[] };
@@ -531,7 +531,7 @@ describe('config-extension', () => {
     });
 
     it('rejects a negative number for contextWindow', async () => {
-      const result = (await configWriteTool.execute('test-call', {
+      const result = (await configWriteTool.execute({
         key: 'contextWindow',
         value: -1,
       })) as { content: { type: string; text: string }[] };
@@ -541,7 +541,7 @@ describe('config-extension', () => {
     });
 
     it('rejects a missing key parameter', async () => {
-      const result = (await configWriteTool.execute('test-call', { value: 'x' })) as {
+      const result = (await configWriteTool.execute({ value: 'x' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -550,7 +550,7 @@ describe('config-extension', () => {
     });
 
     it('rejects a missing value parameter', async () => {
-      const result = (await configWriteTool.execute('test-call', { key: 'theme' })) as {
+      const result = (await configWriteTool.execute({ key: 'theme' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -559,7 +559,7 @@ describe('config-extension', () => {
     });
 
     it('handles null/undefined params gracefully', async () => {
-      const result = (await configWriteTool.execute('test-call', null)) as {
+      const result = (await configWriteTool.execute(null)) as {
         content: { type: string; text: string }[];
       };
 
