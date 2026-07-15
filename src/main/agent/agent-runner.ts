@@ -464,6 +464,10 @@ export class CoworkAgentRunner {
   private codexRuntime?: CodexRuntime;
   private codexToolBridge?: CodexToolBridge;
   private readonly codexSessionMeta: Map<string, CodexSessionMeta> = new Map();
+  // The codex app-server inherits process.env at spawn time and is long-lived, so a changed
+  // provider/key won't reach an already-running app-server. Track the projected model-env so
+  // we can respawn the app-server when credentials change.
+  private codexClientEnvSignature: string | null = null;
   private readonly codexRunContexts: Map<string, CodexRunContext> = new Map();
   private readonly codexContextUsage: Map<
     string,
@@ -1466,6 +1470,27 @@ ${hints.join('\n')}
       for (const [key, value] of Object.entries(modelConfig.env)) {
         process.env[key] = value;
       }
+
+      // The codex app-server captures process.env at spawn and is long-lived, so a changed
+      // provider/key (just projected above) can't reach an already-running app-server —
+      // codex would report "Missing environment variable: <ENV_KEY>". If the model env
+      // changed since the app-server was spawned, dispose the runtime so the next
+      // ensureCodexRuntime() respawns it with the fresh credentials.
+      const modelEnvSignature = JSON.stringify(modelConfig.env);
+      if (this.codexRuntime && this.codexClientEnvSignature !== modelEnvSignature) {
+        logCtx(
+          '[CoworkAgentRunner] Model env changed — restarting codex app-server for fresh credentials'
+        );
+        try {
+          this.codexRuntime.dispose();
+        } catch (e: unknown) {
+          logWarn('[CoworkAgentRunner] codex runtime dispose (env change) failed:', e);
+        }
+        this.codexRuntime = undefined;
+        this.codexToolBridge = undefined;
+        this.codexSessionMeta.clear();
+      }
+      this.codexClientEnvSignature = modelEnvSignature;
 
       // Register enabled MCP servers with codex NATIVELY (codex owns the `mcp__` tool
       // namespace and spawns/connects the servers itself), rather than proxying each MCP

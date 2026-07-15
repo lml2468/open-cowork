@@ -20,6 +20,7 @@ import { app } from 'electron';
 
 import { log, logError, logWarn } from '../../utils/logger';
 import { CodexClient, type CodexLogger } from './codex-client';
+import { getLastCodexModelEnvSignature } from './codex-one-shot-config';
 
 const logger: CodexLogger = {
   log: (...args: unknown[]) => log('[codex-oneshot]', ...args),
@@ -28,18 +29,31 @@ const logger: CodexLogger = {
 };
 
 let sharedClient: CodexClient | null = null;
+// The env signature the current shared app-server was spawned with. When the one-shot model
+// env changes (credential/provider switch), the frozen app-server must be respawned.
+let sharedClientEnvSignature: string | null = null;
 
 /**
  * Return the process-wide shared codex client, constructing it (but not starting it) on
  * first call. The app-server child is spawned lazily by `runCodexOneShot` on first use.
+ *
+ * If the one-shot model env changed since the app-server was spawned (it captures
+ * process.env at spawn and can't see later changes), the stale client is disposed and a
+ * fresh one is created so codex reads the current API key via its `env_key`.
  */
 export function getSharedCodexClient(): CodexClient {
+  const currentSignature = getLastCodexModelEnvSignature();
+  if (sharedClient && sharedClientEnvSignature !== currentSignature) {
+    log('[codex-oneshot] model env changed — respawning shared app-server for fresh credentials');
+    disposeSharedCodexClient();
+  }
   if (sharedClient) return sharedClient;
   sharedClient = new CodexClient({
     clientInfo: { name: 'open-cowork', version: app.getVersion() },
     capabilities: { experimentalApi: true, requestAttestation: false },
     logger,
   });
+  sharedClientEnvSignature = currentSignature;
   return sharedClient;
 }
 

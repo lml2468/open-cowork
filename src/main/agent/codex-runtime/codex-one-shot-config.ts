@@ -51,8 +51,20 @@ export function resolveCodexOneShotModel(input: CodexModelConfigInput): CodexOne
  * can read the key via the provider's `env_key`. Keys never round-trip through config
  * files (see the config spec). Mirrors the projection `agent-runner` does per turn.
  */
+let lastAppliedEnvSignature = '';
+
 export function applyCodexModelEnv(env: Record<string, string>): void {
+  lastAppliedEnvSignature = JSON.stringify(env);
   for (const [key, value] of Object.entries(env)) {
     process.env[key] = value;
   }
+}
+
+/**
+ * Signature of the most recently applied one-shot model env. The shared codex client reads
+ * this to decide whether its (already-spawned, env-frozen) app-server needs respawning —
+ * the app-server captures process.env at spawn and can't see later credential changes.
+ */
+export function getLastCodexModelEnvSignature(): string {
+  return lastAppliedEnvSignature;
 }
