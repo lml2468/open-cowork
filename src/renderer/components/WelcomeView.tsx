@@ -22,6 +22,14 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { Skeleton } from './Skeleton';
 import { localizeSkill } from '../utils/localize-skill';
+import { ScenarioChips } from './ScenarioChips';
+import { InspirationGallery } from './InspirationGallery';
+import { ExpertsGallery } from './ExpertsGallery';
+import {
+  filterByScenario,
+  type ScenarioFilter,
+  type ScenarioId,
+} from '../utils/activation-gallery';
 import {
   ComposerAutocomplete,
   type ComposerAutocompleteHandle,
@@ -55,6 +63,7 @@ export function WelcomeView() {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioFilter>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isComposingRef = useRef(false);
   const [pastedImages, setPastedImages] = useState<
@@ -475,24 +484,40 @@ export function WelcomeView() {
     adjustTextareaHeight();
   }, []);
 
+  // Seed the composer from a discovery gallery (experts G23 / inspiration G24)
+  // and focus it, so the user can start the session with one tap.
+  const seedComposer = useCallback((text: string) => {
+    setPrompt(text);
+    const el = textareaRef.current;
+    if (el) {
+      el.value = text;
+      adjustTextareaHeight();
+      el.focus();
+      el.setSelectionRange(text.length, text.length);
+    }
+  }, []);
+
   const quickTags = [
     {
       id: 'create',
       label: t('welcome.createFile'),
       icon: FileText,
       prompt: t('welcome.quickPromptCreate'),
+      scenarios: ['daily'] as ScenarioId[],
     },
     {
       id: 'crunch',
       label: t('welcome.crunchData'),
       icon: BarChart3,
       prompt: t('welcome.quickPromptCrunch'),
+      scenarios: ['daily', 'coding'] as ScenarioId[],
     },
     {
       id: 'organize',
       label: t('welcome.organizeFiles'),
       icon: FolderOpen,
       prompt: t('welcome.quickPromptOrganize'),
+      scenarios: ['daily'] as ScenarioId[],
     },
     {
       id: 'email',
@@ -500,6 +525,7 @@ export function WelcomeView() {
       icon: Mail,
       prompt: t('welcome.quickPromptEmail'),
       requiresChrome: true,
+      scenarios: ['daily'] as ScenarioId[],
     },
     {
       id: 'papers',
@@ -507,6 +533,7 @@ export function WelcomeView() {
       icon: BookOpen,
       prompt: t('welcome.quickPromptPapers'),
       requiresChrome: true,
+      scenarios: ['coding', 'design'] as ScenarioId[],
     },
     {
       id: 'research-notion',
@@ -514,8 +541,10 @@ export function WelcomeView() {
       icon: FileSearch,
       prompt: t('welcome.quickPromptNotion'),
       requiresNotion: true,
+      scenarios: ['daily'] as ScenarioId[],
     },
   ];
+  const visibleTags = filterByScenario(quickTags, selectedScenario);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 md:px-8 md:py-14">
@@ -556,15 +585,20 @@ export function WelcomeView() {
           </p>
         )}
 
+        {/* Scenario segmentation (G26): filters discovery galleries + chips */}
+        <div className="order-4">
+          <ScenarioChips value={selectedScenario} onChange={setSelectedScenario} />
+        </div>
+
         {/* Skill cards (from installed skills) with quick-action tags as fallback */}
         {skills === null ? (
-          <div className="order-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="order-5 grid grid-cols-2 md:grid-cols-3 gap-3">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-[4.5rem]" />
             ))}
           </div>
         ) : skills.length > 0 ? (
-          <div className="order-4 space-y-2.5">
+          <div className="order-5 space-y-2.5">
             <div className="text-label font-medium uppercase text-text-muted px-1">
               {t('welcome.orStartFromSkill')}
             </div>
@@ -597,8 +631,8 @@ export function WelcomeView() {
             </div>
           </div>
         ) : (
-          <div className="order-4 flex flex-wrap gap-2 justify-center px-3">
-            {quickTags.map((tag) => (
+          <div className="order-5 flex flex-wrap gap-2 justify-center px-3">
+            {visibleTags.map((tag) => (
               <button
                 key={tag.id}
                 onClick={() => handleTagClick(tag.id, tag.prompt)}
@@ -772,6 +806,14 @@ export function WelcomeView() {
             </button>
           </div>
         </form>
+
+        {/* Inspiration templates (G24) + expert personas (G23), scenario-filtered */}
+        <div className="order-6">
+          <InspirationGallery scenario={selectedScenario} onSeed={seedComposer} />
+        </div>
+        <div className="order-7">
+          <ExpertsGallery scenario={selectedScenario} onSeed={seedComposer} />
+        </div>
       </div>
     </div>
   );

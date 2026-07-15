@@ -56,7 +56,82 @@
     "quickPromptPapers": "Please help me use Chrome to search for and summarize papers related to [Agent] within two days.\nSource websites:\n1. HuggingFace Daily Papers. Please include the vote information and a brief summary. Note that it may not include papers in the weekend, so you may need to check the papers in previous days. But make sure that there is a total of two days.",
     "quickPromptNotion": "Help me research three representative survey papers related to agents, and add them under a Notion page titled \"Agent Survey\". For each paper, include the title, authors, publication venue/year, and a brief summary of the main contributions.",
     "apiNotConfigured": "API not configured yet. Please go to Settings to set up your API provider and key.",
-    "goToSettings": "Go to Settings"
+    "goToSettings": "Go to Settings",
+    "scenarios": {
+      "all": "All",
+      "daily": "Daily work",
+      "coding": "Coding",
+      "design": "Design"
+    },
+    "inspiration": {
+      "heading": "Get inspired",
+      "makeOne": "Make one like this",
+      "emptyTitle": "No templates for this scenario",
+      "emptyDescription": "Switch scenarios to explore more starting points.",
+      "weekly-report": {
+        "title": "Weekly status report",
+        "description": "Turn this week's notes and tasks into a clear, shareable summary.",
+        "prompt": "Draft a weekly status report from my notes: summarize what I finished, what's in progress, and next week's priorities."
+      },
+      "meeting-notes": {
+        "title": "Meeting notes & actions",
+        "description": "Structure raw meeting notes into decisions, owners, and follow-ups.",
+        "prompt": "Organize my meeting notes into a structured summary with key decisions, action items, and owners."
+      },
+      "landing-page": {
+        "title": "Product landing page",
+        "description": "A single-page HTML landing page with hero, features, and a call to action.",
+        "prompt": "Build a responsive single-page HTML landing page for a product, with a hero section, three feature highlights, and a call-to-action button."
+      },
+      "data-dashboard": {
+        "title": "Data dashboard",
+        "description": "An interactive HTML dashboard that charts a dataset at a glance.",
+        "prompt": "Create an interactive HTML dashboard that visualizes a dataset with a few charts and summary metrics."
+      },
+      "api-reference": {
+        "title": "API reference page",
+        "description": "Readable HTML docs for a set of API endpoints with examples.",
+        "prompt": "Generate a clean HTML API reference page for a set of endpoints, including request and response examples."
+      },
+      "pitch-deck": {
+        "title": "Pitch deck outline",
+        "description": "A slide-by-slide outline for a compelling product pitch.",
+        "prompt": "Draft a slide-by-slide pitch deck outline for a product, covering problem, solution, market, and ask."
+      }
+    },
+    "experts": {
+      "heading": "Bring in an expert",
+      "writing-coach": {
+        "name": "Writing Coach",
+        "role": "Sharpens tone, clarity, and structure",
+        "prompt": "Act as a writing coach. Help me improve the clarity, tone, and structure of the following text: "
+      },
+      "data-analyst": {
+        "name": "Data Analyst",
+        "role": "Finds the story in your numbers",
+        "prompt": "Act as a data analyst. Help me explore this dataset, surface key trends, and suggest visualizations: "
+      },
+      "code-reviewer": {
+        "name": "Code Reviewer",
+        "role": "Reviews for bugs, clarity, and risk",
+        "prompt": "Act as a meticulous code reviewer. Review the following changes for correctness, readability, and potential risks: "
+      },
+      "refactor-guide": {
+        "name": "Refactoring Guide",
+        "role": "Restructures code without changing behavior",
+        "prompt": "Act as a refactoring guide. Propose a safe, incremental plan to restructure this code while preserving its behavior: "
+      },
+      "ux-designer": {
+        "name": "UX Designer",
+        "role": "Improves flows and usability",
+        "prompt": "Act as a UX designer. Review this flow and suggest concrete improvements to usability and information hierarchy: "
+      },
+      "brand-designer": {
+        "name": "Brand Designer",
+        "role": "Shapes visual identity and voice",
+        "prompt": "Act as a brand designer. Help me develop a visual identity (palette, typography, and voice) for the following brief: "
+      }
+    }
   },
   "settings": {
     "title": "Settings",
@@ -956,7 +1031,37 @@
     "pickerAdd": "Add",
     "pickerSelectedTimes": "Selected times",
     "pickerNone": "No time slots selected yet",
-    "pickerSuggestions": "Suggestions"
+    "pickerSuggestions": "Suggestions",
+    "templates": {
+      "heading": "Start from a template",
+      "hint": "Pick a template to prefill the form below.",
+      "use": "Use template",
+      "daily-briefing": {
+        "title": "Morning briefing",
+        "description": "A daily digest of priorities to start your day.",
+        "prompt": "Prepare a concise morning briefing: today's priorities, any deadlines, and one suggested first task."
+      },
+      "weekly-review": {
+        "title": "Weekly review",
+        "description": "A Monday summary of last week and the week ahead.",
+        "prompt": "Write a weekly review: summarize last week's progress and outline goals and priorities for the coming week."
+      },
+      "inbox-triage": {
+        "title": "Inbox triage",
+        "description": "A daily pass to sort what needs a reply.",
+        "prompt": "Triage my inbox: group messages by urgency and draft short replies for the ones that need a response today."
+      },
+      "learning-nudge": {
+        "title": "Daily learning nudge",
+        "description": "One small thing to learn each evening.",
+        "prompt": "Teach me one useful concept today with a short explanation and a concrete example I can try."
+      },
+      "cleanup-reminder": {
+        "title": "Weekly cleanup",
+        "description": "A Friday reminder to tidy your working folder.",
+        "prompt": "Review my working folder and suggest a cleanup plan: files to archive, rename, or remove, without deleting anything yet."
+      }
+    }
   },
   "remote": {
     "title": "Remote Control",
