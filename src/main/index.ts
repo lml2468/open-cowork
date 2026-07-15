@@ -95,6 +95,8 @@ import {
   isDevLogsEnabled,
 } from './utils/logger';
 import { listRecentWorkspaceFiles } from './utils/recent-workspace-files';
+import { listWorkspaceDir, readWorkspaceFile } from './utils/workspace-fs';
+import { getWorkspaceChanges } from './utils/git-changes';
 import { buildDiagnosticsSummary } from './utils/diagnostics-summary';
 import {
   parseHeadlessArgs,
@@ -1907,6 +1909,18 @@ ipcMain.handle(
     return listRecentWorkspaceFiles(cwd, sinceMs, limit);
   }
 );
+
+ipcMain.handle('artifacts.listDir', async (_event, cwd: string, relPath: string = '') => {
+  return listWorkspaceDir(cwd, relPath);
+});
+
+ipcMain.handle('artifacts.readFile', async (_event, cwd: string, relPath: string) => {
+  return readWorkspaceFile(cwd, relPath);
+});
+
+ipcMain.handle('artifacts.getChanges', async (_event, cwd: string) => {
+  return getWorkspaceChanges(cwd);
+});
 
 ipcMain.handle('dialog.selectFiles', async () => {
   const result = await dialog.showOpenDialog({

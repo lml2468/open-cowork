@@ -751,7 +751,30 @@
     "copyPath": "Copy path",
     "openInFileManager": "Open in file manager",
     "contextUsage": "Context Usage",
-    "contextUsageLabel": "{{used}} / {{total}}"
+    "contextUsageLabel": "{{used}} / {{total}}",
+    "workspace": "Workspace",
+    "tabs": {
+      "artifacts": "Artifacts",
+      "files": "Files",
+      "changes": "Changes"
+    },
+    "files": {
+      "noWorkingDir": "Select a working directory to browse files.",
+      "back": "Back",
+      "binary": "Binary file — preview unavailable.",
+      "truncated": "Preview truncated — file is larger than the preview limit.",
+      "loading": "Loading…",
+      "empty": "This folder is empty."
+    },
+    "changes": {
+      "noWorkingDir": "Select a working directory to see changes.",
+      "loading": "Loading changes…",
+      "notGitRepo": "The working directory is not a Git repository, so changes cannot be tracked.",
+      "noChanges": "No changes yet.",
+      "fileCount": "{{count}} changed",
+      "refresh": "Refresh",
+      "binary": "Binary"
+    }
   },
   "compaction": {
     "turnsLeft": "turns left",

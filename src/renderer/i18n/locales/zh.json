@@ -751,7 +751,30 @@
     "copyPath": "复制路径",
     "openInFileManager": "在文件管理器中打开",
     "contextUsage": "上下文用量",
-    "contextUsageLabel": "{{used}} / {{total}}"
+    "contextUsageLabel": "{{used}} / {{total}}",
+    "workspace": "工作空间",
+    "tabs": {
+      "artifacts": "产物",
+      "files": "文件",
+      "changes": "变更"
+    },
+    "files": {
+      "noWorkingDir": "选择工作目录后即可浏览文件。",
+      "back": "返回",
+      "binary": "二进制文件 — 无法预览。",
+      "truncated": "预览已截断 — 文件超过预览大小限制。",
+      "loading": "加载中…",
+      "empty": "该文件夹为空。"
+    },
+    "changes": {
+      "noWorkingDir": "选择工作目录后即可查看变更。",
+      "loading": "正在加载变更…",
+      "notGitRepo": "当前工作目录不是 Git 仓库，无法追踪变更。",
+      "noChanges": "暂无变更。",
+      "fileCount": "{{count}} 个文件已变更",
+      "refresh": "刷新",
+      "binary": "二进制"
+    }
   },
   "compaction": {
     "turnsLeft": "轮剩余",
