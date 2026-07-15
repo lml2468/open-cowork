@@ -1,7 +1,7 @@
 import type { TSchema } from '@sinclair/typebox';
 import type { Message, Session } from '../../renderer/types';
 
-/** A content element a custom tool returns (structural subset of the former pi tool-result). */
+/** A content element a custom tool returns. */
 export interface AgentToolResultContent {
   type: string;
   text?: string;
@@ -16,23 +16,16 @@ export interface AgentToolResult {
 }
 
 /**
- * A host-provided custom tool. Formerly `ToolDefinition<TSchema>` from pi; now a local
- * structural type (pi removed in Phase 6). The Codex tool bridge/adapter consumes this
- * shape (`codex-runtime/codex-tool-adapter.ts`). `parameters` is a TypeBox schema
- * (`@sinclair/typebox`, an independent dep).
+ * A host-provided custom tool (memory / config / spawn_subagent). Adapted into a codex host
+ * `dynamic_tools` entry by `codex-runtime/codex-tool-adapter.ts`. `parameters` is a TypeBox
+ * schema (`@sinclair/typebox`), which the adapter converts to plain JSON Schema for codex.
  */
 export interface AgentRuntimeCustomTool {
   name: string;
-  label?: string;
   description: string;
   parameters: TSchema;
-  execute: (
-    toolCallId: string,
-    params: unknown,
-    signal?: AbortSignal,
-    onUpdate?: (update: unknown) => void,
-    ctx?: unknown
-  ) => Promise<AgentToolResult>;
+  /** Codex owns the real `call_id`; the host tool only needs the validated params. */
+  execute: (params: unknown) => Promise<AgentToolResult>;
 }
 
 export interface BeforeSessionRunContext {

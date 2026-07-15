@@ -111,10 +111,10 @@ describe('CoworkAgentRunner Codex runtime integration', () => {
 
   it('adapts extension tools into codex host tools per turn', () => {
     expect(agentRunnerContent).toContain(
-      "import { adaptPiToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter'"
+      "import { adaptCustomToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter'"
     );
     expect(agentRunnerContent).toContain(
-      'this.codexToolBridge?.setTools(adaptPiToolsToCodexHostTools(customTools));'
+      'this.codexToolBridge?.setTools(adaptCustomToolsToCodexHostTools(customTools));'
     );
   });
 

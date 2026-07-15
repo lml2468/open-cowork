@@ -61,7 +61,6 @@ function createSpawnSubagentTool(
 ): AgentRuntimeCustomTool {
   return {
     name: 'spawn_subagent',
-    label: 'spawn_subagent',
     description:
       'Spawn a child agent to complete a focused sub-task in its own context. ' +
       'The child inherits your tools and config but not your conversation history. ' +
@@ -92,7 +91,7 @@ function createSpawnSubagentTool(
         })
       ),
     }),
-    async execute(_toolCallId: string, params: unknown) {
+    async execute(params: unknown) {
       const { task, result_format, timeout_seconds } = (params || {}) as SubagentParams;
 
       if (!task || typeof task !== 'string' || task.trim().length === 0) {

@@ -1,25 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import { Type } from '@sinclair/typebox';
 import {
-  adaptPiToolToCodexHostTool,
-  adaptPiToolsToCodexHostTools,
+  adaptCustomToolToCodexHostTool,
+  adaptCustomToolsToCodexHostTools,
 } from '@/main/agent/codex-runtime/codex-tool-adapter';
 import type { AgentRuntimeCustomTool } from '@/main/extensions/agent-runtime-extension';
 
 /**
- * Build a minimal fake pi custom tool. Uses a real TypeBox schema so the JSON-Schema
+ * Build a minimal fake host custom tool. Uses a real TypeBox schema so the JSON-Schema
  * conversion is exercised against actual TypeBox `Symbol` keys, not a hand-rolled object.
- * The fake execute only reads `(toolCallId, params)` like the app's real tools.
  */
 function makeFakeTool(
   execute: (
-    toolCallId: string,
     params: unknown
   ) => Promise<{ content: { type: string; text?: string }[]; isError?: boolean; details?: unknown }>
 ): AgentRuntimeCustomTool {
   const tool = {
     name: 'fake_tool',
-    label: 'fake_tool',
     description: 'A fake tool for testing',
     parameters: Type.Object({
       query: Type.String({ description: 'the query' }),
@@ -30,9 +27,9 @@ function makeFakeTool(
   return tool as unknown as AgentRuntimeCustomTool;
 }
 
-describe('adaptPiToolToCodexHostTool', () => {
+describe('adaptCustomToolToCodexHostTool', () => {
   it('maps name and description straight through', () => {
-    const codexTool = adaptPiToolToCodexHostTool(
+    const codexTool = adaptCustomToolToCodexHostTool(
       makeFakeTool(async () => ({ content: [{ type: 'text', text: 'ok' }], details: undefined }))
     );
     expect(codexTool.name).toBe('fake_tool');
@@ -40,7 +37,7 @@ describe('adaptPiToolToCodexHostTool', () => {
   });
 
   it('converts the TypeBox schema into a plain JSON-Schema object (no Symbol keys)', () => {
-    const codexTool = adaptPiToolToCodexHostTool(
+    const codexTool = adaptCustomToolToCodexHostTool(
       makeFakeTool(async () => ({ content: [{ type: 'text', text: 'ok' }], details: undefined }))
     );
     // Structural JSON-Schema shape survives.
@@ -59,10 +56,8 @@ describe('adaptPiToolToCodexHostTool', () => {
 
   it('delegates execute and flattens text content to a string', async () => {
     let receivedParams: unknown;
-    let receivedId: unknown;
-    const codexTool = adaptPiToolToCodexHostTool(
-      makeFakeTool(async (toolCallId, params) => {
-        receivedId = toolCallId;
+    const codexTool = adaptCustomToolToCodexHostTool(
+      makeFakeTool(async (params) => {
         receivedParams = params;
         return {
           content: [
@@ -78,12 +73,10 @@ describe('adaptPiToolToCodexHostTool', () => {
     expect(result.content).toBe('line one\nline two');
     expect(result.isError).toBeUndefined();
     expect(receivedParams).toEqual({ query: 'hello' });
-    expect(typeof receivedId).toBe('string');
-    expect(receivedId as string).not.toHaveLength(0);
   });
 
   it('represents non-text content by its type marker', async () => {
-    const codexTool = adaptPiToolToCodexHostTool(
+    const codexTool = adaptCustomToolToCodexHostTool(
       makeFakeTool(async () => ({
         content: [{ type: 'text', text: 'caption' }, { type: 'image' }],
         details: undefined,
@@ -94,7 +87,7 @@ describe('adaptPiToolToCodexHostTool', () => {
   });
 
   it('maps an isError flag from the pi result', async () => {
-    const codexTool = adaptPiToolToCodexHostTool(
+    const codexTool = adaptCustomToolToCodexHostTool(
       makeFakeTool(async () => ({
         content: [{ type: 'text', text: 'something went wrong' }],
         isError: true,
@@ -107,7 +100,7 @@ describe('adaptPiToolToCodexHostTool', () => {
   });
 
   it('converts a thrown pi execute into an error result instead of throwing', async () => {
-    const codexTool = adaptPiToolToCodexHostTool(
+    const codexTool = adaptCustomToolToCodexHostTool(
       makeFakeTool(async () => {
         throw new Error('boom');
       })
@@ -118,7 +111,7 @@ describe('adaptPiToolToCodexHostTool', () => {
   });
 
   it('handles a non-Error throw', async () => {
-    const codexTool = adaptPiToolToCodexHostTool(
+    const codexTool = adaptCustomToolToCodexHostTool(
       makeFakeTool(async () => {
         throw 'plain string failure';
       })
@@ -129,7 +122,7 @@ describe('adaptPiToolToCodexHostTool', () => {
   });
 
   it('tolerates a result with missing content', async () => {
-    const codexTool = adaptPiToolToCodexHostTool(
+    const codexTool = adaptCustomToolToCodexHostTool(
       makeFakeTool(async () => ({ content: undefined as unknown as { type: string }[] }))
     );
     const result = await codexTool.execute({ query: 'x' });
@@ -138,11 +131,11 @@ describe('adaptPiToolToCodexHostTool', () => {
   });
 });
 
-describe('adaptPiToolsToCodexHostTools', () => {
+describe('adaptCustomToolsToCodexHostTools', () => {
   it('adapts a list of tools preserving order', () => {
     const first = makeFakeTool(async () => ({ content: [{ type: 'text', text: 'a' }] }));
     const second = { ...makeFakeTool(async () => ({ content: [] })), name: 'second' };
-    const adapted = adaptPiToolsToCodexHostTools([
+    const adapted = adaptCustomToolsToCodexHostTools([
       first,
       second as unknown as AgentRuntimeCustomTool,
     ]);

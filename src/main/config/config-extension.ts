@@ -102,7 +102,6 @@ export function isKeyReadable(key: string): boolean {
 function createConfigReadTool(configStore: ConfigStore): AgentRuntimeCustomTool {
   return {
     name: 'config_read',
-    label: 'config_read',
     description:
       'Read the current application configuration. Returns non-sensitive config fields. ' +
       'Provide an optional `key` parameter to read a specific field, or omit to get all readable fields.',
@@ -115,7 +114,7 @@ function createConfigReadTool(configStore: ConfigStore): AgentRuntimeCustomTool 
         })
       ),
     }),
-    async execute(_toolCallId: string, params: unknown) {
+    async execute(params: unknown) {
       const { key } = (params || {}) as { key?: string };
       const config = configStore.getAll();
 
@@ -248,7 +247,6 @@ function toolTextResult(text: string) {
 function createConfigWriteTool(configStore: ConfigStore): PermissionAwareTool {
   return {
     name: 'config_write',
-    label: 'config_write',
     permission: 'always-ask',
     description:
       'Write a single non-sensitive application configuration field. Always requires explicit ' +
@@ -267,7 +265,7 @@ function createConfigWriteTool(configStore: ConfigStore): PermissionAwareTool {
         description: "The new value for the field. Must match the field's expected type.",
       }),
     }),
-    async execute(_toolCallId: string, params: unknown) {
+    async execute(params: unknown) {
       const { key, value } = (params || {}) as { key?: string; value?: unknown };
 
       if (!key || typeof key !== 'string') {

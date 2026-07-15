@@ -15,7 +15,7 @@ vi.mock('../../main/config/config-store', () => ({
 
 import { SubagentExtension } from '../../main/agent/subagent-extension';
 
-type ToolExecuteFn = (id: string, params: unknown) => Promise<unknown>;
+type ToolExecuteFn = (params: unknown) => Promise<unknown>;
 
 const noopSend = () => {};
 const noopPermission = async () => 'allow' as const;
@@ -48,7 +48,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      const execResult = (await execute('test-call', { task: '' })) as {
+      const execResult = (await execute({ task: '' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -60,7 +60,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      const execResult = (await execute('test-call', null)) as {
+      const execResult = (await execute(null)) as {
         content: { type: string; text: string }[];
       };
 
@@ -72,7 +72,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      const execResult = (await execute('test-call', { task: '   ' })) as {
+      const execResult = (await execute({ task: '   ' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -84,7 +84,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      const execResult = (await execute('test-call', { task: 'x'.repeat(11000) })) as {
+      const execResult = (await execute({ task: 'x'.repeat(11000) })) as {
         content: { type: string; text: string }[];
       };
 
@@ -102,7 +102,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      const execResult = (await execute('test-call', { task: 'test' })) as {
+      const execResult = (await execute({ task: 'test' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -120,7 +120,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      const execResult = (await execute('test-call', { task: 'test task' })) as {
+      const execResult = (await execute({ task: 'test task' })) as {
         content: { type: string; text: string }[];
       };
 
@@ -157,7 +157,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      await execute('test-call', { task: 'test streaming' });
+      await execute({ task: 'test streaming' });
 
       const startedEvent = events.find((e) => e.payload?.event === 'started');
       expect(startedEvent).toBeDefined();
@@ -184,7 +184,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      await execute('test-call', { task: 'test early failure' });
+      await execute({ task: 'test early failure' });
 
       // Model resolution failure happens before session creation,
       // so only 'started' is emitted (no completed/failed since the tool returns early)
@@ -209,7 +209,7 @@ describe('SubagentExtension', () => {
       const result = await extension.beforeSessionRun(mockContext as never);
       const execute = result.customTools![0].execute as unknown as ToolExecuteFn;
 
-      await execute('test-call', { task: 'test concurrency decrement' });
+      await execute({ task: 'test concurrency decrement' });
 
       // Even though execution failed (model not found), counter should be back to 0
       expect(state.active).toBe(0);

@@ -41,7 +41,6 @@ export interface CodexDynamicToolSpec {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  deferLoading?: boolean;
 }
 
 /** The result a `CodexHostTool.execute` returns; normalized into the codex envelope. */
@@ -60,8 +59,6 @@ export interface CodexHostTool {
   /** JSON Schema for the tool arguments. */
   parameters: Record<string, unknown>;
   execute: (args: Record<string, unknown>) => Promise<CodexHostToolResult> | CodexHostToolResult;
-  /** When true, codex loads the tool schema lazily on first use. */
-  deferLoading?: boolean;
 }
 
 export class CodexToolBridge {
@@ -101,7 +98,6 @@ export class CodexToolBridge {
       name: tool.name,
       description: tool.description,
       inputSchema: tool.parameters,
-      ...(tool.deferLoading ? { deferLoading: true } : {}),
     }));
   }
 

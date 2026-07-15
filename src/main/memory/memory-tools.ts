@@ -34,13 +34,12 @@ function formatReadResult(result: MemoryReadResult): string {
 export function createMemoryTools(memoryService: MemoryService): MemoryToolDefinition[] {
   const searchTool: MemoryToolDefinition = {
     name: 'memory_search',
-    label: 'memory_search',
     description: 'Search long-term core memory (durable identity, preferences, skills, interests).',
     parameters: Type.Object({
       query: Type.String({ minLength: 1, description: 'What you want to remember or look up.' }),
       limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
     }),
-    async execute(_toolCallId: string, params: unknown) {
+    async execute(params: unknown) {
       const result = memoryService.search({
         query: String((params as { query: string }).query || ''),
         limit:
@@ -64,12 +63,11 @@ export function createMemoryTools(memoryService: MemoryService): MemoryToolDefin
 
   const readTool: MemoryToolDefinition = {
     name: 'memory_read',
-    label: 'memory_read',
     description: 'Read a core memory item returned by memory_search in full detail.',
     parameters: Type.Object({
       id: Type.String({ minLength: 1, description: 'The id returned by memory_search.' }),
     }),
-    async execute(_toolCallId: string, params: unknown) {
+    async execute(params: unknown) {
       const result = memoryService.read(String((params as { id: string }).id || ''));
       const text = result ? formatReadResult(result) : 'Memory item not found.';
       return {

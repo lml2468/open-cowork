@@ -55,7 +55,7 @@ import { CodexPermissionBridge } from './codex-runtime/codex-permission-bridge';
 import { CodexElicitationBridge } from './codex-runtime/codex-elicitation-bridge';
 import { CodexToolBridge } from './codex-runtime/codex-tool-bridge';
 import { CodexEventTranslator } from './codex-runtime/codex-event-translator';
-import { adaptPiToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter';
+import { adaptCustomToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter';
 import { buildCodexModelConfig } from './codex-runtime/codex-model-config';
 import { buildCodexMcpServersConfig } from './codex-runtime/codex-mcp-config';
 
@@ -1970,7 +1970,7 @@ Tool routing:
       await enrichProcessPathForBuild();
 
       const runtime = this.ensureCodexRuntime();
-      this.codexToolBridge?.setTools(adaptPiToolsToCodexHostTools(customTools));
+      this.codexToolBridge?.setTools(adaptCustomToolsToCodexHostTools(customTools));
 
       // ── Loop guard: protect against runaway tool-call loops ──
       // Layer 1 (hash of a message's tool-call group) fires when the final assistant
