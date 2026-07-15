@@ -258,6 +258,7 @@ const defaultSettings: Settings = {
   globalSkillsPath: '',
   memoryStrategy: 'auto',
   maxContextTokens: 180000,
+  deletionProtection: true,
 };
 
 export const useAppStore = create<AppState>((set) => ({

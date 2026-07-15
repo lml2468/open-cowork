@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useIPC } from '../hooks/useIPC';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { PermissionRequest } from '../types';
-import { Shield, X, Check, AlertTriangle } from 'lucide-react';
+import { Shield, X, Check, AlertTriangle, Trash2 } from 'lucide-react';
+import { isDestructiveDeleteRequest, isBulkDeleteRequest } from '../utils/destructive-command';
 
 interface PermissionDialogProps {
   permission: PermissionRequest;
@@ -49,6 +50,9 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
     'edit_file',
   ].includes(permission.toolName);
 
+  const isDestructiveDelete = isDestructiveDeleteRequest(permission.toolName, permission.input);
+  const isBulkDelete = isBulkDeleteRequest(permission.toolName, permission.input);
+
   return (
     <div
       className="overlay"
@@ -66,10 +70,12 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
         <div className="flex items-start gap-4">
           <div
             className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              isHighRisk ? 'bg-warning/10' : 'bg-accent-muted'
+              isDestructiveDelete ? 'bg-error/10' : isHighRisk ? 'bg-warning/10' : 'bg-accent-muted'
             }`}
           >
-            {isHighRisk ? (
+            {isDestructiveDelete ? (
+              <Trash2 className="w-6 h-6 text-error" />
+            ) : isHighRisk ? (
               <AlertTriangle className="w-6 h-6 text-warning" />
             ) : (
               <Shield className="w-6 h-6 text-accent" />
@@ -103,8 +109,20 @@ export function PermissionDialog({ permission }: PermissionDialogProps) {
           </div>
         </div>
 
+        {/* Destructive-delete warning (deletion protection) */}
+        {isDestructiveDelete && (
+          <div className="mt-4 p-3 bg-error/10 border border-error/20 rounded-xl">
+            <div className="flex items-start gap-2">
+              <Trash2 className="w-4 h-4 text-error mt-0.5 flex-shrink-0" />
+              <p className="text-body-sm text-error">
+                {isBulkDelete ? t('permission.bulkDeleteWarning') : t('permission.deleteWarning')}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Warning */}
-        {isHighRisk && (
+        {isHighRisk && !isDestructiveDelete && (
           <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-xl">
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />

@@ -43,7 +43,11 @@ import {
 import { runConfigApiTest } from './config/config-test-routing';
 import { disposeSharedCodexClient } from './agent/codex-runtime/codex-shared-client';
 import { listOllamaModels } from './config/ollama-api';
-import { setPermissionRules, decidePermission } from './config/permission-rules-store';
+import {
+  setPermissionRules,
+  setDeletionProtection,
+  decidePermission,
+} from './config/permission-rules-store';
 import { mcpConfigStore } from './mcp/mcp-config-store';
 import { getSandboxAdapter, shutdownSandbox } from './sandbox/sandbox-adapter';
 import { SandboxSync } from './sandbox/sandbox-sync';
@@ -3326,6 +3330,14 @@ async function handleClientEvent(event: ClientEvent): Promise<unknown> {
       if (Array.isArray((event.payload as { permissionRules?: unknown }).permissionRules)) {
         setPermissionRules(
           (event.payload as { permissionRules: PermissionRule[] }).permissionRules
+        );
+      }
+
+      if (
+        typeof (event.payload as { deletionProtection?: unknown }).deletionProtection === 'boolean'
+      ) {
+        setDeletionProtection(
+          (event.payload as { deletionProtection: boolean }).deletionProtection
         );
       }
       return null;

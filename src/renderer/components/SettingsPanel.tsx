@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   X,
   Settings,
-  Shield,
+  ShieldCheck,
   Wifi,
   AlertCircle,
   Globe,
@@ -14,19 +14,26 @@ import { useWindowSize } from '../hooks/useWindowSize';
 import { RemoteControlPanel } from './RemoteControlPanel';
 import { useAppStore } from '../store';
 import { SettingsAPI } from './settings/SettingsAPI';
-import { SettingsSandbox } from './settings/SettingsSandbox';
+import { SettingsSecurity } from './settings/SettingsSecurity';
 import { SettingsGeneral } from './settings/SettingsGeneral';
 import { SettingsLogs } from './settings/SettingsLogs';
 import { SettingsMemory } from './settings/SettingsMemory';
 
 interface SettingsPanelProps {
   onClose: () => void;
-  initialTab?: 'api' | 'sandbox' | 'memory' | 'remote' | 'logs' | 'general';
+  initialTab?: 'api' | 'security' | 'memory' | 'remote' | 'logs' | 'general';
 }
 
-type TabId = 'api' | 'sandbox' | 'memory' | 'remote' | 'logs' | 'general';
+type TabId = 'api' | 'security' | 'memory' | 'remote' | 'logs' | 'general';
 
-const VALID_TABS = new Set<TabId>(['api', 'sandbox', 'memory', 'remote', 'logs', 'general']);
+const VALID_TABS = new Set<TabId>(['api', 'security', 'memory', 'remote', 'logs', 'general']);
+
+/** Map external / legacy tab ids (e.g. the old `sandbox` tab) onto current ids. */
+function normalizeTabId(raw: string | null | undefined): TabId | null {
+  if (!raw) return null;
+  if (raw === 'sandbox') return 'security';
+  return VALID_TABS.has(raw as TabId) ? (raw as TabId) : null;
+}
 
 export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProps) {
   const { t } = useTranslation();
@@ -36,8 +43,7 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
   // takes effect even before this component mounts.
   const storeTab = useAppStore((s) => s.settingsTab);
   const setSettingsTab = useAppStore((s) => s.setSettingsTab);
-  const resolvedInitial =
-    storeTab && VALID_TABS.has(storeTab as TabId) ? (storeTab as TabId) : initialTab;
+  const resolvedInitial = normalizeTabId(storeTab) ?? initialTab;
 
   const [activeTab, setActiveTab] = useState<TabId>(resolvedInitial);
   // Track which tabs have been viewed at least once (for lazy loading)
@@ -55,8 +61,9 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
 
   // Consume the store signal and apply tab in one effect
   useEffect(() => {
-    if (storeTab && VALID_TABS.has(storeTab as TabId)) {
-      setActiveTab(storeTab as TabId);
+    const normalized = normalizeTabId(storeTab);
+    if (normalized) {
+      setActiveTab(normalized);
       setSettingsTab(null);
     }
   }, [storeTab, setSettingsTab]);
@@ -76,10 +83,10 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
       description: t('settings.apiSettingsDesc'),
     },
     {
-      id: 'sandbox' as TabId,
-      label: t('settings.sandbox'),
-      icon: Shield,
-      description: t('settings.sandboxDesc'),
+      id: 'security' as TabId,
+      label: t('security.tabTitle'),
+      icon: ShieldCheck,
+      description: t('security.tabDesc'),
     },
     {
       id: 'memory' as TabId,
@@ -191,8 +198,8 @@ export function SettingsPanel({ onClose, initialTab = 'api' }: SettingsPanelProp
                 </>
               )}
             </div>
-            <div className={activeTab === 'sandbox' ? '' : 'hidden'}>
-              {viewedTabs.has('sandbox') && <SettingsSandbox />}
+            <div className={activeTab === 'security' ? '' : 'hidden'}>
+              {viewedTabs.has('security') && <SettingsSecurity />}
             </div>
             <div className={activeTab === 'memory' ? '' : 'hidden'}>
               {viewedTabs.has('memory') && <SettingsMemory />}
