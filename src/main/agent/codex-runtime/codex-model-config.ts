@@ -92,12 +92,16 @@ export function buildCodexModelConfig(input: CodexModelConfigInput): CodexModelC
   const provider = input.provider;
 
   if (!isResponsesCompatibleProvider(provider, input.customProtocol)) {
+    // codex 0.142 accepts only wire_api="responses"; chat-completions and native
+    // Anthropic/Gemini providers cannot run. Point the user at the concrete fix.
+    const fix =
+      ' Fix: in Settings, choose provider "OpenAI", or "Custom" with the "OpenAI (Responses)" protocol and a base URL that implements the OpenAI Responses API (/v1/responses).';
     const reason =
       provider === 'anthropic' || provider === 'gemini'
-        ? `Provider "${provider}" is not supported: codex speaks only the OpenAI Responses API.`
+        ? `Provider "${provider}" is not supported: codex speaks only the OpenAI Responses API.${fix}`
         : provider === 'custom'
-          ? `Custom provider protocol "${input.customProtocol ?? 'unknown'}" is not supported: only an OpenAI Responses-compatible endpoint works.`
-          : `Provider "${provider}" is not supported: it does not expose an OpenAI Responses API (codex 0.142 dropped wire_api="chat").`;
+          ? `Custom provider protocol "${input.customProtocol ?? 'unknown'}" is not supported: codex requires an OpenAI Responses-compatible endpoint.${fix}`
+          : `Provider "${provider}" is not supported: it does not expose an OpenAI Responses API (codex 0.142 dropped wire_api="chat").${fix}`;
     return { supported: false, provider, reason };
   }
 

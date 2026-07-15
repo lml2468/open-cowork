@@ -216,12 +216,12 @@ const defaultProfiles: Record<ProviderProfileKey, ProviderProfile> = {
   openrouter: {
     apiKey: '',
     baseUrl: 'https://openrouter.ai/api/v1',
-    model: 'anthropic/claude-sonnet-4-6',
+    model: 'openai/gpt-5.4',
   },
   anthropic: {
     apiKey: '',
     baseUrl: 'https://api.anthropic.com',
-    model: 'claude-sonnet-4-6',
+    model: 'gpt-5.4',
   },
   openai: {
     apiKey: '',
@@ -259,9 +259,11 @@ const defaultConfigSet: ApiConfigSet = {
   id: DEFAULT_CONFIG_SET_ID,
   name: '默认方案',
   isSystem: true,
-  provider: 'openrouter',
-  customProtocol: 'anthropic',
-  activeProfileKey: 'openrouter',
+  // Codex runtime speaks only the OpenAI Responses API, so a fresh install defaults to a
+  // supported provider (OpenAI). Non-Responses providers/protocols fail closed.
+  provider: 'openai',
+  customProtocol: 'openai',
+  activeProfileKey: 'openai',
   profiles: defaultProfiles,
   enableThinking: false,
   updatedAt: '1970-01-01T00:00:00.000Z',
@@ -269,10 +271,10 @@ const defaultConfigSet: ApiConfigSet = {
 
 const defaultConfig: AppConfig = {
   provider: defaultConfigSet.provider,
-  apiKey: defaultProfiles.openrouter.apiKey,
-  baseUrl: defaultProfiles.openrouter.baseUrl,
+  apiKey: defaultProfiles.openai.apiKey,
+  baseUrl: defaultProfiles.openai.baseUrl,
   customProtocol: defaultConfigSet.customProtocol,
-  model: defaultProfiles.openrouter.model,
+  model: defaultProfiles.openai.model,
   activeProfileKey: defaultConfigSet.activeProfileKey,
   profiles: defaultProfiles,
   activeConfigSetId: DEFAULT_CONFIG_SET_ID,
@@ -389,7 +391,7 @@ function normalizeMemoryRuntimeConfig(raw: unknown): MemoryRuntimeConfig {
 
 function profileKeyFromProvider(
   provider: ProviderType,
-  customProtocol: CustomProtocolType = 'anthropic'
+  customProtocol: CustomProtocolType = 'openai'
 ): ProviderProfileKey {
   if (provider !== 'custom') {
     return provider;
@@ -497,8 +499,46 @@ export class ConfigStore {
   }
 
   private ensureNormalized(): void {
-    const normalized = this.normalizeConfig(this.store.store as Partial<AppConfig>);
+    const migrated = this.migrateUnsupportedCustomProtocol(this.store.store as Partial<AppConfig>);
+    const normalized = this.normalizeConfig(migrated);
     this.store.set(normalized);
+  }
+
+  /**
+   * One-time load migration: the codex runtime speaks only the OpenAI Responses API, so the
+   * sole valid custom protocol is `openai`. Configs saved under the old pi runtime may carry
+   * `custom` + `anthropic`/`gemini`, which now hard-fail with a configuration error. Coerce
+   * such sets to `custom` + `openai` (carrying the active profile's endpoint/model/key onto
+   * the `custom:openai` key) so existing users aren't blocked. Runs once in the constructor;
+   * `update()`/`getAll()` are intentionally NOT affected. Idempotent + non-destructive.
+   */
+  private migrateUnsupportedCustomProtocol(
+    raw: Partial<AppConfig> | undefined
+  ): Partial<AppConfig> {
+    if (!raw || typeof raw !== 'object') return raw ?? {};
+
+    const coerceSet = (set: Partial<ApiConfigSet> | undefined): void => {
+      if (!set || set.provider !== 'custom') return;
+      const protocol = set.customProtocol;
+      if (!protocol || protocol === 'openai') return;
+      const oldKey = profileKeyFromProvider('custom', protocol);
+      const newKey = profileKeyFromProvider('custom', 'openai'); // 'custom:openai'
+      if (set.profiles && set.profiles[oldKey] && !set.profiles[newKey]) {
+        set.profiles[newKey] = set.profiles[oldKey];
+      }
+      if (set.activeProfileKey === oldKey) set.activeProfileKey = newKey;
+      set.customProtocol = 'openai';
+    };
+
+    // Legacy top-level projection (no configSets yet): coerce the scalar fields so the
+    // default set derived from them is supported.
+    if (raw.provider === 'custom' && raw.customProtocol && raw.customProtocol !== 'openai') {
+      raw.customProtocol = 'openai';
+    }
+    if (Array.isArray(raw.configSets)) {
+      for (const set of raw.configSets) coerceSet(set as Partial<ApiConfigSet>);
+    }
+    return raw;
   }
 
   /**

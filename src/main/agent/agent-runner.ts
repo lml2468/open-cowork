@@ -1050,7 +1050,7 @@ ${hints.join('\n')}
   private getCurrentModelString(preferredModel?: string): string {
     const routeModel = preferredModel?.trim();
     const configuredModel = configStore.get('model')?.trim();
-    const model = routeModel || configuredModel || 'anthropic/claude-sonnet-4-6';
+    const model = routeModel || configuredModel || 'gpt-5.4';
     logCtx('[CoworkAgentRunner] Current model:', model);
     logCtx(
       '[CoworkAgentRunner] Model source:',

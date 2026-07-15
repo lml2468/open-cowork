@@ -35,9 +35,6 @@ export const API_PROVIDER_PRESETS: SharedProviderPresets = {
     name: 'OpenRouter',
     baseUrl: 'https://openrouter.ai/api/v1',
     models: [
-      { id: 'anthropic/claude-opus-4-6', name: 'anthropic/claude-opus-4-6' },
-      { id: 'anthropic/claude-sonnet-4-6', name: 'anthropic/claude-sonnet-4-6' },
-      { id: 'anthropic/claude-haiku-4-5', name: 'anthropic/claude-haiku-4-5' },
       { id: 'openai/gpt-5.4', name: 'openai/gpt-5.4' },
       { id: 'openai/gpt-5.3-codex', name: 'openai/gpt-5.3-codex' },
       { id: 'google/gemini-3.1-pro-preview', name: 'google/gemini-3.1-pro-preview' },
