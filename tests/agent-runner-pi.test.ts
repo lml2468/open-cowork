@@ -5,7 +5,7 @@ import path from 'node:path';
 const agentRunnerPath = path.resolve(process.cwd(), 'src/main/agent/agent-runner.ts');
 const agentRunnerContent = readFileSync(agentRunnerPath, 'utf8');
 
-describe('CoworkAgentRunner Open Cowork SDK integration', () => {
+describe('CoworkAgentRunner Codex runtime integration', () => {
   it('avoids dynamic re-import shadowing for config store singletons', () => {
     expect(agentRunnerContent).toContain(
       "import { mcpConfigStore } from '../mcp/mcp-config-store'"
@@ -45,50 +45,47 @@ describe('CoworkAgentRunner Open Cowork SDK integration', () => {
     expect(agentRunnerContent).toContain("log('[CoworkAgentRunner] Final mcpServers config:'");
   });
 
-  it('summarizes noisy SDK message updates instead of logging every text delta', () => {
-    expect(agentRunnerContent).toContain('const streamEventCounts = new Map<string, number>();');
-    expect(agentRunnerContent).toContain(
-      "if (updateType !== 'text_delta' && updateType !== 'thinking_delta') {"
-    );
-    expect(agentRunnerContent).toContain("'[CoworkAgentRunner] Event: message_end'");
-    expect(agentRunnerContent).toContain('messageUpdateCounts: getStreamEventSummary()');
-    expect(agentRunnerContent).toContain("if (process.env.COWORK_LOG_SDK_MESSAGES_FULL === '1') {");
-    expect(agentRunnerContent).toContain("'[CoworkAgentRunner] message_end raw message:'");
+  it('drives a codex turn through the shared runtime instead of a pi session', () => {
+    // Pi's createAgentSession / prompt / subscribe loop is gone.
+    expect(agentRunnerContent).not.toContain('createAgentSession');
+    expect(agentRunnerContent).not.toContain('piSession.prompt(');
+    expect(agentRunnerContent).not.toContain('piSession.subscribe(');
+    // The turn now runs on the long-lived CodexRuntime.
+    expect(agentRunnerContent).toContain('const runtime = this.ensureCodexRuntime();');
+    expect(agentRunnerContent).toContain('await runtime.runTurn({');
+    expect(agentRunnerContent).toContain('new CodexEventTranslator({');
   });
 
   it('reuses the shared user-facing error helper', () => {
     expect(agentRunnerContent).toContain("from './agent-runner-message-end'");
-    expect(agentRunnerContent).toContain('resolveMessageEndPayload');
     expect(agentRunnerContent).toContain('toUserFacingErrorText');
     expect(agentRunnerContent).toContain(
       'const errorText = toUserFacingErrorText(toErrorText(error));'
     );
   });
 
-  it('uses pi DefaultResourceLoader with additionalSkillPaths and appendSystemPrompt', () => {
-    expect(agentRunnerContent).toContain('additionalSkillPaths: skillPaths');
-    expect(agentRunnerContent).toContain('appendSystemPrompt: coworkAppendPrompt');
+  it('seeds the codex system prompt as developer instructions', () => {
+    expect(agentRunnerContent).toContain('developerInstructions: coworkAppendPrompt');
     expect(agentRunnerContent).not.toContain('systemPromptOverride');
+    expect(agentRunnerContent).not.toContain('DefaultResourceLoader');
   });
 
-  it('recreates cached pi sessions when the runtime signature changes', () => {
+  it('disposes the codex thread when the runtime signature changes', () => {
+    expect(agentRunnerContent).toContain('const sessionRuntimeSignature = JSON.stringify({');
     expect(agentRunnerContent).toContain(
-      "import { buildPiSessionRuntimeSignature } from './pi-session-runtime'"
+      'sessionMeta.runtimeSignature !== sessionRuntimeSignature'
     );
-    expect(agentRunnerContent).toContain(
-      'const sessionRuntimeSignature = buildPiSessionRuntimeSignature({'
-    );
-    expect(agentRunnerContent).toContain(
-      'cachedSession.runtimeSignature !== sessionRuntimeSignature'
-    );
-    expect(agentRunnerContent).toContain('Runtime changed, recreating cached pi session:');
+    expect(agentRunnerContent).toContain('this.codexRuntime?.disposeSession(session.id);');
     expect(agentRunnerContent).toContain('runtimeSignature: sessionRuntimeSignature');
   });
 
-  it('uses the normalized route protocol so openrouter follows the openai-compatible path', () => {
-    expect(agentRunnerContent).toContain('resolvePiRouteProtocol');
-    expect(agentRunnerContent).toContain('const configProtocol = resolvePiRouteProtocol(');
-    expect(agentRunnerContent).toContain('resolveSyntheticPiModelFallback');
+  it('resolves the model/provider through the codex model-config mapper', () => {
+    expect(agentRunnerContent).toContain(
+      "import { buildCodexModelConfig } from './codex-runtime/codex-model-config'"
+    );
+    expect(agentRunnerContent).toContain('const modelConfigResult = buildCodexModelConfig({');
+    // Unsupported providers fail closed with a user-facing configuration error.
+    expect(agentRunnerContent).toContain('if (!modelConfigResult.supported) {');
   });
 
   it('nudges the model to proceed with reasonable assumptions', () => {
@@ -97,24 +94,23 @@ describe('CoworkAgentRunner Open Cowork SDK integration', () => {
     expect(agentRunnerContent).toContain('most recent two relevant publication days');
   });
 
-  it('routes MCP image results through structured helpers instead of stringifying base64 into text', () => {
+  it('routes MCP tool results through the structured helper for the model', () => {
     expect(agentRunnerContent).toContain(
-      "import {\n  normalizeMcpToolResultForModel,\n  normalizeToolExecutionResultForUi,\n} from './tool-result-utils'"
+      "import { normalizeMcpToolResultForModel } from './tool-result-utils'"
     );
     expect(agentRunnerContent).toContain(
       'const normalizedResult = normalizeMcpToolResultForModel(result);'
     );
-    expect(agentRunnerContent).toContain(
-      'const normalizedToolResult = normalizeToolExecutionResultForUi(event.result);'
-    );
     expect(agentRunnerContent).not.toContain('else textParts.push(JSON.stringify(part));');
-    expect(agentRunnerContent).not.toContain(": JSON.stringify(event.result || '');");
   });
 
-  it('persists assistant model metadata for pi-ai thinking replay', () => {
-    expect(agentRunnerContent).toContain('api: piModel.api');
-    expect(agentRunnerContent).toContain('provider: piModel.provider');
-    expect(agentRunnerContent).toContain('model: piModel.id');
+  it('adapts extension + MCP tools into codex host tools per turn', () => {
+    expect(agentRunnerContent).toContain(
+      "import { adaptPiToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter'"
+    );
+    expect(agentRunnerContent).toContain(
+      'this.codexToolBridge?.setTools(adaptPiToolsToCodexHostTools(customTools));'
+    );
   });
 
   it('does not reference removed AskUserQuestion or TodoWrite tools', () => {

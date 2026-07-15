@@ -71,6 +71,12 @@ export interface CodexThreadStartParams {
   config?: Record<string, unknown> | null;
   baseInstructions?: string | null;
   developerInstructions?: string | null;
+  /**
+   * Host-injected `dynamic_tools` registration specs (see codex-tool-bridge). Sent on
+   * thread start so codex knows which host function tools exist for the thread's turns.
+   * Typed as `unknown[]` here to keep the transport layer free of the tool-bridge module.
+   */
+  dynamicTools?: unknown[] | null;
 }
 
 export interface CodexThreadRef {

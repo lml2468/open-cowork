@@ -25,13 +25,13 @@ export const TOOL_CALL_METHOD = 'item/tool/call';
 
 /** A single content element in a dynamic-tool response (text-only for now). */
 export interface CodexToolContentItem {
-  type: 'text';
+  type: 'inputText';
   text: string;
 }
 
 /** The result envelope the host writes back for an `item/tool/call` request. */
 export interface CodexDynamicToolResponse {
-  content_items: CodexToolContentItem[];
+  contentItems: CodexToolContentItem[];
   success: boolean;
 }
 
@@ -78,6 +78,17 @@ export class CodexToolBridge {
     this.tools.set(tool.name, tool);
   }
 
+  /**
+   * Replace the entire registered tool set. Used by the runner to rebuild the bridge
+   * per turn (open item (d)) so newly added / removed extension + MCP tools take effect.
+   */
+  setTools(tools: readonly CodexHostTool[]): void {
+    this.tools.clear();
+    for (const tool of tools) {
+      this.tools.set(tool.name, tool);
+    }
+  }
+
   /** Whether this bridge owns the given server-request method. */
   canHandle(method: string): boolean {
     return method === TOOL_CALL_METHOD;
@@ -113,7 +124,7 @@ export class CodexToolBridge {
     try {
       const result = await tool.execute(args);
       return {
-        content_items: [{ type: 'text', text: result.content }],
+        contentItems: [{ type: 'inputText', text: result.content }],
         success: result.isError !== true,
       };
     } catch (err: unknown) {
@@ -123,7 +134,7 @@ export class CodexToolBridge {
 }
 
 function errorResult(message: string): CodexDynamicToolResponse {
-  return { content_items: [{ type: 'text', text: message }], success: false };
+  return { contentItems: [{ type: 'inputText', text: message }], success: false };
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

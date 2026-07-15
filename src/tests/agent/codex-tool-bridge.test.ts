@@ -45,7 +45,7 @@ describe('CodexToolBridge', () => {
     const bridge = new CodexToolBridge([{ ...echoTool, execute }]);
     const res = await bridge.handle(toolCall({ tool: 'echo', arguments: { text: 'hi' } }));
     expect(execute).toHaveBeenCalledWith({ text: 'hi' });
-    expect(res).toEqual({ content_items: [{ type: 'text', text: 'echo:hi' }], success: true });
+    expect(res).toEqual({ contentItems: [{ type: 'inputText', text: 'echo:hi' }], success: true });
   });
 
   it('marks a tool result as unsuccessful when the tool reports isError', async () => {
@@ -58,14 +58,14 @@ describe('CodexToolBridge', () => {
       },
     ]);
     const res = await bridge.handle(toolCall({ tool: 'boom', arguments: {} }));
-    expect(res).toEqual({ content_items: [{ type: 'text', text: 'nope' }], success: false });
+    expect(res).toEqual({ contentItems: [{ type: 'inputText', text: 'nope' }], success: false });
   });
 
   it('returns an error envelope for an unknown tool', async () => {
     const bridge = new CodexToolBridge([echoTool]);
     const res = await bridge.handle(toolCall({ tool: 'missing', arguments: {} }));
     expect(res.success).toBe(false);
-    expect(res.content_items[0].text).toContain('Unknown tool: missing');
+    expect(res.contentItems[0].text).toContain('Unknown tool: missing');
   });
 
   it('converts a thrown tool error into an error envelope (never rejects)', async () => {
@@ -80,7 +80,7 @@ describe('CodexToolBridge', () => {
       },
     ]);
     const res = await bridge.handle(toolCall({ tool: 'throws', arguments: {} }));
-    expect(res).toEqual({ content_items: [{ type: 'text', text: 'kaboom' }], success: false });
+    expect(res).toEqual({ contentItems: [{ type: 'inputText', text: 'kaboom' }], success: false });
   });
 
   it('supports late registration via register()', async () => {
