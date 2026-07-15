@@ -31,7 +31,7 @@ import {
   shouldAllowEmptyGeminiApiKey,
   shouldUseAnthropicAuthToken,
 } from './auth-utils';
-import { API_PROVIDER_PRESETS, PI_AI_CURATED_PRESETS } from '../../shared/api-model-presets';
+import { API_PROVIDER_PRESETS } from '../../shared/api-model-presets';
 import type { GpuAccelerationMode } from '../system/gpu-detection';
 import { isGpuAccelerationMode } from '../system/gpu-detection';
 
@@ -302,55 +302,17 @@ const defaultConfig: AppConfig = {
 };
 
 export const PROVIDER_PRESETS = API_PROVIDER_PRESETS;
-const PI_AI_CURATED: Record<string, { piProvider: string; pick: string[] }> = PI_AI_CURATED_PRESETS;
-
-// Cached dynamic presets — populated once by async import.
-let cachedDynamicPresets: typeof PROVIDER_PRESETS | null = null;
 
 /**
- * Build model presets dynamically from pi-ai registry.
- * Returns PROVIDER_PRESETS with models arrays replaced by registry data where available.
- * Uses async import() because pi-ai is ESM-only.
+ * Return the provider→model presets shown in the config UI.
+ *
+ * Historically this merged pi-ai's model registry over the curated static presets. Under
+ * the codex (OpenAI-Responses-only) runtime pi-ai is gone, so the curated static presets
+ * in `API_PROVIDER_PRESETS` are authoritative and returned directly. Kept async for
+ * call-site compatibility (the IPC handler awaits it).
  */
-export async function getPiAiModelPresets(): Promise<typeof PROVIDER_PRESETS> {
-  if (cachedDynamicPresets) return cachedDynamicPresets;
-
-  try {
-    const { getModels } = (await import('@mariozechner/pi-ai')) as {
-      getModels: (provider: string) => Array<{ id: string; name: string }> | undefined;
-    };
-
-    const result = { ...PROVIDER_PRESETS } as Record<
-      string,
-      (typeof PROVIDER_PRESETS)[keyof typeof PROVIDER_PRESETS]
-    >;
-
-    for (const [providerKey, curated] of Object.entries(PI_AI_CURATED)) {
-      const preset = PROVIDER_PRESETS[providerKey as keyof typeof PROVIDER_PRESETS];
-      if (!preset) continue;
-
-      const registryModels = getModels(curated.piProvider);
-      if (!registryModels || registryModels.length === 0) continue;
-
-      const registryIds = new Set(registryModels.map((m) => m.id));
-      const picked = curated.pick
-        .filter((id) => registryIds.has(id))
-        .map((id) => {
-          const reg = registryModels.find((m) => m.id === id);
-          return { id, name: reg?.name || id };
-        });
-
-      if (picked.length > 0) {
-        result[providerKey] = { ...preset, models: picked };
-      }
-    }
-
-    cachedDynamicPresets = result as unknown as typeof PROVIDER_PRESETS;
-    return cachedDynamicPresets;
-  } catch (err) {
-    logWarn('[ConfigStore] Failed to load pi-ai model presets, using hardcoded fallback:', err);
-    return PROVIDER_PRESETS;
-  }
+export async function getModelPresets(): Promise<typeof PROVIDER_PRESETS> {
+  return PROVIDER_PRESETS;
 }
 
 const PROFILE_KEYS: ProviderProfileKey[] = [

@@ -119,55 +119,6 @@ export const API_PROVIDER_PRESETS: SharedProviderPresets = {
   },
 };
 
-export const PI_AI_CURATED_PRESETS: Record<string, { piProvider: string; pick: string[] }> = {
-  openrouter: {
-    piProvider: 'openrouter',
-    pick: [
-      'anthropic/claude-opus-4-6',
-      'anthropic/claude-sonnet-4-6',
-      'anthropic/claude-haiku-4-5',
-      'openai/gpt-5.4',
-      'openai/gpt-5.3-codex',
-      'google/gemini-3.1-pro-preview',
-      'google/gemini-3-flash-preview',
-      'google/gemini-2.5-flash',
-    ],
-  },
-  anthropic: {
-    piProvider: 'anthropic',
-    pick: [
-      'claude-opus-4-6',
-      'claude-sonnet-4-6',
-      'claude-haiku-4-5',
-      'claude-sonnet-4-5',
-      'claude-3-7-sonnet-latest',
-    ],
-  },
-  openai: {
-    piProvider: 'openai',
-    pick: [
-      'gpt-5.4',
-      'gpt-5.4-pro',
-      'gpt-5.4-mini',
-      'gpt-5.4-nano',
-      'gpt-5.3-codex',
-      'o3',
-      'o4-mini',
-    ],
-  },
-  gemini: {
-    piProvider: 'google',
-    pick: [
-      'gemini-3.1-pro-preview',
-      'gemini-3-flash-preview',
-      'gemini-3.1-flash-lite-preview',
-      'gemini-2.5-pro',
-      'gemini-2.5-flash',
-      'gemini-2.5-flash-lite',
-    ],
-  },
-};
-
 export function getModelInputGuidance(
   provider: SharedProviderType,
   customProtocol: SharedCustomProtocolType = 'anthropic'

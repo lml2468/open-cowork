@@ -29,7 +29,7 @@ import { SubagentExtension } from './agent/subagent-extension';
 import { AgentRuntimeExtensionManager } from './extensions/agent-runtime-extension-manager';
 import {
   configStore,
-  getPiAiModelPresets,
+  getModelPresets,
   type AppConfig,
   type AppTheme,
   type CreateConfigSetPayload,
@@ -1933,7 +1933,7 @@ ipcMain.handle('config.get', () => {
 
 ipcMain.handle('config.getPresets', () => {
   try {
-    return getPiAiModelPresets();
+    return getModelPresets();
   } catch (error) {
     logError('[Config] Error getting presets:', error);
     return [];
