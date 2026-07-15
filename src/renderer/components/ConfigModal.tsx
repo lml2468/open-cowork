@@ -218,23 +218,21 @@ export function ConfigModal({
               {t('api.provider')}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {(['openrouter', 'anthropic', 'openai', 'gemini', 'ollama', 'custom'] as const).map(
-                (p) => (
-                  <button
-                    key={p}
-                    onClick={() => changeProvider(p)}
-                    className={`px-3 py-2 rounded-lg text-body-sm font-medium transition-all ${
-                      provider === p
-                        ? 'bg-accent text-on-accent'
-                        : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
-                    }`}
-                  >
-                    {presets?.[p]?.name ||
-                      (p === 'custom' ? t('api.custom') : PROVIDER_LABELS[p]) ||
-                      p}
-                  </button>
-                )
-              )}
+              {(['openai', 'custom'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => changeProvider(p)}
+                  className={`px-3 py-2 rounded-lg text-body-sm font-medium transition-all ${
+                    provider === p
+                      ? 'bg-accent text-on-accent'
+                      : 'bg-surface-hover text-text-secondary hover:bg-surface-active'
+                  }`}
+                >
+                  {presets?.[p]?.name ||
+                    (p === 'custom' ? t('api.custom') : PROVIDER_LABELS[p]) ||
+                    p}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -264,13 +262,7 @@ export function ConfigModal({
                 {t('api.protocol')}
               </label>
               <div className="grid grid-cols-3 gap-2">
-                {(
-                  [
-                    { id: 'anthropic', label: 'Anthropic' },
-                    { id: 'openai', label: 'OpenAI' },
-                    { id: 'gemini', label: 'Gemini' },
-                  ] as const
-                ).map((mode) => (
+                {([{ id: 'openai', label: 'OpenAI (Responses)' }] as const).map((mode) => (
                   <button
                     key={mode.id}
                     onClick={() => changeProtocol(mode.id)}
