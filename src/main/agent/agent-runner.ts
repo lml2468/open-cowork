@@ -1469,10 +1469,16 @@ ${hints.join('\n')}
 
       // Register enabled MCP servers with codex NATIVELY (codex owns the `mcp__` tool
       // namespace and spawns/connects the servers itself), rather than proxying each MCP
-      // tool as a host `dynamic_tools` entry. Flattened into `mcp_servers.*` config that
+      // tool as a host `dynamic_tools` entry. mcp-manager resolves each stdio server into a
+      // spawn-ready spec (bundled node, path placeholders, enhanced PATH/NODE_PATH) so
+      // codex can launch them; the result is flattened into `mcp_servers.*` config that
       // rides the same thread-config channel as `model_providers.*`. Included in the
       // runtime signature below so adding/removing a server re-creates the codex thread.
-      const mcpServersConfig = buildCodexMcpServersConfig(mcpConfigStore.getEnabledServers());
+      const mcpServersConfig = this.mcpManager
+        ? buildCodexMcpServersConfig(
+            await this.mcpManager.resolveCodexServerSpecs(mcpConfigStore.getEnabledServers())
+          )
+        : {};
 
       // Context window drives the cold-start history budget + the config summary prompt.
       const codexContextWindow =

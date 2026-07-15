@@ -101,7 +101,7 @@ describe('CoworkAgentRunner Codex runtime integration', () => {
       "import { buildCodexMcpServersConfig } from './codex-runtime/codex-mcp-config'"
     );
     expect(agentRunnerContent).toContain(
-      'buildCodexMcpServersConfig(mcpConfigStore.getEnabledServers())'
+      'resolveCodexServerSpecs(mcpConfigStore.getEnabledServers())'
     );
     expect(agentRunnerContent).toContain('...mcpServersConfig');
     // The old app-side MCP tool proxy is gone.
