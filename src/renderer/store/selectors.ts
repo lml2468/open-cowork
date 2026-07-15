@@ -17,7 +17,13 @@
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from './index';
 import type { Session, Message, TraceStep, Settings, AppConfig } from '../types';
-import type { GlobalNotice, SessionExecutionClock, CompactionEvent, ActiveView } from './index';
+import type {
+  GlobalNotice,
+  SessionExecutionClock,
+  CompactionEvent,
+  ActiveView,
+  ChatMode,
+} from './index';
 
 // ---------------------------------------------------------------------------
 // Session domain
@@ -199,6 +205,13 @@ export function useActiveTraceSteps(): TraceStep[] {
 export function useActiveContextWindow(): number | undefined {
   return useAppStore((s) =>
     s.activeSessionId ? s.sessionStates[s.activeSessionId]?.contextWindow : undefined
+  );
+}
+
+/** Returns the composer behaviour mode ('build' | 'plan') for the active session. */
+export function useActiveSessionMode(): ChatMode {
+  return useAppStore((s) =>
+    s.activeSessionId ? (s.sessionStates[s.activeSessionId]?.mode ?? 'build') : 'build'
   );
 }
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
 import { useIPC } from '../hooks/useIPC';
@@ -22,6 +22,11 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { Skeleton } from './Skeleton';
 import { localizeSkill } from '../utils/localize-skill';
+import {
+  ComposerAutocomplete,
+  type ComposerAutocompleteHandle,
+} from './composer/ComposerAutocomplete';
+import { replaceRange } from '../utils/composer-autocomplete';
 
 type AttachedFile = {
   name: string;
@@ -58,6 +63,7 @@ export function WelcomeView() {
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const autocompleteRef = useRef<ComposerAutocompleteHandle>(null);
   const { startSession, changeWorkingDir, isElectron } = useIPC();
   const workingDir = useAppStore((state) => state.workingDir);
   const setGlobalNotice = useAppStore((state) => state.setGlobalNotice);
@@ -450,6 +456,25 @@ export function WelcomeView() {
     adjustTextareaHeight();
   }, [prompt]);
 
+  // Replace an `@`-mention trigger token with the chosen file reference (G10).
+  const skillTemplate = useCallback(
+    (name: string) => t('welcome.skillPromptTemplate', { name }),
+    [t]
+  );
+
+  const handleComposerReplace = useCallback((start: number, end: number, insert: string) => {
+    const current = textareaRef.current?.value ?? '';
+    const { text, caret } = replaceRange(current, start, end, insert);
+    setPrompt(text);
+    const el = textareaRef.current;
+    if (el) {
+      el.value = text;
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    }
+    adjustTextareaHeight();
+  }, []);
+
   const quickTags = [
     {
       id: 'create',
@@ -613,10 +638,19 @@ export function WelcomeView() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`order-3 rounded-4xl border border-border-muted bg-background/85 shadow-soft px-5 py-5 space-y-4 transition-colors ${
+          className={`order-3 relative rounded-4xl border border-border-muted bg-background/85 shadow-soft px-5 py-5 space-y-4 transition-colors ${
             isDragging ? 'ring-2 ring-accent bg-accent/5' : ''
           }`}
         >
+          <ComposerAutocomplete
+            ref={autocompleteRef}
+            textareaRef={textareaRef}
+            value={prompt}
+            cwd={workingDir}
+            onReplace={handleComposerReplace}
+            skillTemplate={skillTemplate}
+          />
+
           {/* Image previews */}
           {pastedImages.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 pb-2 border-b border-border w-full">
@@ -682,6 +716,10 @@ export function WelcomeView() {
             style={{ minHeight: '72px', maxHeight: '200px' }}
             className="w-full resize-none bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-base leading-relaxed overflow-hidden"
             onKeyDown={(e) => {
+              // Autocomplete menu navigation takes priority over submit.
+              if (autocompleteRef.current?.handleKeyDown(e)) {
+                return;
+              }
               // Enter to send, Shift+Enter for new line
               if (e.key === 'Enter' && !e.shiftKey) {
                 if (e.nativeEvent.isComposing || isComposingRef.current || e.keyCode === 229) {

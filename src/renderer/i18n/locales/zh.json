@@ -671,6 +671,43 @@
     "cancel": "取消",
     "confirmDelete": "删除"
   },
+  "composer": {
+    "model": {
+      "title": "模型",
+      "configure": "在设置中配置模型"
+    },
+    "skills": {
+      "pill": "技能",
+      "title": "技能",
+      "search": "搜索技能...",
+      "loading": "加载技能中...",
+      "empty": "尚未启用任何技能",
+      "noMatch": "没有匹配的技能"
+    },
+    "connectors": {
+      "pill": "连接",
+      "title": "连接器",
+      "loading": "加载连接器中...",
+      "empty": "在设置中添加连接器",
+      "toolCount_one": "{{count}} 个工具",
+      "toolCount_other": "{{count}} 个工具",
+      "connecting": "连接中...",
+      "disabled": "已禁用"
+    },
+    "mode": {
+      "title": "模式",
+      "build": "执行",
+      "buildDesc": "直接执行以完成任务。",
+      "plan": "规划",
+      "planDesc": "先思考出方案再执行。"
+    },
+    "mention": {
+      "title": "文件"
+    },
+    "command": {
+      "title": "技能"
+    }
+  },
   "chat": {
     "sendMessage": "发送消息",
     "stop": "停止",
