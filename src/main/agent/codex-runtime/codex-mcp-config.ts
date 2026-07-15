@@ -6,10 +6,10 @@ import type { MCPServerConfig } from '../../mcp/mcp-manager';
  * tool namespace), instead of the app proxying each MCP tool as a host `dynamic_tools`
  * entry (which collides: "dynamic tool name is reserved: mcp__…").
  *
- * The values are strings codex parses as TOML (the same dotted-config mechanism the app
- * already uses for `model_providers.*`, verified via `codex -c 'mcp_servers.x.command=…'`).
- * Arrays are emitted as TOML/JSON array literals; env is emitted per-key as
- * `mcp_servers.<id>.env.<KEY>`.
+ * The values are the codex `thread/start` config map's **native JSON** types (NOT
+ * TOML-encoded strings — that only applies to the `-c` CLI). Dotted keys build the nested
+ * config, so `args` is a native string array, `command`/`cwd`/`url` are strings, and env /
+ * headers are emitted per-key as `mcp_servers.<id>.env.<KEY>` string values.
  *
  * NOTE (ownership): codex SPAWNS the stdio servers itself from this spec, so the spec must
  * be fully resolved (absolute command path / resolved args / complete env) by the caller —
@@ -27,16 +27,17 @@ export function sanitizeMcpServerId(id: string): string {
  * Build the flattened `mcp_servers.*` config overrides for one server. Returns an empty
  * object for a server that can't be expressed (no command and no url).
  */
-export function buildCodexMcpServerEntry(config: MCPServerConfig): Record<string, string> {
+export function buildCodexMcpServerEntry(config: MCPServerConfig): Record<string, unknown> {
   const id = sanitizeMcpServerId(config.id || config.name);
   const prefix = `mcp_servers.${id}`;
-  const out: Record<string, string> = {};
+  const out: Record<string, unknown> = {};
 
   if (config.type === 'stdio') {
     if (!config.command || config.command.trim().length === 0) return {};
     out[`${prefix}.command`] = config.command;
     if (config.args && config.args.length > 0) {
-      out[`${prefix}.args`] = JSON.stringify(config.args);
+      // Native array — the config map is JSON, not TOML; codex wants a sequence here.
+      out[`${prefix}.args`] = [...config.args];
     }
     if (config.cwd && config.cwd.trim().length > 0) {
       out[`${prefix}.cwd`] = config.cwd;
@@ -67,8 +68,8 @@ export function buildCodexMcpServerEntry(config: MCPServerConfig): Record<string
  * Build the merged `mcp_servers.*` config overrides for a list of servers (typically the
  * enabled set). Servers that can't be expressed are skipped.
  */
-export function buildCodexMcpServersConfig(servers: MCPServerConfig[]): Record<string, string> {
-  const merged: Record<string, string> = {};
+export function buildCodexMcpServersConfig(servers: MCPServerConfig[]): Record<string, unknown> {
+  const merged: Record<string, unknown> = {};
   for (const server of servers) {
     Object.assign(merged, buildCodexMcpServerEntry(server));
   }

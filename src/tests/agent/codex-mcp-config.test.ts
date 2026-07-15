@@ -24,10 +24,10 @@ describe('codex-mcp-config', () => {
     expect(sanitizeMcpServerId('')).toBe('server');
   });
 
-  it('maps a stdio server to command/args(JSON)/env(per-key)', () => {
+  it('maps a stdio server to command/args(array)/env(per-key)', () => {
     const entry = buildCodexMcpServerEntry(stdio());
     expect(entry['mcp_servers.chrome.command']).toBe('npx');
-    expect(entry['mcp_servers.chrome.args']).toBe('["-y","chrome-devtools-mcp@latest"]');
+    expect(entry['mcp_servers.chrome.args']).toEqual(['-y', 'chrome-devtools-mcp@latest']);
     expect(entry['mcp_servers.chrome.env.FOO']).toBe('bar');
   });
 
