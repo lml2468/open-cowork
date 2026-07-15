@@ -56,7 +56,82 @@
     "quickPromptPapers": "请帮我使用 Chrome 搜索并总结两天内与 [Agent] 相关的论文。\n来源网站：\n1. HuggingFace Daily Papers。请包含投票信息和简短总结。注意周末可能没有新论文，所以你可能需要补看前几天的内容，但总计仍然要覆盖两天。",
     "quickPromptNotion": "帮我调研三篇与 agents 相关、具有代表性的综述论文，并将它们添加到一个名为“Agent Survey”的 Notion 页面下。每篇论文请包含标题、作者、发表 venue/year，以及主要贡献的简短总结。",
     "apiNotConfigured": "API 尚未配置，请前往设置页面填写 API 提供商和密钥。",
-    "goToSettings": "前往设置"
+    "goToSettings": "前往设置",
+    "scenarios": {
+      "all": "全部",
+      "daily": "日常办公",
+      "coding": "编程开发",
+      "design": "设计创意"
+    },
+    "inspiration": {
+      "heading": "获取灵感",
+      "makeOne": "做一个同款",
+      "emptyTitle": "该场景暂无模板",
+      "emptyDescription": "切换场景以探索更多起点。",
+      "weekly-report": {
+        "title": "工作周报",
+        "description": "把本周的记录和任务整理成清晰、可分享的总结。",
+        "prompt": "根据我的记录起草一份工作周报：总结我已完成的工作、进行中的事项，以及下周的优先事项。"
+      },
+      "meeting-notes": {
+        "title": "会议纪要与待办",
+        "description": "把零散的会议记录整理成决策、负责人和后续待办。",
+        "prompt": "把我的会议记录整理成结构化纪要，包含关键决策、行动项和负责人。"
+      },
+      "landing-page": {
+        "title": "产品落地页",
+        "description": "一个包含主视觉、功能亮点和行动号召的单页 HTML 落地页。",
+        "prompt": "为一个产品构建响应式单页 HTML 落地页，包含主视觉区、三个功能亮点和一个行动号召按钮。"
+      },
+      "data-dashboard": {
+        "title": "数据看板",
+        "description": "一个交互式 HTML 看板，一眼呈现数据集要点。",
+        "prompt": "创建一个交互式 HTML 看板，用几张图表和汇总指标可视化一份数据集。"
+      },
+      "api-reference": {
+        "title": "API 参考文档",
+        "description": "为一组 API 接口生成可读的 HTML 文档，附带示例。",
+        "prompt": "为一组接口生成整洁的 HTML API 参考页面，包含请求和响应示例。"
+      },
+      "pitch-deck": {
+        "title": "路演演示提纲",
+        "description": "为一场有说服力的产品路演准备逐页提纲。",
+        "prompt": "为一个产品起草逐页的路演演示提纲，涵盖问题、解决方案、市场和诉求。"
+      }
+    },
+    "experts": {
+      "heading": "邀请一位专家",
+      "writing-coach": {
+        "name": "写作教练",
+        "role": "打磨语气、清晰度与结构",
+        "prompt": "请作为写作教练，帮我改进以下文字的清晰度、语气和结构："
+      },
+      "data-analyst": {
+        "name": "数据分析师",
+        "role": "从数据中发现关键结论",
+        "prompt": "请作为数据分析师，帮我探索这份数据集、提炼关键趋势并建议可视化方式："
+      },
+      "code-reviewer": {
+        "name": "代码审查员",
+        "role": "审查缺陷、可读性与风险",
+        "prompt": "请作为严谨的代码审查员，审查以下改动的正确性、可读性和潜在风险："
+      },
+      "refactor-guide": {
+        "name": "重构向导",
+        "role": "在不改变行为的前提下重构代码",
+        "prompt": "请作为重构向导，提出一个安全、渐进的方案来重构这段代码，同时保持其行为不变："
+      },
+      "ux-designer": {
+        "name": "体验设计师",
+        "role": "优化流程与易用性",
+        "prompt": "请作为体验设计师，审视这个流程并给出关于易用性和信息层级的具体改进建议："
+      },
+      "brand-designer": {
+        "name": "品牌设计师",
+        "role": "塑造视觉识别与调性",
+        "prompt": "请作为品牌设计师，帮我为以下需求打造视觉识别——配色、字体和调性："
+      }
+    }
   },
   "settings": {
     "title": "设置",
@@ -956,7 +1031,37 @@
     "pickerAdd": "添加",
     "pickerSelectedTimes": "已选时段",
     "pickerNone": "还没有选择时段",
-    "pickerSuggestions": "常用建议"
+    "pickerSuggestions": "常用建议",
+    "templates": {
+      "heading": "从模板开始",
+      "hint": "选择一个模板以预填下方表单。",
+      "use": "使用模板",
+      "daily-briefing": {
+        "title": "每日晨报",
+        "description": "每天开始时的优先事项摘要。",
+        "prompt": "准备一份简洁的晨报：今天的优先事项、临近的截止时间，以及一个建议优先处理的任务。"
+      },
+      "weekly-review": {
+        "title": "每周复盘",
+        "description": "每周一回顾上周并规划本周。",
+        "prompt": "撰写每周复盘：总结上周进展，并列出下周的目标和优先事项。"
+      },
+      "inbox-triage": {
+        "title": "收件箱整理",
+        "description": "每天梳理需要回复的事项。",
+        "prompt": "整理我的收件箱：按紧急程度分组，并为今天需要回复的消息起草简短回复。"
+      },
+      "learning-nudge": {
+        "title": "每日学习提醒",
+        "description": "每晚学一个小知识点。",
+        "prompt": "今天教我一个有用的概念，附上简短解释和一个我可以尝试的具体示例。"
+      },
+      "cleanup-reminder": {
+        "title": "每周清理",
+        "description": "每周五提醒整理工作目录。",
+        "prompt": "检查我的工作目录并给出清理方案：需要归档、重命名或删除的文件，但先不要实际删除任何内容。"
+      }
+    }
   },
   "remote": {
     "title": "远程控制",

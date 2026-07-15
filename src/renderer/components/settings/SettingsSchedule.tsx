@@ -15,6 +15,8 @@ import { formatAppDateTime, joinAppList } from '../../utils/i18n-format';
 import { renderLocalizedBannerMessage, getWeekdayOptions, getScheduleModeOptions } from './shared';
 import type { LocalizedBanner, ScheduleFormMode } from './shared';
 import { EmptyState } from '../EmptyState';
+import { AutomationTemplateGallery } from './AutomationTemplateGallery';
+import type { AutomationTemplate } from '../../utils/activation-gallery';
 
 const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
 
@@ -354,6 +356,23 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
     setRepeatUnit('day');
   }
 
+  // Prefill the create form from a curated automation template (G25). Never
+  // touches an in-progress edit — it always starts a fresh create.
+  function applyAutomationTemplate(template: AutomationTemplate) {
+    setEditingId(null);
+    setEditingTaskSnapshot(null);
+    setPrompt(t(`schedule.templates.${template.id}.prompt`));
+    setCwd(workingDir || '');
+    setScheduleMode(template.scheduleMode);
+    setSelectedTimes(template.times);
+    setSelectedWeekdays(template.weekdays as ScheduleWeekday[]);
+    setEnabled(true);
+    setRepeatEvery(1);
+    setRepeatUnit('day');
+    setError(null);
+    setSuccess(null);
+  }
+
   return (
     <div className="space-y-4">
       {error && (
@@ -369,10 +388,12 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
         </div>
       )}
 
+      {!editingId && <AutomationTemplateGallery onApply={applyAutomationTemplate} />}
+
       <div className="rounded-lg border border-border bg-surface p-4 space-y-3">
         <h4 className="text-body-sm font-medium text-text-primary">
           {editingId ? t('schedule.editTitle') : t('schedule.createTitle')}
-        </h4>
+        </h4>{' '}
         <div className="rounded-lg border border-border bg-background px-3 py-2">
           <div className="text-caption text-text-muted mb-1">{t('schedule.autoTitleLabel')}</div>
           <div className="text-body-sm text-text-primary break-all">{previewTitle}</div>
