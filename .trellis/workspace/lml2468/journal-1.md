@@ -110,3 +110,36 @@ Replaced the MCP dynamic_tools proxy (mcp\_\_ reserved collision) with codex-nat
 ### Next Steps
 
 - None - task complete
+
+## Session 4: Codex best-practice cleanup (Batch A+B)
+
+**Date**: 2026-07-15
+**Task**: Codex best-practice cleanup (Batch A+B)
+**Branch**: `main`
+
+### Summary
+
+Dropped vestigial pi-era adapter code: trimmed AgentRuntimeCustomTool.execute to (params), removed synthetic toolCallId + dead label field, renamed Pi* adapter symbols to CustomTool*, and removed the dead deferLoading field. Merged as PR #30. Deferred the conversation_history->thread/resume rewrite to a dedicated task.
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash      | Message       |
+| --------- | ------------- |
+| `cb3dc0e` | (see git log) |
+| `27668d7` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
