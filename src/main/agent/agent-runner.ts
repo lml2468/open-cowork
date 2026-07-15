@@ -415,6 +415,12 @@ interface AgentRunnerOptions {
     toolName: string,
     input: Record<string, unknown>
   ) => Promise<'allow' | 'deny' | 'allow_always'>;
+  /**
+   * Persist the codex threadId + runtime signature for a session so it can be resumed
+   * (`thread/resume`) on a later cold start (e.g. after an app restart) instead of
+   * rebuilding the `<conversation_history>` preamble.
+   */
+  persistCodexThread?: (sessionId: string, threadId: string, runtimeSignature: string) => void;
 }
 
 /** Per-session codex bookkeeping (replaces the pi `CachedPiSession` cache). */
@@ -453,6 +459,11 @@ export class CoworkAgentRunner {
     toolName: string,
     input: Record<string, unknown>
   ) => Promise<'allow' | 'deny' | 'allow_always'>;
+  private persistCodexThread?: (
+    sessionId: string,
+    threadId: string,
+    runtimeSignature: string
+  ) => void;
   private pathResolver: PathResolver;
   private mcpManager?: MCPManager;
   private _pluginRuntimeService?: PluginRuntimeService;
@@ -791,6 +802,7 @@ ${hints.join('\n')}
     this.sendToRenderer = options.sendToRenderer;
     this.saveMessage = options.saveMessage;
     this.requestPermission = options.requestPermission;
+    this.persistCodexThread = options.persistCodexThread;
     this.pathResolver = pathResolver;
     this.mcpManager = mcpManager;
     this._pluginRuntimeService = pluginRuntimeService;
@@ -1671,6 +1683,22 @@ ${hints.join('\n')}
       }
       const isColdStart = !sessionMeta;
 
+      // Resume path: on a cold start, if this session has a persisted codex thread created
+      // under the SAME runtime signature (survives app restarts — codexSessionMeta is
+      // in-memory), resume it. codex restores the thread's server-side history, so we skip
+      // the hand-built <conversation_history> preamble. (Optimistic: if resume fails inside
+      // runTurn it falls back to a fresh thread; preamble-on-resume-miss is a follow-up.)
+      const canResumeThread =
+        isColdStart &&
+        !!session.openaiThreadId &&
+        session.codexRuntimeSignature === sessionRuntimeSignature;
+      if (canResumeThread) {
+        logCtx(
+          '[CoworkAgentRunner] Resuming persisted codex thread (skipping history preamble):',
+          session.openaiThreadId
+        );
+      }
+
       const extensionResult = this.extensionManager
         ? await this.extensionManager.beforeSessionRun({
             session,
@@ -1681,7 +1709,7 @@ ${hints.join('\n')}
         : { promptPrefix: undefined, customTools: [] };
 
       let contextualPrompt = prompt;
-      if (isColdStart) {
+      if (isColdStart && !canResumeThread) {
         // Cold start: inject recent history into prompt if available
         const conversationMessages = existingMessages.filter(
           (msg) => msg.role === 'user' || msg.role === 'assistant'
@@ -2082,6 +2110,9 @@ Tool routing:
           // System prompt seeds a NEW thread only; a warm thread already holds it.
           developerInstructions: coworkAppendPrompt,
           config: { ...modelConfig.configOverrides, ...mcpServersConfig },
+          ...(canResumeThread && session.openaiThreadId
+            ? { resumeThreadId: session.openaiThreadId }
+            : {}),
         });
         // Turn completed — record the session as warm so the next turn reuses the codex
         // thread (server-side history) and skips the <conversation_history> preamble.
@@ -2089,6 +2120,13 @@ Tool routing:
           runtimeSignature: sessionRuntimeSignature,
           skillsSignature,
         });
+        // Persist the codex threadId + signature so a later cold start (e.g. after an app
+        // restart, when codexSessionMeta is empty) can `thread/resume` instead of rebuilding
+        // the history preamble.
+        const resolvedThreadId = runtime.getThreadId(session.id);
+        if (resolvedThreadId) {
+          this.persistCodexThread?.(session.id, resolvedThreadId, sessionRuntimeSignature);
+        }
       } catch (turnErr: unknown) {
         // runTurn rejects on turn/failed or an intentional interrupt (loop guard / timeout /
         // user cancel / dispose). Only surface a fresh error when nothing already did.

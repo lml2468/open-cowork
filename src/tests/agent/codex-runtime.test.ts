@@ -79,6 +79,14 @@ class FakeCodexClient implements CodexClientLike {
     return { thread: { id: this.threadId }, model: 'gpt', modelProvider: 'openai' };
   }
 
+  threadResumeCalls: unknown[] = [];
+  resumeShouldFail = false;
+  async threadResume(params: { threadId: string }): Promise<CodexThreadStartResponse> {
+    this.threadResumeCalls.push(params);
+    if (this.resumeShouldFail) throw new Error('resume failed');
+    return { thread: { id: params.threadId }, model: 'gpt', modelProvider: 'openai' };
+  }
+
   async turnStart(params: CodexTurnStartParams): Promise<CodexTurnStartResponse> {
     this.turnStartCalls.push(params);
     return { turn: { id: this.turnId } };
@@ -156,6 +164,53 @@ const completedNotification = (): CodexNotification => ({
 });
 
 describe('CodexRuntime', () => {
+  describe('prepareThread (resume)', () => {
+    it('resumes a persisted thread instead of starting fresh', async () => {
+      const client = new FakeCodexClient();
+      const { runtime } = makeRuntime(client);
+
+      const res = await runtime.prepareThread({
+        sessionId: 's1',
+        input: '',
+        resumeThreadId: 'persisted-thread',
+        model: 'gpt',
+        cwd: '/w',
+      });
+
+      expect(res).toEqual({ threadId: 'persisted-thread', resumed: true });
+      expect(client.threadResumeCalls).toHaveLength(1);
+      expect(client.threadStartCalls).toHaveLength(0);
+    });
+
+    it('falls back to a fresh thread when resume fails', async () => {
+      const client = new FakeCodexClient();
+      client.resumeShouldFail = true;
+      const { runtime } = makeRuntime(client);
+
+      const res = await runtime.prepareThread({
+        sessionId: 's1',
+        input: '',
+        resumeThreadId: 'evicted-thread',
+      });
+
+      expect(res.resumed).toBe(false);
+      expect(client.threadResumeCalls).toHaveLength(1);
+      expect(client.threadStartCalls).toHaveLength(1);
+    });
+
+    it('starts fresh (no resume) when no resumeThreadId is given', async () => {
+      const client = new FakeCodexClient();
+      const { runtime } = makeRuntime(client);
+
+      const res = await runtime.prepareThread({ sessionId: 's1', input: '' });
+
+      expect(res.resumed).toBe(false);
+      expect(client.threadResumeCalls).toHaveLength(0);
+      expect(client.threadStartCalls).toHaveLength(1);
+      expect(runtime.getThreadId('s1')).toBe(client.threadId);
+    });
+  });
+
   it('starts the client, opens a thread, and streams a turn to the emitters', async () => {
     const client = new FakeCodexClient();
     const { runtime, emitters } = makeRuntime(client);

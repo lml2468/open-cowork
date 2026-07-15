@@ -4,6 +4,8 @@ export interface Session {
   title: string;
   claudeSessionId?: string;
   openaiThreadId?: string;
+  /** Runtime signature the persisted codex thread was created under (resume-vs-fresh gate). */
+  codexRuntimeSignature?: string;
   status: SessionStatus;
   cwd?: string;
   mountedPaths: MountedPath[];
