@@ -58,19 +58,22 @@ vi.mock('../src/main/mcp/mcp-config-store', () => ({
   },
 }));
 
-vi.mock('../src/main/agent/sdk-one-shot', () => ({
-  generateTitleWithSdk: vi.fn(async () => 'Unified Title'),
+const generateTitleWithCodexMock = vi.hoisted(() => vi.fn(async () => 'Unified Title'));
+const getSharedCodexClientMock = vi.hoisted(() => vi.fn(() => ({}) as never));
+
+vi.mock('../src/main/agent/codex-runtime/codex-one-shot', () => ({
+  generateTitleWithCodex: generateTitleWithCodexMock,
+}));
+
+vi.mock('../src/main/agent/codex-runtime/codex-shared-client', () => ({
+  getSharedCodexClient: getSharedCodexClientMock,
 }));
 
 import { configStore } from '../src/main/config/config-store';
 import { SessionManager } from '../src/main/session/session-manager';
-import { generateTitleWithSdk } from '../src/main/agent/sdk-one-shot';
 
-const mockedGenerateTitleWithClaudeSdk = vi.mocked(generateTitleWithSdk);
-
-describe('SessionManager unified title generation', () => {
+describe('SessionManager codex title generation', () => {
   const previous = {
-    disableClaudeUnified: process.env.COWORK_DISABLE_CLAUDE_UNIFIED,
     provider: configStore.get('provider'),
     customProtocol: configStore.get('customProtocol'),
     apiKey: configStore.get('apiKey'),
@@ -79,20 +82,15 @@ describe('SessionManager unified title generation', () => {
   };
 
   beforeEach(() => {
-    delete process.env.COWORK_DISABLE_CLAUDE_UNIFIED;
     configStore.set('provider', 'openai');
     configStore.set('customProtocol', 'openai');
     configStore.set('apiKey', 'sk-test');
     configStore.set('model', 'gpt-4.1');
-    mockedGenerateTitleWithClaudeSdk.mockClear();
+    generateTitleWithCodexMock.mockClear();
+    generateTitleWithCodexMock.mockResolvedValue('Unified Title');
   });
 
   afterEach(() => {
-    if (previous.disableClaudeUnified === undefined) {
-      delete process.env.COWORK_DISABLE_CLAUDE_UNIFIED;
-    } else {
-      process.env.COWORK_DISABLE_CLAUDE_UNIFIED = previous.disableClaudeUnified;
-    }
     configStore.set('provider', previous.provider);
     configStore.set('customProtocol', previous.customProtocol);
     configStore.set('apiKey', previous.apiKey);
@@ -101,7 +99,7 @@ describe('SessionManager unified title generation', () => {
     vi.restoreAllMocks();
   });
 
-  it('routes title generation through Claude SDK in unified mode', async () => {
+  it('routes title generation through the codex one-shot for a supported provider', async () => {
     const proto = SessionManager.prototype as unknown as {
       generateTitleWithConfig(titlePrompt: string): Promise<string | null>;
     };
@@ -109,18 +107,18 @@ describe('SessionManager unified title generation', () => {
     const title = await proto.generateTitleWithConfig.call({}, 'Please generate title');
 
     expect(title).toBe('Unified Title');
-    expect(mockedGenerateTitleWithClaudeSdk).toHaveBeenCalledTimes(1);
-    expect(mockedGenerateTitleWithClaudeSdk).toHaveBeenCalledWith(
-      'Please generate title',
+    expect(generateTitleWithCodexMock).toHaveBeenCalledTimes(1);
+    expect(generateTitleWithCodexMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        provider: 'openai',
+        titlePrompt: 'Please generate title',
         model: 'gpt-4.1',
-      })
+        modelProvider: 'coworkopenai',
+      }),
+      expect.objectContaining({ client: expect.anything() })
     );
   });
 
-  it('routes gemini title generation through Claude SDK even when unified mode flag is disabled', async () => {
-    process.env.COWORK_DISABLE_CLAUDE_UNIFIED = '1';
+  it('skips title generation (returns null) for a provider codex cannot speak', async () => {
     configStore.set('provider', 'gemini');
     configStore.set('customProtocol', 'gemini');
     configStore.set('apiKey', 'AIza-test');
@@ -133,15 +131,7 @@ describe('SessionManager unified title generation', () => {
 
     const title = await proto.generateTitleWithConfig.call({}, 'Please generate title');
 
-    expect(title).toBe('Unified Title');
-    expect(mockedGenerateTitleWithClaudeSdk).toHaveBeenCalledTimes(1);
-    expect(mockedGenerateTitleWithClaudeSdk).toHaveBeenCalledWith(
-      'Please generate title',
-      expect.objectContaining({
-        provider: 'gemini',
-        customProtocol: 'gemini',
-        model: 'gemini-2.5-flash',
-      })
-    );
+    expect(title).toBeNull();
+    expect(generateTitleWithCodexMock).not.toHaveBeenCalled();
   });
 });

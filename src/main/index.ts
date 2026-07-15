@@ -41,6 +41,7 @@ import {
   exportOnConfigChange,
 } from './config/config-file-watcher';
 import { runConfigApiTest } from './config/config-test-routing';
+import { disposeSharedCodexClient } from './agent/codex-runtime/codex-shared-client';
 import { listOllamaModels } from './config/ollama-api';
 import { setPermissionRules, decidePermission } from './config/permission-rules-store';
 import { mcpConfigStore } from './mcp/mcp-config-store';
@@ -1556,6 +1557,7 @@ async function cleanupSandboxResources(): Promise<void> {
   stopConfigFileWatcher();
   skillsManager?.stopStorageMonitoring();
   scheduledTaskManager?.stop();
+  disposeSharedCodexClient();
   tray?.destroy();
   tray = null;
 
@@ -1642,6 +1644,7 @@ app.on('before-quit', async (event) => {
     // In dev mode, exit quickly — no need for async sandbox cleanup
     if (process.env.VITE_DEV_SERVER_URL) {
       stopNavServer();
+      disposeSharedCodexClient();
       try {
         closeDatabase();
       } catch {
