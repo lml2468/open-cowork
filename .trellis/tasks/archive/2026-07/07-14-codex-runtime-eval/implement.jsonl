@@ -1,6 +1,0 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
-{"file": ".trellis/spec/main/agent-and-sessions.md", "reason": "Current pi runtime execution path being replaced"}
-{"file": ".trellis/spec/main/runtime-extensions.md", "reason": "Extension pattern + register in BOTH GUI/headless managers"}
-{"file": ".trellis/spec/shared/ipc-contract.md", "reason": "ServerEvent/Message contract the translator must feed (unchanged)"}
-{"file": ".trellis/spec/guides/build-and-test.md", "reason": "CI gate, per-platform binary bundling, vite externalization"}
-{"file": ".trellis/tasks/07-14-codex-runtime-eval/research/codex-integration-surface.md", "reason": "Codex app-server capabilities the runtime is built on"}

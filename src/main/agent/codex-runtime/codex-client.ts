@@ -1,7 +1,6 @@
 /**
  * CodexClient — spawns and supervises a long-lived `codex app-server` child process
- * and speaks the newline-delimited JSON-RPC v2 protocol verified in the Phase 0 spike
- * (see .trellis/tasks/07-14-codex-runtime-eval/spike/harness-0b.mjs).
+ * and speaks the newline-delimited JSON-RPC v2 protocol verified in the Phase 0 spike.
  *
  * Framing (empirically confirmed against codex 0.142.5):
  *   - Every message is a single JSON object terminated by a newline.

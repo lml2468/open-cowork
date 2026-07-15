@@ -1,3 +1,0 @@
-# regenerable via: codex app-server generate-ts [--experimental] --out <dir>
-proto-ts/
-proto-exp/
