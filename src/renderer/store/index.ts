@@ -47,6 +47,14 @@ export interface SessionExecutionClock {
   endAt: number | null;
 }
 
+/**
+ * Per-turn agent behaviour mode surfaced in the composer (G12).
+ * `build` = execute directly; `plan` = plan-first before acting. The renderer
+ * persists this per session; plumbing the flag into codex-runtime requires a
+ * backend change (see report), so today it is a UI-level preference.
+ */
+export type ChatMode = 'build' | 'plan';
+
 export interface CompactionEvent {
   id: string;
   timestamp: number;
@@ -69,6 +77,7 @@ export interface SessionState {
   traceSteps: TraceStep[];
   contextWindow: number;
   compactionHistory: CompactionEvent[];
+  mode: ChatMode;
 }
 
 const DEFAULT_SESSION_STATE: SessionState = {
@@ -81,6 +90,7 @@ const DEFAULT_SESSION_STATE: SessionState = {
   traceSteps: [],
   contextWindow: 0,
   compactionHistory: [],
+  mode: 'build',
 };
 
 // Helper to immutably update a single session's state within the record
@@ -218,6 +228,9 @@ interface AppState {
 
   // Compaction history actions
   addCompactionEvent: (sessionId: string, event: CompactionEvent) => void;
+
+  // Composer mode actions
+  setSessionMode: (sessionId: string, mode: ChatMode) => void;
 
   // System theme actions
   setSystemDarkMode: (dark: boolean) => void;
@@ -649,6 +662,12 @@ export const useAppStore = create<AppState>((set) => ({
 
   // System theme actions
   setSystemDarkMode: (dark) => set({ systemDarkMode: dark }),
+
+  // Composer mode actions
+  setSessionMode: (sessionId, mode) =>
+    set((state) => ({
+      sessionStates: patchSession(state.sessionStates, sessionId, { mode }),
+    })),
 }));
 
 // Expose helpers for nav-server (CLI-driven UI navigation via executeJavaScript)

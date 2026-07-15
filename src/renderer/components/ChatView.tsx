@@ -9,7 +9,8 @@ import {
   useActiveTurn,
   usePendingTurns,
   useActiveExecutionClock,
-  useAppConfig,
+  useActiveSessionCwd,
+  useActiveSessionMode,
 } from '../store/selectors';
 import { useAppStore } from '../store';
 import { useIPC } from '../hooks/useIPC';
@@ -17,8 +18,17 @@ import { useSmoothedStreamingText } from '../hooks/useSmoothedStreamingText';
 import { MessageCard } from './MessageCard';
 import { SubagentTracker } from './SubagentTracker';
 import { ContextUsageBar } from './ContextUsageBar';
+import { ModelPicker } from './composer/ModelPicker';
+import { SkillPicker } from './composer/SkillPicker';
+import { ConnectorPicker } from './composer/ConnectorPicker';
+import { ModePicker } from './composer/ModePicker';
+import {
+  ComposerAutocomplete,
+  type ComposerAutocompleteHandle,
+} from './composer/ComposerAutocomplete';
+import { replaceRange } from '../utils/composer-autocomplete';
 import { resolveChatFollowOutput } from './chat-scroll';
-import type { Message, ContentBlock } from '../types';
+import type { Message, ContentBlock, Skill } from '../types';
 import { Send, Square, Plus, Loader2, Plug, X, Clock } from 'lucide-react';
 
 type AttachedFile = {
@@ -81,10 +91,13 @@ export function ChatView() {
   const activeTurn = useActiveTurn();
   const pendingTurns = usePendingTurns();
   const executionClock = useActiveExecutionClock();
-  const appConfig = useAppConfig();
+  const activeCwd = useActiveSessionCwd();
+  const composerMode = useActiveSessionMode();
+  const setSessionMode = useAppStore((s) => s.setSessionMode);
   const setGlobalNotice = useAppStore((s) => s.setGlobalNotice);
   const { continueSession, stopSession, isElectron } = useIPC();
   const [prompt, setPrompt] = useState('');
+  const autocompleteRef = useRef<ComposerAutocompleteHandle>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeConnectors, setActiveConnectors] = useState<
     { id: string; name: string; connected: boolean; toolCount: number }[]
@@ -503,10 +516,46 @@ export function ChatView() {
     return () => observer.disconnect();
   }, [activeSession?.title, activeConnectors.length]);
 
+  // Build the prompt template injected when a skill is picked (reuses the
+  // welcome-card template so behaviour is consistent across composers).
+  const skillTemplate = useCallback(
+    (name: string) => t('welcome.skillPromptTemplate', { name }),
+    [t]
+  );
+
+  const setComposerValue = useCallback((next: string, caret?: number) => {
+    setPrompt(next);
+    const el = textareaRef.current;
+    if (el) {
+      el.value = next;
+      el.focus();
+      if (caret !== undefined) el.setSelectionRange(caret, caret);
+    }
+  }, []);
+
+  // Insert a skill's prompt template into the composer (G8 skill pill).
+  const handleInsertSkill = useCallback(
+    (skill: Skill) => {
+      const template = skillTemplate(skill.name);
+      const current = textareaRef.current?.value ?? prompt;
+      const next = current.trim() ? `${current.trimEnd()}\n${template}` : template;
+      setComposerValue(next, next.length);
+    },
+    [prompt, skillTemplate, setComposerValue]
+  );
+
+  // Replace an autocomplete trigger token with the chosen insert text (G10/G11).
+  const handleComposerReplace = useCallback(
+    (start: number, end: number, insert: string) => {
+      const current = textareaRef.current?.value ?? prompt;
+      const { text, caret } = replaceRange(current, start, end, insert);
+      setComposerValue(text, caret);
+    },
+    [prompt, setComposerValue]
+  );
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-
-    // Get value from ref to handle both controlled and uncontrolled cases
     const currentPrompt = textareaRef.current?.value || prompt;
 
     if (
@@ -708,77 +757,105 @@ export function ChatView() {
               </div>
             )}
 
+            <ComposerAutocomplete
+              ref={autocompleteRef}
+              textareaRef={textareaRef}
+              value={prompt}
+              cwd={activeCwd}
+              enableCommands
+              onReplace={handleComposerReplace}
+              skillTemplate={skillTemplate}
+            />
+
             <div
-              className={`flex items-end gap-2 p-3.5 rounded-4xl bg-background/88 border border-border-muted shadow-soft transition-colors ${
+              className={`flex flex-col gap-2 p-3.5 rounded-4xl bg-background/88 border border-border-muted shadow-soft transition-colors ${
                 isDragging ? 'ring-2 ring-accent bg-accent/5' : ''
               }`}
             >
-              <button
-                type="button"
-                onClick={handleFileSelect}
-                className="icon-btn w-9 h-9"
-                title={t('welcome.attachFiles')}
-              >
-                <Plus className="w-5 h-5" />
-              </button>
+              <div className="flex items-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleFileSelect}
+                  className="icon-btn w-9 h-9"
+                  title={t('welcome.attachFiles')}
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
 
-              <textarea
-                ref={textareaRef}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onCompositionStart={() => {
-                  isComposingRef.current = true;
-                }}
-                onCompositionEnd={() => {
-                  isComposingRef.current = false;
-                }}
-                onPaste={handlePaste}
-                onKeyDown={(e) => {
-                  // Enter to send, Shift+Enter for new line
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    if (e.nativeEvent.isComposing || isComposingRef.current || e.keyCode === 229) {
+                <textarea
+                  ref={textareaRef}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onCompositionStart={() => {
+                    isComposingRef.current = true;
+                  }}
+                  onCompositionEnd={() => {
+                    isComposingRef.current = false;
+                  }}
+                  onPaste={handlePaste}
+                  onKeyDown={(e) => {
+                    // Autocomplete menu navigation takes priority over submit.
+                    if (autocompleteRef.current?.handleKeyDown(e)) {
                       return;
                     }
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-                placeholder={t('chat.typeMessage')}
-                disabled={isSubmitting}
-                rows={1}
-                className="flex-1 resize-none bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-body py-2"
-              />
+                    // Enter to send, Shift+Enter for new line
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      if (
+                        e.nativeEvent.isComposing ||
+                        isComposingRef.current ||
+                        e.keyCode === 229
+                      ) {
+                        return;
+                      }
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                  placeholder={t('chat.typeMessage')}
+                  disabled={isSubmitting}
+                  rows={1}
+                  className="flex-1 resize-none bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted text-body py-2"
+                />
+              </div>
 
-              <div className="flex items-center gap-2">
-                {/* Model display */}
-                <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full border border-border-subtle bg-background/60 text-caption text-text-muted">
-                  {appConfig?.model || t('chat.noModel')}
-                </span>
+              {/* Per-turn composer controls (G7–G9, G12) */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <ModelPicker />
+                <SkillPicker onSelectSkill={handleInsertSkill} />
+                <ConnectorPicker />
+                <ModePicker
+                  mode={composerMode}
+                  onChange={(m) => {
+                    if (activeSessionId) setSessionMode(activeSessionId, m);
+                  }}
+                />
 
-                {canStop && (
+                <div className="ml-auto flex items-center gap-2">
+                  {canStop && (
+                    <button
+                      type="button"
+                      onClick={handleStop}
+                      className="w-9 h-9 rounded-2xl flex items-center justify-center bg-error/10 text-error hover:bg-error/20 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-opacity-50"
+                      title={t('chat.stop')}
+                    >
+                      <Square className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
-                    type="button"
-                    onClick={handleStop}
-                    className="w-9 h-9 rounded-2xl flex items-center justify-center bg-error/10 text-error hover:bg-error/20 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-opacity-50"
-                    title={t('chat.stop')}
+                    type="submit"
+                    disabled={
+                      (!prompt.trim() &&
+                        !textareaRef.current?.value.trim() &&
+                        pastedImages.length === 0 &&
+                        attachedFiles.length === 0) ||
+                      isSubmitting
+                    }
+                    className="w-9 h-9 rounded-2xl flex items-center justify-center bg-accent text-on-accent disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    title={t('chat.sendMessage')}
                   >
-                    <Square className="w-4 h-4" />
+                    <Send className="w-4 h-4" />
                   </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={
-                    (!prompt.trim() &&
-                      !textareaRef.current?.value.trim() &&
-                      pastedImages.length === 0 &&
-                      attachedFiles.length === 0) ||
-                    isSubmitting
-                  }
-                  className="w-9 h-9 rounded-2xl flex items-center justify-center bg-accent text-on-accent disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  title={t('chat.sendMessage')}
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+                </div>
               </div>
             </div>
 

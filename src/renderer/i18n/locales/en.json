@@ -671,6 +671,43 @@
     "cancel": "Cancel",
     "confirmDelete": "Delete"
   },
+  "composer": {
+    "model": {
+      "title": "Model",
+      "configure": "Configure a model in Settings"
+    },
+    "skills": {
+      "pill": "Skills",
+      "title": "Skills",
+      "search": "Search skills...",
+      "loading": "Loading skills...",
+      "empty": "No skills enabled yet",
+      "noMatch": "No matching skills"
+    },
+    "connectors": {
+      "pill": "Connectors",
+      "title": "Connectors",
+      "loading": "Loading connectors...",
+      "empty": "Add a connector in Settings",
+      "toolCount_one": "{{count}} tool",
+      "toolCount_other": "{{count}} tools",
+      "connecting": "Connecting...",
+      "disabled": "Disabled"
+    },
+    "mode": {
+      "title": "Mode",
+      "build": "Build",
+      "buildDesc": "Act directly to complete the task.",
+      "plan": "Plan",
+      "planDesc": "Think through a plan before acting."
+    },
+    "mention": {
+      "title": "Files"
+    },
+    "command": {
+      "title": "Skills"
+    }
+  },
   "chat": {
     "sendMessage": "Send message",
     "stop": "Stop",
