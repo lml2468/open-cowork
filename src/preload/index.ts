@@ -446,9 +446,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   memory: {
     getOverview: (): Promise<MemoryOverview> => ipcRenderer.invoke('memory.getOverview'),
-    search: (payload: { query: string; limit?: number }): Promise<MemorySearchResult[]> =>
-      ipcRenderer.invoke('memory.search', payload),
-    read: (id: string): Promise<MemoryReadResult | null> => ipcRenderer.invoke('memory.read', id),
     clearCoreMemory: (): Promise<{ success: boolean }> =>
       ipcRenderer.invoke('memory.clearCoreMemory'),
     listFiles: (): Promise<MemoryDebugFileInfo[]> => ipcRenderer.invoke('memory.listFiles'),

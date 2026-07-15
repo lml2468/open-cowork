@@ -1,78 +1,8 @@
-import type { Message, Session } from '../../renderer/types';
-import type { AgentRuntimeCustomTool } from '../extensions/agent-runtime-extension';
-
-export type CoreMemoryCategory = 'identity' | 'preferences' | 'skills' | 'interests';
-export type MemorySearchKind = 'core';
-
-export interface MemoryTranscriptTurn {
-  role: string;
-  content: string;
-  messageId?: string;
-  timestamp?: number;
-}
-
-export interface CoreMemoryActionInput {
-  op: 'add' | 'update' | 'upsert' | 'delete';
-  category?: CoreMemoryCategory;
-  key: string;
-  value?: string | null;
-  reason?: string;
-}
-
-export interface AppliedCoreMemoryAction {
-  op: 'add' | 'update' | 'upsert' | 'delete';
-  category?: CoreMemoryCategory;
-  key: string;
-  value?: string | null;
-  combinedKey: string;
-}
-
-export interface CoreMemoryEntry {
-  combinedKey: string;
-  category?: CoreMemoryCategory;
-  key: string;
-  value: string;
-}
-
-export interface MemorySearchParams {
-  query: string;
-  limit?: number;
-}
-
-export interface MemorySearchResult {
-  id: string;
-  recordId: string;
-  kind: MemorySearchKind;
-  title: string;
-  summary: string;
-  contentPreview: string;
-  category?: CoreMemoryCategory;
-  score: number;
-  createdAt: number;
-  updatedAt?: number;
-  keywords?: string[];
-  sourceFile?: string;
-}
-
-export interface MemoryReadResult extends MemorySearchResult {
-  rawText?: string;
-}
-
-export interface MemoryIngestionInput {
-  session: Session;
-  prompt: string;
-  messages: Message[];
-}
-
-export interface MemorySessionStateRecord {
-  sessionId: string;
-  sourceWorkspace?: string | null;
-  lastProcessedMessageCount: number;
-  lastIngestedAt?: number | null;
-  lastError?: string | null;
-  createdAt: number;
-  updatedAt: number;
-}
+/**
+ * Types for the agent-managed Markdown memory Settings view (overview + file browser).
+ * The memory data itself is plain Markdown the agent manages; these describe the read-only
+ * views the renderer shows.
+ */
 
 export interface MemoryDebugFileInfo {
   kind: 'core' | 'state';
@@ -102,5 +32,3 @@ export interface MemoryOverview {
   latestIngestionAt: number | null;
   latestError: string | null;
 }
-
-export interface MemoryToolDefinition extends AgentRuntimeCustomTool {}

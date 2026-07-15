@@ -3064,29 +3064,6 @@ ipcMain.handle('memory.getOverview', () => {
   return memoryService.getOverview();
 });
 
-ipcMain.handle(
-  'memory.search',
-  (
-    _event,
-    payload: {
-      query: string;
-      limit?: number;
-    }
-  ) => {
-    if (!memoryService) {
-      throw new Error('Memory service not initialized');
-    }
-    return memoryService.search(payload);
-  }
-);
-
-ipcMain.handle('memory.read', (_event, id: string) => {
-  if (!memoryService) {
-    throw new Error('Memory service not initialized');
-  }
-  return memoryService.read(id);
-});
-
 ipcMain.handle('memory.clearCoreMemory', () => {
   if (!memoryService) {
     throw new Error('Memory service not initialized');

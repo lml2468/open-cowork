@@ -4,9 +4,7 @@ import type {
   MemoryDebugFileContent,
   MemoryDebugFileInfo,
   MemoryOverview,
-  MemoryReadResult,
   MemoryRuntimeConfig,
-  MemorySearchResult,
 } from '../../types';
 import { useAppStore } from '../../store';
 import { SettingsContentSection } from './shared';
@@ -35,9 +33,6 @@ export function SettingsMemory() {
   const appConfig = useAppStore((state) => state.appConfig);
 
   const [overview, setOverview] = useState<MemoryOverview | null>(null);
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<MemorySearchResult[]>([]);
-  const [selected, setSelected] = useState<MemoryReadResult | null>(null);
   const [files, setFiles] = useState<MemoryDebugFileInfo[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<MemoryDebugFileContent | null>(null);
@@ -108,47 +103,6 @@ export function SettingsMemory() {
     }
   };
 
-  const handleSearch = async () => {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      setSelected(null);
-      return;
-    }
-    setIsBusy(true);
-    setStatus(null);
-    try {
-      const nextResults = await window.electronAPI.memory.search({
-        query: trimmed,
-        limit: 20,
-      });
-      setResults(nextResults);
-      if (nextResults.length > 0) {
-        const detail = await window.electronAPI.memory.read(nextResults[0].id);
-        setSelected(detail);
-      } else {
-        setSelected(null);
-      }
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const handleSelectResult = async (id: string) => {
-    setIsBusy(true);
-    setStatus(null);
-    try {
-      const detail = await window.electronAPI.memory.read(id);
-      setSelected(detail);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
   const handleSelectFile = async (filePath: string) => {
     setIsBusy(true);
     setStatus(null);
@@ -187,8 +141,6 @@ export function SettingsMemory() {
     setStatus(null);
     try {
       await window.electronAPI.memory.clearCoreMemory();
-      setResults([]);
-      setSelected(null);
       await Promise.all([refreshOverview(), refreshFiles()]);
       setStatus(t('memory.clearCoreSuccess'));
     } catch (error) {
@@ -338,76 +290,6 @@ export function SettingsMemory() {
             >
               {t('memory.saveRuntime', '保存运行时配置')}
             </button>
-          </div>
-        </div>
-      </SettingsContentSection>
-
-      <SettingsContentSection
-        title={t('memory.searchTitle')}
-        description={t('memory.searchDescription')}
-      >
-        <div className="space-y-3 rounded-xl border border-border-muted bg-background-secondary/60 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t('memory.searchPlaceholder')}
-              className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-body-sm text-text-primary outline-none transition-colors focus:border-accent"
-            />
-            <button
-              onClick={() => {
-                void handleSearch();
-              }}
-              disabled={isBusy || !query.trim()}
-              className="rounded-lg bg-accent px-4 py-2.5 text-body-sm font-medium text-on-accent disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {t('memory.searchAction')}
-            </button>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="space-y-4">
-              <ResultGroup
-                title={t('memory.groupCore')}
-                items={results}
-                selectedId={selected?.id || null}
-                onSelect={handleSelectResult}
-                emptyLabel={t('memory.noResults')}
-              />
-            </div>
-            <div className="space-y-4">
-              <div className="rounded-xl border border-border-muted bg-background/80 p-4">
-                <p className="text-body-sm font-semibold text-text-primary">
-                  {t('memory.detailTitle')}
-                </p>
-                {selected ? (
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <p className="text-caption uppercase tracking-wide text-text-muted">
-                        {selected.kind}
-                      </p>
-                      <p className="mt-1 text-body-sm font-medium text-text-primary">
-                        {selected.title}
-                      </p>
-                    </div>
-                    <p className="text-body-sm text-text-secondary whitespace-pre-wrap">
-                      {selected.summary}
-                    </p>
-                    {selected.sourceFile && (
-                      <p className="text-caption text-text-muted">
-                        {t('memory.sourceFile', '来源文件')}: {selected.sourceFile}
-                      </p>
-                    )}
-                    {selected.rawText && (
-                      <pre className="max-h-64 overflow-auto rounded-lg bg-background-secondary/80 p-3 text-caption leading-5 text-text-secondary whitespace-pre-wrap">
-                        {selected.rawText}
-                      </pre>
-                    )}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-body-sm text-text-muted">{t('memory.noSelection')}</p>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </SettingsContentSection>
@@ -575,52 +457,5 @@ function ToggleField({
         onChange={(event) => onChange(event.target.checked)}
       />
     </label>
-  );
-}
-
-function ResultGroup({
-  title,
-  items,
-  selectedId,
-  onSelect,
-  emptyLabel,
-}: {
-  title: string;
-  items: MemorySearchResult[];
-  selectedId: string | null;
-  onSelect: (id: string) => void | Promise<void>;
-  emptyLabel: string;
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="text-caption font-medium uppercase tracking-wide text-text-muted">{title}</p>
-      {items.length > 0 ? (
-        <div className="space-y-2">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                void onSelect(item.id);
-              }}
-              className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                selectedId === item.id
-                  ? 'border-accent bg-accent/5'
-                  : 'border-border-muted bg-background/80 hover:bg-surface-hover'
-              }`}
-            >
-              <p className="text-body-sm font-medium text-text-primary">{item.title}</p>
-              <p className="mt-1 text-caption leading-5 text-text-muted">{item.contentPreview}</p>
-              {item.sourceFile && (
-                <p className="mt-2 text-caption text-text-muted">{item.sourceFile}</p>
-              )}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-lg border border-dashed border-border-muted bg-background/50 p-3 text-body-sm text-text-muted">
-          {emptyLabel}
-        </div>
-      )}
-    </div>
   );
 }
