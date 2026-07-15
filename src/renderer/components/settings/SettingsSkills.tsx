@@ -18,6 +18,8 @@ import type { Skill, PluginCatalogItemV2, InstalledPlugin, PluginComponentKind }
 import { useAppStore } from '../../store';
 import { SettingsContentSection } from './shared';
 import type { LocalizedBanner } from './shared';
+import { SkeletonCardList } from '../Skeleton';
+import { localizeSkill } from '../../utils/localize-skill';
 
 const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
 
@@ -30,6 +32,7 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
   const skillsStorageChangedAt = useAppStore((state) => state.skillsStorageChangedAt);
   const skillsStorageChangeEvent = useAppStore((state) => state.skillsStorageChangeEvent);
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [storagePath, setStoragePath] = useState('');
   const [plugins, setPlugins] = useState<PluginCatalogItemV2[]>([]);
   const [installedPluginsByKey, setInstalledPluginsByKey] = useState<
@@ -164,6 +167,8 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
               : tRef.current('skills.failedToLoad'),
         });
       }
+    } finally {
+      setHasLoaded(true);
     }
   }, []);
 
@@ -471,15 +476,19 @@ export function SettingsSkills({ isActive }: { isActive: boolean }) {
         title={t('skills.builtinSkills')}
         description={t('skills.builtinSkillsDesc')}
       >
-        {builtinSkills.map((skill) => (
-          <SkillCard
-            key={skill.id}
-            skill={skill}
-            onToggleEnabled={() => handleToggleEnabled(skill)}
-            onDelete={null}
-            isLoading={isLoading}
-          />
-        ))}
+        {!hasLoaded ? (
+          <SkeletonCardList count={4} />
+        ) : (
+          builtinSkills.map((skill) => (
+            <SkillCard
+              key={skill.id}
+              skill={skill}
+              onToggleEnabled={() => handleToggleEnabled(skill)}
+              onDelete={null}
+              isLoading={isLoading}
+            />
+          ))
+        )}
       </SettingsContentSection>
 
       {/* Custom Skills */}
@@ -771,6 +780,7 @@ function SkillCard({
 }) {
   const { t } = useTranslation();
   const isBuiltin = skill.type === 'builtin';
+  const { name, description } = localizeSkill(skill, t);
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
@@ -780,7 +790,7 @@ function SkillCard({
             <div
               className={`w-3 h-3 rounded-full ${skill.enabled ? 'bg-success' : 'bg-text-muted'}`}
             />
-            <h3 className="font-medium text-text-primary">{skill.name}</h3>
+            <h3 className="font-medium text-text-primary">{name}</h3>
             <span
               className={`px-2 py-0.5 text-caption rounded ${
                 isBuiltin
@@ -793,8 +803,8 @@ function SkillCard({
               {skill.type.toUpperCase()}
             </span>
           </div>
-          {skill.description && (
-            <p className="text-body-sm text-text-muted ml-6 line-clamp-2">{skill.description}</p>
+          {description && (
+            <p className="text-body-sm text-text-muted ml-6 line-clamp-2">{description}</p>
           )}
         </div>
         <div className="flex items-center gap-2">

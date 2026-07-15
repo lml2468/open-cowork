@@ -20,6 +20,8 @@ import {
   Package,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { Skeleton } from './Skeleton';
+import { localizeSkill } from '../utils/localize-skill';
 
 type AttachedFile = {
   name: string;
@@ -492,8 +494,8 @@ export function WelcomeView() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 md:px-8 md:py-14">
-      <div className="max-w-content-narrow w-full space-y-7 animate-fade-in">
-        <div className="space-y-4 text-center">
+      <div className="max-w-content-narrow w-full flex flex-col gap-7 animate-fade-in">
+        <div className="order-1 space-y-4 text-center">
           <div className="flex items-center justify-center gap-4">
             <img
               src={welcomeLogoSrc}
@@ -513,7 +515,7 @@ export function WelcomeView() {
 
         {/* API Not Configured Hint */}
         {!isConfigured && (
-          <p className="text-body-sm text-text-muted text-center">
+          <p className="order-2 text-body-sm text-text-muted text-center">
             {t('welcome.apiNotConfigured')}{' '}
             <button
               type="button"
@@ -531,19 +533,20 @@ export function WelcomeView() {
 
         {/* Skill cards (from installed skills) with quick-action tags as fallback */}
         {skills === null ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="order-4 grid grid-cols-2 md:grid-cols-3 gap-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="card px-4 py-3.5 h-[4.5rem] animate-pulse opacity-60" />
+              <Skeleton key={i} className="h-[4.5rem]" />
             ))}
           </div>
         ) : skills.length > 0 ? (
-          <div className="space-y-2.5">
+          <div className="order-4 space-y-2.5">
             <div className="text-label font-medium uppercase text-text-muted px-1">
-              {t('welcome.skillsHeading')}
+              {t('welcome.orStartFromSkill')}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {skills.slice(0, 6).map((skill) => {
                 const Icon = skillIcon(skill.type);
+                const { name, description } = localizeSkill(skill, t);
                 return (
                   <button
                     key={skill.id}
@@ -555,11 +558,11 @@ export function WelcomeView() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-body-sm font-semibold text-text-primary truncate">
-                        {skill.name}
+                        {name}
                       </span>
-                      {skill.description && (
+                      {description && (
                         <span className="block text-caption text-text-muted line-clamp-2 leading-snug mt-0.5">
-                          {skill.description}
+                          {description}
                         </span>
                       )}
                     </span>
@@ -569,7 +572,7 @@ export function WelcomeView() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2 justify-center px-3">
+          <div className="order-4 flex flex-wrap gap-2 justify-center px-3">
             {quickTags.map((tag) => (
               <button
                 key={tag.id}
@@ -610,7 +613,7 @@ export function WelcomeView() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`rounded-4xl border border-border-muted bg-background/85 shadow-soft px-5 py-5 space-y-4 transition-colors ${
+          className={`order-3 rounded-4xl border border-border-muted bg-background/85 shadow-soft px-5 py-5 space-y-4 transition-colors ${
             isDragging ? 'ring-2 ring-accent bg-accent/5' : ''
           }`}
         >

@@ -35,6 +35,7 @@
   },
   "welcome": {
     "skillsHeading": "从技能开始",
+    "orStartFromSkill": "或从技能开始",
     "skillPromptTemplate": "使用「{{name}}」技能来",
     "title": "今天我能为您做些什么？",
     "placeholder": "描述你想做的事情...",
@@ -345,6 +346,7 @@
     }
   },
   "window": {
+    "brand": "Open Cowork",
     "minimize": "最小化",
     "maximize": "最大化",
     "restore": "还原",
@@ -507,6 +509,60 @@
     "noEnvVars": "未配置环境变量"
   },
   "skills": {
+    "builtin": {
+      "coding-before-dev": {
+        "name": "开发前准备",
+        "description": "在编写代码前梳理并对齐需求。"
+      },
+      "coding-brainstorm": {
+        "name": "头脑风暴",
+        "description": "在确定方案前探索思路与实现方式。"
+      },
+      "coding-break-loop": {
+        "name": "打破循环",
+        "description": "当反复尝试仍失败时帮助跳出困境。"
+      },
+      "coding-check": {
+        "name": "检查",
+        "description": "对照规范与质量门禁审查改动。"
+      },
+      "coding-meta": {
+        "name": "流程编排",
+        "description": "协调多步骤的编码工作流。"
+      },
+      "coding-session-insight": {
+        "name": "会话洞察",
+        "description": "从工作会话中提炼收获与洞察。"
+      },
+      "coding-spec-bootstrap": {
+        "name": "规范初始化",
+        "description": "生成初始的项目规范与指南。"
+      },
+      "coding-update-spec": {
+        "name": "更新规范",
+        "description": "使项目规范与代码库保持同步。"
+      },
+      "docx": {
+        "name": "Word 文档",
+        "description": "创建和编辑 Microsoft Word（.docx）文档。"
+      },
+      "pdf": {
+        "name": "PDF",
+        "description": "读取、创建与处理 PDF 文件。"
+      },
+      "pptx": {
+        "name": "PowerPoint",
+        "description": "制作和编辑 PowerPoint（.pptx）演示文稿。"
+      },
+      "skill-creator": {
+        "name": "技能创建器",
+        "description": "为助手搭建新的自定义技能。"
+      },
+      "xlsx": {
+        "name": "Excel 表格",
+        "description": "创建和编辑 Excel（.xlsx）表格。"
+      }
+    },
     "storagePathHint": "选择自定义技能的存储位置，以及应用如何刷新这些技能。",
     "builtinSkillsDesc": "内置技能随应用提供，可按需启用或停用。",
     "pluginsTitle": "插件与导入",
@@ -591,6 +647,8 @@
     "expandToView": "展开查看任务",
     "noTasks": "暂无任务",
     "noTasksHint": "开始一个新对话，继续构建、调研或编辑文件。",
+    "noResults": "没有匹配的对话",
+    "noResultsHint": "尝试其他搜索关键词。",
     "search": "搜索对话...",
     "deleteAll": "删除所有对话",
     "localTasks": "这些任务在本地运行，不会在设备间同步。",
@@ -717,6 +775,7 @@
     "cancelEdit": "取消编辑",
     "listHint": "说明：停用仅阻止后续自动触发，已开始执行的会话需在会话列表中手动停止。",
     "empty": "暂无定时任务",
+    "emptyHint": "在上方创建定时任务，即可自动运行提示词。",
     "loadFailed": "加载定时任务失败",
     "promptRequired": "请输入要执行的 Prompt",
     "dailyTimesRequired": "请至少选择一个每日执行时段",
