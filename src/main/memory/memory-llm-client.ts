@@ -1,11 +1,22 @@
 import type { AppConfig, CustomProtocolType, ProviderType } from '../config/config-store';
 import { configStore } from '../config/config-store';
-import { runPiAiOneShot } from '../agent/sdk-one-shot';
+import type {
+  CodexOneShotOptions,
+  CodexOneShotResult,
+} from '../agent/codex-runtime/codex-one-shot';
+import { runCodexOneShot } from '../agent/codex-runtime/codex-one-shot';
+import {
+  applyCodexModelEnv,
+  resolveCodexOneShotModel,
+} from '../agent/codex-runtime/codex-one-shot-config';
+import { getSharedCodexClient } from '../agent/codex-runtime/codex-shared-client';
 
 export interface MemoryCompletionRequest {
   systemPrompt: string;
   userPrompt: string;
+  /** NOTE: dropped under codex — one-shot turns don't expose a sampling temperature. */
   temperature?: number;
+  /** NOTE: dropped under codex — one-shot turns don't expose a max-tokens cap. */
   maxTokens?: number;
 }
 
@@ -65,19 +76,17 @@ function normalizeModelConfig(
   };
 }
 
-function buildAppConfig(base: AppConfig, resolved: ResolvedMemoryModelConfig): AppConfig {
-  return {
-    ...base,
-    provider: resolved.provider,
-    customProtocol: resolved.customProtocol,
-    apiKey: resolved.apiKey,
-    baseUrl: resolved.baseUrl,
-    model: resolved.model,
-  };
-}
+/** Injectable one-shot runner (defaults to the shared codex client) for testing. */
+export type MemoryOneShotRunner = (options: CodexOneShotOptions) => Promise<CodexOneShotResult>;
+
+const defaultOneShotRunner: MemoryOneShotRunner = (options) =>
+  runCodexOneShot(options, { client: getSharedCodexClient() });
 
 export class MemoryLLMClient implements MemoryLLMClientLike {
-  constructor(private readonly getConfig: () => AppConfig = () => configStore.getAll()) {}
+  constructor(
+    private readonly getConfig: () => AppConfig = () => configStore.getAll(),
+    private readonly runOneShot: MemoryOneShotRunner = defaultOneShotRunner
+  ) {}
 
   async complete(request: MemoryCompletionRequest): Promise<MemoryCompletionResponse> {
     const appConfig = this.getConfig();
@@ -86,35 +95,31 @@ export class MemoryLLMClient implements MemoryLLMClientLike {
       appConfig.memoryRuntime?.llm,
       appConfig.model
     );
-    const controller = new AbortController();
-    let timeout: ReturnType<typeof setTimeout> | undefined;
 
-    try {
-      const timeoutPromise = new Promise<never>((_resolve, reject) => {
-        timeout = setTimeout(() => {
-          controller.abort();
-          reject(new Error(`Memory LLM request timed out after ${llmConfig.timeoutMs}ms`));
-        }, llmConfig.timeoutMs);
-        timeout.unref?.();
-      });
-      const result = await Promise.race([
-        runPiAiOneShot(
-          request.userPrompt,
-          request.systemPrompt,
-          buildAppConfig(appConfig, llmConfig),
-          {
-            temperature: request.temperature ?? 0,
-            maxTokens: request.maxTokens ?? 16_000,
-            signal: controller.signal,
-          }
-        ),
-        timeoutPromise,
-      ]);
-      return { text: result.text };
-    } finally {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
+    const resolved = resolveCodexOneShotModel({
+      provider: llmConfig.provider,
+      model: llmConfig.model,
+      baseUrl: llmConfig.baseUrl,
+      apiKey: llmConfig.apiKey,
+      customProtocol: llmConfig.customProtocol,
+    });
+    if (!resolved.supported) {
+      // Under D4/D4a a provider codex can't speak is a hard error (no pi fallback).
+      throw new Error(`Memory LLM provider not supported: ${resolved.reason}`);
     }
+    applyCodexModelEnv(resolved.env);
+
+    // temperature/maxTokens are dropped (codex one-shot turns don't expose sampling
+    // params); the former AbortSignal-based cancellation is replaced by the codex-enforced
+    // `timeoutMs` (codex turns take no external signal).
+    const result = await this.runOneShot({
+      prompt: request.userPrompt,
+      systemPrompt: request.systemPrompt,
+      model: resolved.model.model,
+      modelProvider: resolved.model.modelProvider,
+      config: resolved.model.config,
+      timeoutMs: llmConfig.timeoutMs,
+    });
+    return { text: result.text };
   }
 }

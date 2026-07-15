@@ -1,15 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-const runPiAiOneShotMock = vi.hoisted(() => vi.fn());
-
-vi.mock('../../main/agent/sdk-one-shot', () => ({
-  runPiAiOneShot: runPiAiOneShotMock,
-}));
+import { describe, expect, it, vi } from 'vitest';
 
 import type { AppConfig } from '../../main/config/config-store';
+import type {
+  CodexOneShotOptions,
+  CodexOneShotResult,
+} from '../../main/agent/codex-runtime/codex-one-shot';
 import { MemoryLLMClient } from '../../main/memory/memory-llm-client';
 
-function makeConfig(timeoutMs: number): AppConfig {
+function makeConfig(overrides?: Partial<AppConfig>): AppConfig {
   return {
     provider: 'custom',
     customProtocol: 'openai',
@@ -33,51 +31,62 @@ function makeConfig(timeoutMs: number): AppConfig {
         apiKey: '',
         baseUrl: '',
         model: '',
-        timeoutMs,
+        timeoutMs: 5000,
       },
       storageRoot: '',
     },
     enableThinking: false,
     gpuAcceleration: 'auto',
     isConfigured: true,
+    ...overrides,
   };
 }
 
+function makeResult(text: string): CodexOneShotResult {
+  return { text, hasThinking: false, durationMs: 12 };
+}
+
 describe('MemoryLLMClient', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    runPiAiOneShotMock.mockReset();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('aborts one-shot completions with the configured memory LLM timeout', async () => {
-    let signal: AbortSignal | undefined;
-    runPiAiOneShotMock.mockImplementation((_prompt, _systemPrompt, _config, options) => {
-      signal = options?.signal;
-      return new Promise(() => undefined);
+  it('maps the config into codex one-shot options for a supported provider', async () => {
+    let captured: CodexOneShotOptions | undefined;
+    const runOneShot = vi.fn(async (options: CodexOneShotOptions) => {
+      captured = options;
+      return makeResult('memory answer');
     });
 
-    const client = new MemoryLLMClient(() => makeConfig(5000));
-    const completion = client
-      .complete({
-        systemPrompt: 'memory system',
-        userPrompt: 'memory user',
-      })
-      .then(
-        () => null,
-        (error: unknown) => error as Error
-      );
+    const client = new MemoryLLMClient(() => makeConfig(), runOneShot);
+    const response = await client.complete({
+      systemPrompt: 'memory system',
+      userPrompt: 'memory user',
+      // temperature/maxTokens are accepted for interface parity but dropped under codex.
+      temperature: 0.7,
+      maxTokens: 1234,
+    });
 
-    await vi.advanceTimersByTimeAsync(4999);
-    expect(signal?.aborted).toBe(false);
+    expect(response.text).toBe('memory answer');
+    expect(captured).toBeDefined();
+    expect(captured?.prompt).toBe('memory user');
+    expect(captured?.systemPrompt).toBe('memory system');
+    expect(captured?.model).toBe('test-model');
+    // custom+openai → sanitized provider id `coworkcustom`.
+    expect(captured?.modelProvider).toBe('coworkcustom');
+    expect(captured?.timeoutMs).toBe(5000);
+    expect(captured?.config).toMatchObject({
+      'model_providers.coworkcustom.base_url': 'https://example.test/v1',
+      'model_providers.coworkcustom.wire_api': 'responses',
+    });
+    // sampling params are not forwarded (codex one-shot turns don't expose them).
+    expect(captured).not.toHaveProperty('temperature');
+    expect(captured).not.toHaveProperty('maxTokens');
+  });
 
-    await vi.advanceTimersByTimeAsync(1);
-    expect(signal?.aborted).toBe(true);
-    const error = await completion;
-    expect(error).toBeInstanceOf(Error);
-    expect((error as Error).message).toBe('Memory LLM request timed out after 5000ms');
+  it('throws a clear error when the provider is not codex-supported', async () => {
+    const runOneShot = vi.fn();
+    const client = new MemoryLLMClient(() => makeConfig({ provider: 'anthropic' }), runOneShot);
+
+    await expect(client.complete({ systemPrompt: 'sys', userPrompt: 'user' })).rejects.toThrow(
+      /not supported/i
+    );
+    expect(runOneShot).not.toHaveBeenCalled();
   });
 });

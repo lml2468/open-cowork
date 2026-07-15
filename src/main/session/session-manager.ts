@@ -56,7 +56,12 @@ import {
   getDefaultTitleFromPrompt,
   normalizeGeneratedTitle,
 } from './session-title-utils';
-import { generateTitleWithSdk } from '../agent/sdk-one-shot';
+import { generateTitleWithCodex } from '../agent/codex-runtime/codex-one-shot';
+import {
+  applyCodexModelEnv,
+  resolveCodexOneShotModel,
+} from '../agent/codex-runtime/codex-one-shot-config';
+import { getSharedCodexClient } from '../agent/codex-runtime/codex-shared-client';
 import { buildScheduledTaskTitle } from '../../shared/schedule/task-title';
 
 interface AgentRunner {
@@ -854,8 +859,33 @@ export class SessionManager {
   }
 
   private async generateTitleWithConfig(titlePrompt: string): Promise<string | null> {
-    // Always use pi-ai SDK for title generation
-    return normalizeGeneratedTitle(await generateTitleWithSdk(titlePrompt, configStore.getAll()));
+    // Title generation is a best-effort one-shot codex turn. Under D4/D4a a provider
+    // codex can't speak (anthropic/gemini/chat-only gateways) is not fatal here — just
+    // skip title generation and let the caller fall back to a default title.
+    const config = configStore.getAll();
+    const resolved = resolveCodexOneShotModel({
+      provider: config.provider || 'openai',
+      model: config.model,
+      baseUrl: config.baseUrl,
+      apiKey: config.apiKey,
+      customProtocol: config.customProtocol,
+    });
+    if (!resolved.supported) {
+      logWarn('[SessionTitle] Provider not supported by codex; skipping title:', resolved.reason);
+      return null;
+    }
+    applyCodexModelEnv(resolved.env);
+    // `generateTitleWithCodex` already normalizes and returns `string | null`; do not
+    // re-normalize here (callers still normalize the aggregate result idempotently).
+    return generateTitleWithCodex(
+      {
+        titlePrompt,
+        model: resolved.model.model,
+        modelProvider: resolved.model.modelProvider,
+        config: resolved.model.config,
+      },
+      { client: getSharedCodexClient() }
+    );
   }
 
   private enqueuePrompt(session: Session, prompt: string, content?: ContentBlock[]): void {

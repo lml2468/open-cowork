@@ -88,3 +88,17 @@ adapter + runtime wiring must apply to both (keep in sync; see spec/main runtime
 **Open-item decisions:** (a) reduced `compaction.result`; (b) sudo → command approval
 (documented change); (c) preamble seeds new threads only; (d) per-turn tool bridge;
 (e) `describeApprovalRequest` param shapes validated during 5.6 e2e.
+
+## Follow-ups discovered mid-implementation
+
+- **(f) Env-freshness for long-lived codex clients [medium — from 5.3 check].** Both the
+  per-runner `CodexClient` (`agent-runner.ts`) and the shared one-shot client
+  (`codex-shared-client.ts`) are spawned without an `env` option, so the child inherits
+  `process.env` at spawn; `applyCodexModelEnv` mutates the _parent_ env, which a POSIX child
+  can't see afterward. Impact: a **config API-test of a freshly-typed key** run after the
+  shared server is already warm validates the STALE key. Fix options (defer to 5.4/5.6 or a
+  dedicated follow-up): respawn/dispose the shared client on credential change, OR use an
+  ephemeral client for the API-test path, OR pass auth per-request instead of ambient env.
+- **(g) Runner/shared-client consolidation [low].** Process currently runs two codex
+  app-servers (per-runner + shared one-shot) to avoid dispose-ownership ambiguity. Optional
+  later consolidation onto one warm app-server.
