@@ -94,17 +94,22 @@ describe('CoworkAgentRunner Codex runtime integration', () => {
     expect(agentRunnerContent).toContain('most recent two relevant publication days');
   });
 
-  it('routes MCP tool results through the structured helper for the model', () => {
+  it('registers MCP servers with codex natively instead of proxying MCP tools', () => {
+    // MCP tools are no longer wrapped as host dynamic_tools (that collided with codex's
+    // reserved `mcp__` namespace). codex connects to the servers natively via `mcp_servers`.
     expect(agentRunnerContent).toContain(
-      "import { normalizeMcpToolResultForModel } from './tool-result-utils'"
+      "import { buildCodexMcpServersConfig } from './codex-runtime/codex-mcp-config'"
     );
     expect(agentRunnerContent).toContain(
-      'const normalizedResult = normalizeMcpToolResultForModel(result);'
+      'resolveCodexServerSpecs(mcpConfigStore.getEnabledServers())'
     );
-    expect(agentRunnerContent).not.toContain('else textParts.push(JSON.stringify(part));');
+    expect(agentRunnerContent).toContain('...mcpServersConfig');
+    // The old app-side MCP tool proxy is gone.
+    expect(agentRunnerContent).not.toContain('function buildMcpCustomTools');
+    expect(agentRunnerContent).not.toContain('normalizeMcpToolResultForModel');
   });
 
-  it('adapts extension + MCP tools into codex host tools per turn', () => {
+  it('adapts extension tools into codex host tools per turn', () => {
     expect(agentRunnerContent).toContain(
       "import { adaptPiToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter'"
     );

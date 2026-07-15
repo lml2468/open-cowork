@@ -729,6 +729,92 @@ export class MCPManager {
   }
 
   /**
+   * Resolve MCP server configs into fully-spawn-ready specs for **codex-native** MCP
+   * (codex spawns the stdio servers itself from `mcp_servers.*` config). Mirrors the
+   * command/args/env resolution `connectServer` does — bundled-node substitution, path
+   * placeholders, absolute `npx`, and the enhanced `PATH` / `NODE_PATH` /
+   * `OPEN_COWORK_RESOURCES_PATH` a macOS GUI app must inject — but returns the spec instead
+   * of connecting. The env is trimmed to a bounded, spawn-critical allowlist (plus the
+   * server's own configured keys) so the codex config stays small. HTTP/SSE servers pass
+   * through unchanged (codex connects over the network).
+   */
+  async resolveCodexServerSpecs(servers: MCPServerConfig[]): Promise<MCPServerConfig[]> {
+    const ENV_FORWARD_ALLOWLIST = [
+      'PATH',
+      'NODE_PATH',
+      'OPEN_COWORK_RESOURCES_PATH',
+      'HOME',
+      'OPENAI_API_KEY',
+      'OPENAI_BASE_URL',
+      'OPENAI_MODEL',
+      'OPENAI_ACCOUNT_ID',
+      'ANTHROPIC_API_KEY',
+      'ANTHROPIC_AUTH_TOKEN',
+      'ANTHROPIC_BASE_URL',
+    ];
+
+    const resolved: MCPServerConfig[] = [];
+    for (const config of servers) {
+      if (config.type !== 'stdio') {
+        resolved.push(config);
+        continue;
+      }
+
+      let command = config.command || '';
+      let args = config.args || [];
+
+      const isBuiltinServer =
+        config.name === 'GUI_Operate' ||
+        config.name === 'GUI Operate' ||
+        config.name === 'Software_Development' ||
+        config.name === 'Software Development';
+      const isOldConfig =
+        (command === 'npx' || command.endsWith('/npx')) &&
+        args.includes('-y') &&
+        args.includes('tsx');
+      if (isBuiltinServer && isOldConfig && app.isPackaged) {
+        const bundledNode = this.getBundledNodePath();
+        if (bundledNode) {
+          command = bundledNode.node;
+          args = args.filter((arg) => arg !== '-y' && arg !== 'tsx');
+        }
+      }
+
+      args = args.map((arg) => {
+        if (arg === '{SOFTWARE_DEV_SERVER_PATH}') return this.getSoftwareDevServerPath();
+        if (arg === '{GUI_OPERATE_SERVER_PATH}') return this.getGuiOperateServerPath();
+        return arg;
+      });
+
+      const enhancedEnv = await this.getEnhancedEnv(config.env || {});
+      if (command === 'npx' || command.endsWith('/npx')) {
+        command = await this.resolvePreferredNpxPath(enhancedEnv.PATH);
+      }
+      if (app.isPackaged && isBuiltinServer) {
+        const unpackedNodeModules = path.join(
+          process.resourcesPath || '',
+          'app.asar.unpacked',
+          'node_modules'
+        );
+        const asarNodeModules = path.join(process.resourcesPath || '', 'app.asar', 'node_modules');
+        enhancedEnv.NODE_PATH = [unpackedNodeModules, asarNodeModules].join(path.delimiter);
+        enhancedEnv.OPEN_COWORK_RESOURCES_PATH = process.resourcesPath || '';
+      }
+
+      // Trim to the spawn-critical allowlist + the server's own configured keys.
+      const env: Record<string, string> = {};
+      const keys = new Set([...ENV_FORWARD_ALLOWLIST, ...Object.keys(config.env || {})]);
+      for (const key of keys) {
+        const value = enhancedEnv[key];
+        if (typeof value === 'string' && value.length > 0) env[key] = value;
+      }
+
+      resolved.push({ ...config, command, args, env });
+    }
+    return resolved;
+  }
+
+  /**
    * Connect to a single MCP server
    */
   private async connectServer(config: MCPServerConfig): Promise<void> {
