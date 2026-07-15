@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import type { MCPServerConfig, MCPServerStatus, MCPToolInfo, MCPPreset } from './shared';
+import { EmptyState } from '../EmptyState';
 
 const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
 
@@ -216,10 +217,18 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
       {!showAddForm && !editingServer && (
         <div className="space-y-3">
           {servers.length === 0 ? (
-            <div className="rounded-lg border border-border-subtle bg-background text-center py-8 text-text-muted">
-              <Plug className="w-10 h-10 mx-auto mb-3 opacity-50" />
-              <p>{t('mcp.noConnectors')}</p>
-              <p className="text-body-sm mt-1">{t('mcp.addConnector')}</p>
+            <div className="rounded-lg border border-border-subtle bg-background">
+              <EmptyState
+                size="compact"
+                icon={Plug}
+                title={t('mcp.noConnectors')}
+                description={t('mcp.addConnector')}
+                action={{
+                  label: t('mcp.addCustomConnector'),
+                  onClick: () => setShowAddForm(true),
+                  icon: Plus,
+                }}
+              />
             </div>
           ) : (
             servers.map((server) => {

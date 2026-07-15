@@ -20,10 +20,12 @@ import {
   Clock3,
   Folder,
   Plug,
+  MessageSquarePlus,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Session } from '../types';
 import type { ActiveView } from '../store';
+import { EmptyState } from './EmptyState';
 
 import sidebarLogoSrc from '../assets/logo.png';
 
@@ -410,10 +412,26 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {groupedSessions.length === 0 ? (
-          <div className="px-3 py-6">
-            <p className="text-body-sm text-text-secondary">{t('sidebar.noTasks')}</p>
-            <p className="mt-1 text-caption text-text-muted">{t('sidebar.noTasksHint')}</p>
-          </div>
+          normalizedQuery ? (
+            <EmptyState
+              size="compact"
+              icon={SearchIcon}
+              title={t('sidebar.noResults')}
+              description={t('sidebar.noResultsHint')}
+            />
+          ) : (
+            <EmptyState
+              size="compact"
+              icon={MessageSquarePlus}
+              title={t('sidebar.noTasks')}
+              description={t('sidebar.noTasksHint')}
+              action={{
+                label: t('sidebar.newTask'),
+                onClick: handleNewSession,
+                icon: Plus,
+              }}
+            />
+          )
         ) : (
           <div className="space-y-3">
             {groupedSessions.map((group) => {

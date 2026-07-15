@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, CheckCircle, ChevronDown, Plus, X, Check } from 'lucide-react';
+import { AlertCircle, CheckCircle, ChevronDown, Plus, X, Check, CalendarClock } from 'lucide-react';
 import type {
   ScheduleConfig,
   ScheduleTask,
@@ -14,6 +14,7 @@ import { useAppStore } from '../../store';
 import { formatAppDateTime, joinAppList } from '../../utils/i18n-format';
 import { renderLocalizedBannerMessage, getWeekdayOptions, getScheduleModeOptions } from './shared';
 import type { LocalizedBanner, ScheduleFormMode } from './shared';
+import { EmptyState } from '../EmptyState';
 
 const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
 
@@ -518,8 +519,13 @@ export function SettingsSchedule({ isActive }: { isActive: boolean }) {
       <div className="space-y-2">
         <div className="text-caption text-text-muted">{t('schedule.listHint')}</div>
         {tasks.length === 0 ? (
-          <div className="text-body-sm text-text-muted text-center py-6 border border-dashed border-border rounded-lg">
-            {t('schedule.empty')}
+          <div className="border border-dashed border-border rounded-lg">
+            <EmptyState
+              size="compact"
+              icon={CalendarClock}
+              title={t('schedule.empty')}
+              description={t('schedule.emptyHint')}
+            />
           </div>
         ) : (
           tasks.map((task) => (

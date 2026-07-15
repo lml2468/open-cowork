@@ -45,6 +45,18 @@ export function useCurrentSession(): Session | null {
   );
 }
 
+/**
+ * Returns the active session's title as a scalar string, or null when no
+ * session is selected. Used for the titlebar breadcrumb.
+ */
+export function useActiveSessionTitle(): string | null {
+  return useAppStore((s) =>
+    s.activeSessionId
+      ? (s.sessions.find((sess) => sess.id === s.activeSessionId)?.title ?? null)
+      : null
+  );
+}
+
 /** Returns whether the active session is currently executing. */
 export function useIsSessionRunning(): boolean {
   return useAppStore((s) => {

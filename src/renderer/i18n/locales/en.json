@@ -35,6 +35,7 @@
   },
   "welcome": {
     "skillsHeading": "Start with a skill",
+    "orStartFromSkill": "Or start from a skill",
     "skillPromptTemplate": "Use the {{name}} skill to ",
     "title": "How can I help you today?",
     "placeholder": "Describe what you'd like to do...",
@@ -345,6 +346,7 @@
     }
   },
   "window": {
+    "brand": "Open Cowork",
     "minimize": "Minimize",
     "maximize": "Maximize",
     "restore": "Restore",
@@ -507,6 +509,60 @@
     "noEnvVars": "No environment variables configured"
   },
   "skills": {
+    "builtin": {
+      "coding-before-dev": {
+        "name": "Before Dev",
+        "description": "Plan and align on requirements before writing code."
+      },
+      "coding-brainstorm": {
+        "name": "Brainstorm",
+        "description": "Explore ideas and approaches before committing to a plan."
+      },
+      "coding-break-loop": {
+        "name": "Break the Loop",
+        "description": "Get unstuck when repeated attempts keep failing."
+      },
+      "coding-check": {
+        "name": "Check",
+        "description": "Review changes against specs and quality gates."
+      },
+      "coding-meta": {
+        "name": "Meta",
+        "description": "Coordinate the multi-step coding workflow."
+      },
+      "coding-session-insight": {
+        "name": "Session Insight",
+        "description": "Capture learnings and insights from a work session."
+      },
+      "coding-spec-bootstrap": {
+        "name": "Spec Bootstrap",
+        "description": "Generate initial project specs and guidelines."
+      },
+      "coding-update-spec": {
+        "name": "Update Spec",
+        "description": "Keep project specs in sync with the codebase."
+      },
+      "docx": {
+        "name": "Word Documents",
+        "description": "Create and edit Microsoft Word (.docx) documents."
+      },
+      "pdf": {
+        "name": "PDF",
+        "description": "Read, create, and manipulate PDF files."
+      },
+      "pptx": {
+        "name": "PowerPoint",
+        "description": "Build and edit PowerPoint (.pptx) presentations."
+      },
+      "skill-creator": {
+        "name": "Skill Creator",
+        "description": "Scaffold new custom skills for the assistant."
+      },
+      "xlsx": {
+        "name": "Excel Spreadsheets",
+        "description": "Create and edit Excel (.xlsx) spreadsheets."
+      }
+    },
     "storagePathHint": "Choose where custom skills live and how the app refreshes them.",
     "builtinSkillsDesc": "Built-in skills ship with the app and can be toggled when needed.",
     "pluginsTitle": "Plugins & Imports",
@@ -591,6 +647,8 @@
     "expandToView": "Expand to view tasks",
     "noTasks": "No tasks yet",
     "noTasksHint": "Start a new chat to begin building, researching, or editing files.",
+    "noResults": "No matching chats",
+    "noResultsHint": "Try a different search term.",
     "search": "Search conversations...",
     "deleteAll": "Delete all conversations",
     "localTasks": "These tasks run locally and aren't synced across devices.",
@@ -717,6 +775,7 @@
     "cancelEdit": "Cancel editing",
     "listHint": "Disabling only blocks future automatic runs. Already started sessions must be stopped manually from the session list.",
     "empty": "No schedules yet",
+    "emptyHint": "Create a scheduled task above to run prompts automatically.",
     "loadFailed": "Failed to load schedules",
     "promptRequired": "Enter the prompt to run",
     "dailyTimesRequired": "Select at least one daily time slot",
