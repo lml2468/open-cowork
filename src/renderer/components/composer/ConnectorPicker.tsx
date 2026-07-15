@@ -13,8 +13,7 @@ import { ComposerPopover } from './ComposerPopover';
  */
 export function ConnectorPicker() {
   const { t } = useTranslation();
-  const setSettingsTab = useAppStore((s) => s.setSettingsTab);
-  const setShowSettings = useAppStore((s) => s.setShowSettings);
+  const setActiveView = useAppStore((s) => s.setActiveView);
   const [servers, setServers] = useState<McpServerConfig[] | null>(null);
   const [statuses, setStatuses] = useState<McpServerStatus[]>([]);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -81,8 +80,7 @@ export function ConnectorPicker() {
               type="button"
               onClick={() => {
                 close();
-                setSettingsTab('connectors');
-                setShowSettings(true);
+                setActiveView('connectors');
               }}
               className="mx-2 my-1 px-3 py-2 rounded-xl text-left text-body-sm text-accent hover:bg-surface-hover transition-colors"
             >

@@ -23,6 +23,7 @@ import { Titlebar } from './components/Titlebar';
 import { SandboxSetupDialog } from './components/SandboxSetupDialog';
 import { SandboxSyncToast } from './components/SandboxSyncToast';
 import { GlobalNoticeToast } from './components/GlobalNoticeToast';
+import { GlobalSearch } from './components/GlobalSearch';
 import { PanelErrorBoundary } from './components/PanelErrorBoundary';
 import type { AppConfig } from './types';
 import type { GlobalNoticeAction } from './store';
@@ -84,6 +85,7 @@ function App() {
   const setShowSettings = useAppStore((s) => s.setShowSettings);
   const setSidebarCollapsed = useAppStore((s) => s.setSidebarCollapsed);
   const setContextPanelCollapsed = useAppStore((s) => s.setContextPanelCollapsed);
+  const setShowGlobalSearch = useAppStore((s) => s.setShowGlobalSearch);
 
   const { listSessions, isElectron } = useIPC();
   const { width } = useWindowSize();
@@ -129,6 +131,18 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSettings]);
+
+  // Global command-palette shortcut (⌘/Ctrl+K) toggles the search overlay.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setShowGlobalSearch(!useAppStore.getState().showGlobalSearch);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setShowGlobalSearch]);
 
   // Handle config save
   const handleConfigSave = useCallback(
@@ -269,6 +283,8 @@ function App() {
         onDismiss={clearGlobalNotice}
         onAction={handleGlobalNoticeAction}
       />
+
+      <GlobalSearch />
     </div>
   );
 }

@@ -29,7 +29,19 @@ import {
 import { replaceRange } from '../utils/composer-autocomplete';
 import { resolveChatFollowOutput } from './chat-scroll';
 import type { Message, ContentBlock, Skill } from '../types';
-import { Send, Square, Plus, Loader2, Plug, X, Clock } from 'lucide-react';
+import {
+  Send,
+  Square,
+  Plus,
+  Loader2,
+  Plug,
+  X,
+  Clock,
+  Home,
+  ChevronRight,
+  Search,
+  PanelRight,
+} from 'lucide-react';
 
 type AttachedFile = {
   name: string;
@@ -95,6 +107,9 @@ export function ChatView() {
   const composerMode = useActiveSessionMode();
   const setSessionMode = useAppStore((s) => s.setSessionMode);
   const setGlobalNotice = useAppStore((s) => s.setGlobalNotice);
+  const setActiveSession = useAppStore((s) => s.setActiveSession);
+  const setShowGlobalSearch = useAppStore((s) => s.setShowGlobalSearch);
+  const toggleContextPanel = useAppStore((s) => s.toggleContextPanel);
   const { continueSession, stopSession, isElectron } = useIPC();
   const [prompt, setPrompt] = useState('');
   const autocompleteRef = useRef<ComposerAutocompleteHandle>(null);
@@ -102,10 +117,6 @@ export function ChatView() {
   const [activeConnectors, setActiveConnectors] = useState<
     { id: string; name: string; connected: boolean; toolCount: number }[]
   >([]);
-  const [showConnectorLabel, setShowConnectorLabel] = useState(true);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const connectorMeasureRef = useRef<HTMLDivElement>(null);
   const [pastedImages, setPastedImages] = useState<
     Array<{ url: string; base64: string; mediaType: string }>
   >([]);
@@ -488,34 +499,6 @@ export function ChatView() {
     }
   }, [isElectron]);
 
-  useEffect(() => {
-    const titleEl = titleRef.current;
-    const headerEl = headerRef.current;
-    const measureEl = connectorMeasureRef.current;
-    if (!titleEl || !headerEl || !measureEl) {
-      setShowConnectorLabel(true);
-      return;
-    }
-    const updateLabelVisibility = () => {
-      const isTruncated = titleEl.scrollWidth > titleEl.clientWidth;
-      const headerStyle = window.getComputedStyle(headerEl);
-      const paddingLeft = Number.parseFloat(headerStyle.paddingLeft) || 0;
-      const paddingRight = Number.parseFloat(headerStyle.paddingRight) || 0;
-      const contentWidth = headerEl.clientWidth - paddingLeft - paddingRight;
-      const titleWidth = titleEl.getBoundingClientRect().width;
-      const rightColumnWidth = Math.max(0, (contentWidth - titleWidth) / 2);
-      const connectorFullWidth = measureEl.getBoundingClientRect().width;
-      setShowConnectorLabel(!isTruncated && rightColumnWidth >= connectorFullWidth);
-    };
-    updateLabelVisibility();
-    const observer = new ResizeObserver(() => {
-      updateLabelVisibility();
-    });
-    observer.observe(titleEl);
-    observer.observe(headerEl);
-    return () => observer.disconnect();
-  }, [activeSession?.title, activeConnectors.length]);
-
   // Build the prompt template injected when a skill is picked (reuses the
   // welcome-card template so behaviour is consistent across composers).
   const skillTemplate = useCallback(
@@ -624,6 +607,13 @@ export function ChatView() {
     }
   };
 
+  // Basename of the working directory, shown as the "workspace" breadcrumb crumb.
+  const workspaceName = useMemo(() => {
+    if (!activeCwd) return null;
+    const parts = activeCwd.split(/[\\/]/).filter(Boolean);
+    return parts.length > 0 ? parts[parts.length - 1] : null;
+  }, [activeCwd]);
+
   if (!activeSession) {
     return (
       <div className="flex-1 flex items-center justify-center text-text-muted">
@@ -634,42 +624,59 @@ export function ChatView() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-background">
-      {/* Header */}
-      <div
-        ref={headerRef}
-        className="relative h-header border-b border-border-muted grid grid-cols-[1fr_auto_1fr] items-center gutter-x bg-background/88 backdrop-blur-md"
-      >
-        <div className="text-label font-medium uppercase text-text-muted">Open Cowork</div>
-        <h2
-          ref={titleRef}
-          className="text-body font-medium text-text-primary text-center truncate max-w-[40vw] lg:max-w-[32rem]"
-        >
-          {activeSession.title}
-        </h2>
-        {activeConnectors.length > 0 && (
-          <>
-            <div
-              ref={connectorMeasureRef}
-              aria-hidden="true"
-              className="absolute left-0 top-0 -z-10 opacity-0 pointer-events-none"
-            >
-              <div className="flex items-center gap-2 px-2 py-1 rounded-lg border border-mcp/20">
-                <Plug className="w-3.5 h-3.5" />
-                <span className="text-caption font-medium whitespace-nowrap">
-                  {t('chat.connectorCount', { count: activeConnectors.length })}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mcp/8 border border-mcp/15 justify-self-end">
+      {/* Header — breadcrumb location + workspace actions (G19) */}
+      <div className="h-header border-b border-border-muted flex items-center gap-2 gutter-x bg-background/88 backdrop-blur-md">
+        {/* Left: breadcrumb (home › workspace › session) */}
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <button
+            onClick={() => setActiveSession(null)}
+            className="icon-btn w-7 h-7 flex-shrink-0"
+            title={t('chat.backToHome')}
+          >
+            <Home className="w-3.5 h-3.5" />
+          </button>
+          {workspaceName && (
+            <>
+              <ChevronRight className="w-3 h-3 text-text-muted/60 flex-shrink-0" />
+              <span
+                className="text-caption text-text-muted truncate max-w-[8rem] flex-shrink-0"
+                title={activeCwd ?? undefined}
+              >
+                {workspaceName}
+              </span>
+            </>
+          )}
+          <ChevronRight className="w-3 h-3 text-text-muted/60 flex-shrink-0" />
+          <h2 className="text-body font-medium text-text-primary truncate">
+            {activeSession.title}
+          </h2>
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {activeConnectors.length > 0 && (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mcp/8 border border-mcp/15">
               <Plug className="w-3.5 h-3.5 text-mcp" />
               <span className="text-caption text-mcp font-medium">
-                {showConnectorLabel
-                  ? t('chat.connectorCount', { count: activeConnectors.length })
-                  : activeConnectors.length}
+                {t('chat.connectorCount', { count: activeConnectors.length })}
               </span>
-            </div>
-          </>
-        )}
+            </span>
+          )}
+          <button
+            onClick={() => setShowGlobalSearch(true)}
+            className="icon-btn w-8 h-8"
+            title={t('search.open')}
+          >
+            <Search className="w-4 h-4" />
+          </button>
+          <button
+            onClick={toggleContextPanel}
+            className="icon-btn w-8 h-8"
+            title={t('chat.toggleWorkspace')}
+          >
+            <PanelRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Context Usage Bar */}
