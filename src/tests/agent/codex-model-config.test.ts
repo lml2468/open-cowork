@@ -98,6 +98,9 @@ describe('buildCodexModelConfig', () => {
     expect(result.supported).toBe(false);
     if (result.supported) return;
     expect(result.reason).toContain('not supported');
+    // The error must be actionable: name the OpenAI (Responses) fix.
+    expect(result.reason).toContain('OpenAI (Responses)');
+    expect(result.reason).toContain('/v1/responses');
   });
 
   it('rejects a custom provider without a base URL', () => {

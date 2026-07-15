@@ -33,6 +33,15 @@ not inline at call sites:
   - `EXPORTABLE_FIELDS` — the non-sensitive subset that round-trips to the plaintext
     `config.public.json`. API keys live in an Electron-`safeStorage`-encrypted store and
     are **not** exportable.
+  - **Responses-only defaults + migration**: a fresh install defaults to `openai` +
+    `openai` protocol (the only broadly-supported Responses provider). codex accepts only
+    `wire_api="responses"` (0.142 dropped `"chat"`), so the sole valid custom protocol is
+    `openai`. `migrateUnsupportedCustomProtocol()` (run once in the constructor via
+    `ensureNormalized`) coerces stale `custom`+`anthropic`/`gemini` config sets to
+    `custom`+`openai`, remapping the active profile onto the `custom:openai` key so a
+    Responses-compatible gateway keeps working. It's load-only — `update()`/`getAll()` are
+    intentionally not coerced. The `ProviderType`/`CustomProtocolType` unions stay broad;
+    only runtime _values_ and the rendered pickers are narrowed.
 - `src/main/agent/codex-runtime/codex-model-config.ts` — `buildCodexModelConfig()` maps
   the active app config to a codex model/provider config (`model`, `modelProvider`,
   `configOverrides`, and the env vars codex reads the key from). Under the

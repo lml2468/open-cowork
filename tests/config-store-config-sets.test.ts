@@ -71,6 +71,56 @@ describe('ConfigStore config sets', () => {
     expect(config.enableThinking).toBe(true);
   });
 
+  it('migrates a stale custom+anthropic config set to custom+openai (codex Responses-only)', () => {
+    // Pre-codex config saved under the old pi runtime: custom provider speaking the
+    // Anthropic protocol. codex only supports the OpenAI Responses API, so on load the
+    // protocol must be coerced to 'openai' while base URL / model / key are preserved so a
+    // Responses-compatible gateway keeps working.
+    mocks.seed = {
+      activeConfigSetId: 'default',
+      configSets: [
+        {
+          id: 'default',
+          name: '默认方案',
+          isSystem: true,
+          provider: 'custom',
+          customProtocol: 'anthropic',
+          activeProfileKey: 'custom:anthropic',
+          enableThinking: false,
+          updatedAt: '2025-01-01T00:00:00.000Z',
+          profiles: {
+            'custom:anthropic': {
+              apiKey: 'sk-gateway',
+              baseUrl: 'https://gateway.internal/v1',
+              model: 'my-responses-model',
+            },
+          },
+        },
+      ],
+      isConfigured: true,
+    };
+
+    const store = new ConfigStore();
+    const config = store.getAll();
+    const set = config.configSets.find((s) => s.id === 'default');
+
+    expect(set?.provider).toBe('custom');
+    expect(set?.customProtocol).toBe('openai'); // coerced from 'anthropic'
+    expect(set?.activeProfileKey).toBe('custom:openai'); // profile key follows the protocol
+    expect(config.customProtocol).toBe('openai'); // projected top-level value too
+    // Endpoint/model/key carried onto the new key so the gateway still works.
+    expect(config.baseUrl).toBe('https://gateway.internal/v1');
+    expect(config.model).toBe('my-responses-model');
+    expect(config.apiKey).toBe('sk-gateway');
+  });
+
+  it('defaults a fresh install to a supported provider (openai) with the openai protocol', () => {
+    mocks.seed = {};
+    const config = new ConfigStore().getAll();
+    expect(config.provider).toBe('openai');
+    expect(config.customProtocol).toBe('openai');
+  });
+
   it('creates/switches sets without polluting other sets', () => {
     mocks.seed = {
       provider: 'openrouter',
