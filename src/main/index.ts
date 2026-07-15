@@ -105,6 +105,7 @@ import {
   emitHeadlessReady,
   readStdinPrompt,
   startRpcLoop,
+  resolveHeadlessPermissionAction,
 } from './cli/headless-io';
 
 // Current working directory (persisted between sessions)
@@ -938,14 +939,16 @@ app
       // Mutable interceptor: set in stdio mode to route events to StdioChannel
       let stdioEventInterceptor: ((event: ServerEvent) => void) | null = null;
       const headlessSendWithPermission = (event: ServerEvent) => {
-        if (event.type === 'permission.request') {
-          const { toolUseId } = event.payload;
-          const result = headlessArgs.autoApprove ? 'allow' : 'deny';
+        const permissionAction = resolveHeadlessPermissionAction(event, headlessArgs.autoApprove);
+        if (permissionAction) {
           log(
-            `[Headless] Permission ${result} for ${event.payload.toolName} (auto-approve=${headlessArgs.autoApprove})`
+            `[Headless] Permission ${permissionAction.result} for ${event.type === 'permission.request' ? event.payload.toolName : ''} (auto-approve=${headlessArgs.autoApprove})`
           );
           setTimeout(() => {
-            sessionManager?.handlePermissionResponse(toolUseId, result);
+            sessionManager?.handlePermissionResponse(
+              permissionAction.toolUseId,
+              permissionAction.result
+            );
           }, 0);
         }
         if (event.type === 'sudo.password.request') {
@@ -1025,6 +1028,10 @@ app
         log('[Headless] Cleaning up...');
         stopConfigFileWatcher();
         scheduledTaskManager?.stop();
+        // Kill the shared one-shot codex app-server child (title-gen / API-test / memory
+        // LLM). The GUI path disposes it in cleanupSandboxResources, but headless has its
+        // own shutdown that never reaches that — dispose here to avoid a leaked child.
+        disposeSharedCodexClient();
         try {
           const mcpManager = sessionManager?.getMCPManager();
           if (mcpManager) {
