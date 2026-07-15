@@ -1,6 +1,5 @@
-import type { ToolDefinition } from '@mariozechner/pi-coding-agent';
-import type { TSchema } from '@sinclair/typebox';
 import type { Message, Session } from '../../renderer/types';
+import type { AgentRuntimeCustomTool } from '../extensions/agent-runtime-extension';
 
 export type CoreMemoryCategory = 'identity' | 'preferences' | 'skills' | 'interests';
 export type MemorySearchKind = 'core';
@@ -104,4 +103,4 @@ export interface MemoryOverview {
   latestError: string | null;
 }
 
-export interface MemoryToolDefinition extends ToolDefinition<TSchema, unknown> {}
+export interface MemoryToolDefinition extends AgentRuntimeCustomTool {}
