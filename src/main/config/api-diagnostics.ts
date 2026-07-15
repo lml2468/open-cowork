@@ -10,7 +10,7 @@ import * as net from 'net';
 import * as tls from 'tls';
 import OpenAI from 'openai';
 import { Anthropic } from '@anthropic-ai/sdk';
-import { PROVIDER_PRESETS, configStore } from './config-store';
+import { PROVIDER_PRESETS } from './config-store';
 import { DEFAULT_OLLAMA_BASE_URL } from '../../shared/ollama-base-url';
 import { isLoopbackBaseUrl } from '../../shared/network/loopback';
 import {
@@ -23,6 +23,7 @@ import {
   normalizeOllamaBaseUrl,
 } from './auth-utils';
 import type {
+  ApiTestResult,
   DiagnosticInput,
   DiagnosticResult,
   DiagnosticStep,
@@ -31,7 +32,12 @@ import type {
   LocalOllamaDiscoveryResult,
 } from '../../renderer/types';
 import { log, logWarn } from '../utils/logger';
-import { probeWithSdk } from '../agent/sdk-one-shot';
+import { testCodexConnectivity } from '../agent/codex-runtime/codex-one-shot';
+import {
+  applyCodexModelEnv,
+  resolveCodexOneShotModel,
+} from '../agent/codex-runtime/codex-one-shot-config';
+import { getSharedCodexClient } from '../agent/codex-runtime/codex-shared-client';
 import { fetchOllamaModelIndex } from './ollama-api';
 
 const STEP_NAMES: DiagnosticStepName[] = ['dns', 'tcp', 'tls', 'auth', 'model'];
@@ -175,10 +181,7 @@ export function shouldContinueAfterGeminiAuthProbeError(error: {
   return isGeminiModelsGetProbeUnavailable(error);
 }
 
-function getModelDiagnosticFix(
-  errorType: Awaited<ReturnType<typeof probeWithSdk>>['errorType'],
-  model: string
-): string {
+function getModelDiagnosticFix(errorType: ApiTestResult['errorType'], model: string): string {
   switch (errorType) {
     case 'unauthorized':
       return 'auth_invalid_key';
@@ -529,18 +532,27 @@ async function stepModel(input: DiagnosticInput, step: DiagnosticStep): Promise<
       return;
     }
 
-    const config = configStore.getAll();
-    const result = await probeWithSdk(
-      {
-        provider: input.provider,
-        apiKey: input.apiKey,
-        baseUrl: input.baseUrl,
-        customProtocol: input.customProtocol,
-        model: input.model,
-        verificationLevel,
-      },
-      config
-    );
+    const resolved = resolveCodexOneShotModel({
+      provider: input.provider,
+      model: input.model,
+      baseUrl: input.baseUrl,
+      apiKey: input.apiKey,
+      customProtocol: input.customProtocol,
+    });
+    let result: ApiTestResult;
+    if (!resolved.supported) {
+      result = { ok: false, errorType: 'unknown', details: resolved.reason };
+    } else {
+      applyCodexModelEnv(resolved.env);
+      result = await testCodexConnectivity(
+        {
+          model: resolved.model.model,
+          modelProvider: resolved.model.modelProvider,
+          config: resolved.model.config,
+        },
+        { client: getSharedCodexClient() }
+      );
+    }
 
     if (result.ok) {
       step.status = 'ok';

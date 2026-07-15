@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => {
   const tlsConnect = vi.fn();
   const openaiModelsList = vi.fn();
   const fetch = vi.fn();
-  const probeWithSdk = vi.fn();
+  const testCodex = vi.fn();
 
   return {
     dnsLookup,
@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => {
     tlsConnect,
     openaiModelsList,
     fetch,
-    probeWithSdk,
+    testCodex,
   };
 });
 
@@ -70,8 +70,21 @@ vi.mock('../src/main/config/config-store', () => ({
   },
 }));
 
-vi.mock('../src/main/agent/sdk-one-shot', () => ({
-  probeWithSdk: mocks.probeWithSdk,
+vi.mock('../src/main/agent/codex-runtime/codex-one-shot', () => ({
+  testCodexConnectivity: mocks.testCodex,
+}));
+
+vi.mock('../src/main/agent/codex-runtime/codex-one-shot-config', () => ({
+  resolveCodexOneShotModel: (input: { model: string }) => ({
+    supported: true,
+    model: { model: input.model, modelProvider: 'coworkopenai', config: {} },
+    env: {},
+  }),
+  applyCodexModelEnv: () => {},
+}));
+
+vi.mock('../src/main/agent/codex-runtime/codex-shared-client', () => ({
+  getSharedCodexClient: () => ({}),
 }));
 
 vi.mock('../src/main/utils/logger', () => ({
@@ -92,12 +105,12 @@ describe('runDiagnostics TLS step', () => {
     mocks.tlsConnect.mockReset();
     mocks.openaiModelsList.mockReset();
     mocks.fetch.mockReset();
-    mocks.probeWithSdk.mockReset();
+    mocks.testCodex.mockReset();
     global.fetch = mocks.fetch;
 
     mocks.dnsLookup.mockResolvedValue({ address: '127.0.0.1', family: 4 });
     mocks.openaiModelsList.mockResolvedValue({});
-    mocks.probeWithSdk.mockResolvedValue({ ok: true, latencyMs: 10 });
+    mocks.testCodex.mockResolvedValue({ ok: true, latencyMs: 10 });
 
     mocks.tcpConnect.mockImplementation(() => {
       const handlers: Record<string, () => void> = {};
@@ -223,8 +236,8 @@ describe('runDiagnostics TLS step', () => {
     });
   });
 
-  it('model step uses probeWithSdk', async () => {
-    mocks.probeWithSdk.mockResolvedValue({ ok: true, latencyMs: 15 });
+  it('model step uses codex connectivity probe', async () => {
+    mocks.testCodex.mockResolvedValue({ ok: true, latencyMs: 15 });
 
     const result = await runDiagnostics({
       provider: 'openai',
@@ -234,18 +247,14 @@ describe('runDiagnostics TLS step', () => {
     });
 
     expect(result.overallOk).toBe(true);
-    expect(mocks.probeWithSdk).toHaveBeenCalledWith(
-      expect.objectContaining({
-        provider: 'openai',
-        apiKey: 'sk-test',
-        model: 'gpt-4.1',
-      }),
+    expect(mocks.testCodex).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'gpt-4.1' }),
       expect.any(Object)
     );
   });
 
-  it('model step reports failure from probeWithSdk', async () => {
-    mocks.probeWithSdk.mockResolvedValue({
+  it('model step reports failure from codex probe', async () => {
+    mocks.testCodex.mockResolvedValue({
       ok: false,
       errorType: 'unauthorized',
       details: '401 Unauthorized',
@@ -273,7 +282,7 @@ describe('runDiagnostics TLS step', () => {
   ] as const)(
     'maps %s probe failures to a specific diagnostic fix instead of model_unavailable',
     async (errorType, details, expectedFix) => {
-      mocks.probeWithSdk.mockResolvedValue({
+      mocks.testCodex.mockResolvedValue({
         ok: false,
         errorType,
         details,

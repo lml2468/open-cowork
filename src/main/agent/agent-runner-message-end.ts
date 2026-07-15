@@ -1,15 +1,38 @@
-import type {
-  AssistantMessage,
-  AssistantMessageEvent,
-  TextContent,
-  ThinkingContent,
-  ToolCall,
-} from '@mariozechner/pi-ai';
 import { splitThinkTagBlocks } from './think-tag-parser';
 
-type MessageEndContentBlock = TextContent | ThinkingContent | ToolCall;
+// Local structural content-block / message types. These formerly came from `pi-ai`
+// (`TextContent`/`ThinkingContent`/`ToolCall`/`AssistantMessage`); pi was removed in
+// Phase 6, so the minimal shapes this module actually touches are declared inline.
+interface MessageEndTextContent {
+  type: 'text';
+  text: string;
+}
+interface MessageEndThinkingContent {
+  type: 'thinking';
+  thinking: string;
+}
+interface MessageEndToolCall {
+  type: 'toolCall';
+  [key: string]: unknown;
+}
+type MessageEndContentBlock =
+  | MessageEndTextContent
+  | MessageEndThinkingContent
+  | MessageEndToolCall;
 
-type MessageEndMessage = Pick<AssistantMessage, 'role' | 'content' | 'stopReason' | 'errorMessage'>;
+interface MessageEndMessage {
+  role?: string;
+  content?: MessageEndContentBlock[];
+  stopReason?: string;
+  errorMessage?: string;
+}
+
+/** The `type: 'error'` variant of the former pi `AssistantMessageEvent`. */
+export interface AssistantStreamErrorEvent {
+  type: 'error';
+  error?: { errorMessage?: string };
+  reason?: string;
+}
 
 interface ResolveMessageEndPayloadOptions {
   message?: MessageEndMessage;
@@ -95,9 +118,7 @@ export function toUserFacingErrorText(errorText: string): string {
   return errorText;
 }
 
-export function resolveAssistantStreamErrorText(
-  event: Extract<AssistantMessageEvent, { type: 'error' }>
-): string {
+export function resolveAssistantStreamErrorText(event: AssistantStreamErrorEvent): string {
   const rawError = event.error?.errorMessage?.trim() || event.reason || 'stream_error';
   return toUserFacingErrorText(rawError);
 }
@@ -188,9 +209,9 @@ export function resolveMessageEndPayload(
           effectiveContent.push({
             type: 'thinking',
             thinking: splitBlock.thinking,
-          } as ThinkingContent);
+          } as MessageEndThinkingContent);
         } else {
-          effectiveContent.push({ type: 'text', text: splitBlock.text } as TextContent);
+          effectiveContent.push({ type: 'text', text: splitBlock.text } as MessageEndTextContent);
         }
       }
     } else {

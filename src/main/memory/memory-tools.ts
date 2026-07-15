@@ -40,7 +40,7 @@ export function createMemoryTools(memoryService: MemoryService): MemoryToolDefin
       query: Type.String({ minLength: 1, description: 'What you want to remember or look up.' }),
       limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
     }),
-    async execute(_toolCallId, params) {
+    async execute(_toolCallId: string, params: unknown) {
       const result = memoryService.search({
         query: String((params as { query: string }).query || ''),
         limit:
@@ -69,7 +69,7 @@ export function createMemoryTools(memoryService: MemoryService): MemoryToolDefin
     parameters: Type.Object({
       id: Type.String({ minLength: 1, description: 'The id returned by memory_search.' }),
     }),
-    async execute(_toolCallId, params) {
+    async execute(_toolCallId: string, params: unknown) {
       const result = memoryService.read(String((params as { id: string }).id || ''));
       const text = result ? formatReadResult(result) : 'Memory item not found.';
       return {

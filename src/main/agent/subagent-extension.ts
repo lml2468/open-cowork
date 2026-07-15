@@ -1,63 +1,31 @@
 import { Type } from '@sinclair/typebox';
-import {
-  createAgentSession,
-  SessionManager as PiSessionManager,
-  SettingsManager as PiSettingsManager,
-  createCodingTools,
-  DefaultResourceLoader,
-  type ToolDefinition,
-} from '@mariozechner/pi-coding-agent';
+import { app } from 'electron';
 import type {
   AgentRuntimeExtension,
   BeforeSessionRunResult,
   BeforeSessionRunContext,
   AgentRuntimeCustomTool,
 } from '../extensions/agent-runtime-extension';
-import { getSharedAuthStorage, ModelRegistry } from './shared-auth';
 import { MCPManager } from '../mcp/mcp-manager';
 import { configStore } from '../config/config-store';
-import { log, logError } from '../utils/logger';
-import { resolvePiRegistryModel, resolvePiRouteProtocol } from './pi-model-resolution';
+import { log, logError, logWarn } from '../utils/logger';
 import type { ServerEvent } from '../../renderer/types';
 import { v4 as uuidv4 } from 'uuid';
+import { CodexClient, type CodexLogger } from './codex-runtime/codex-client';
+import { runCodexSubagent, type CodexSubagentProgress } from './codex-runtime/codex-subagent';
+import { buildCodexModelConfig } from './codex-runtime/codex-model-config';
+import { CodexPermissionBridge } from './codex-runtime/codex-permission-bridge';
 
 const MAX_TIMEOUT_MS = 300_000;
 const DEFAULT_TIMEOUT_MS = 120_000;
-const TIMEOUT_MESSAGE = 'Subagent timed out';
 const MAX_CONCURRENT_SUBAGENTS = 3;
 const MAX_TASK_LENGTH = 10_000;
-
-class SubagentTimeoutError extends Error {
-  constructor() {
-    super(TIMEOUT_MESSAGE);
-  }
-}
-
-class ParentCancelledError extends Error {
-  constructor() {
-    super('Parent session cancelled');
-  }
-}
 
 interface SubagentParams {
   task: string;
   result_format?: string;
   allowed_tools?: string[];
   timeout_seconds?: number;
-}
-
-function buildChildSystemPrompt(task: string, resultFormat?: string): string {
-  const parts = [
-    'You are a focused sub-agent. Complete the task below and return ONLY the result.',
-    'Do not ask questions. Do not provide commentary beyond what is needed for the result.',
-    '',
-    `## Task`,
-    task,
-  ];
-  if (resultFormat) {
-    parts.push('', `## Expected Output Format`, resultFormat);
-  }
-  return parts.join('\n');
 }
 
 function safeSendEvent(sendEvent: SendEvent, event: ServerEvent): void {
@@ -85,10 +53,9 @@ type SendEvent = (event: ServerEvent) => void;
 type PermissionHandler = (toolName: string, toolInput: unknown) => Promise<'allow' | 'deny'>;
 
 function createSpawnSubagentTool(
-  mcpManager: MCPManager | null,
+  getClient: () => CodexClient,
   sendEvent: SendEvent,
   parentSessionId: string,
-  requestPermission: PermissionHandler | null,
   getParentAbortSignal: () => AbortSignal | null,
   concurrencyState: { active: number }
 ): AgentRuntimeCustomTool {
@@ -126,8 +93,7 @@ function createSpawnSubagentTool(
       ),
     }),
     async execute(_toolCallId: string, params: unknown) {
-      const { task, result_format, allowed_tools, timeout_seconds } = (params ||
-        {}) as SubagentParams;
+      const { task, result_format, timeout_seconds } = (params || {}) as SubagentParams;
 
       if (!task || typeof task !== 'string' || task.trim().length === 0) {
         return {
@@ -168,10 +134,12 @@ function createSpawnSubagentTool(
 
       const subagentId = uuidv4();
       log(`[SubagentExtension] Spawning child ${subagentId} for task: "${task.slice(0, 100)}..."`);
-      const startTime = Date.now();
 
       concurrencyState.active++;
 
+      // Emit `started` before model resolution so the renderer sees the spawn even when
+      // config is invalid. `runCodexSubagent` also emits its own `started`; we suppress the
+      // duplicate in the progress forwarder below.
       safeSendEvent(
         sendEvent,
         buildProgressEvent(parentSessionId, subagentId, {
@@ -181,263 +149,120 @@ function createSpawnSubagentTool(
       );
 
       try {
+        // Resolve the codex model/provider from the app config. Under the Responses-only
+        // constraint an unsupported provider is a hard, user-facing error (no fallback).
         const config = configStore.getAll();
-        const authStorage = getSharedAuthStorage();
-        const modelRegistry = new ModelRegistry(authStorage);
-
-        const modelString = config.model?.trim() || 'anthropic/claude-sonnet-4-6';
-        const configProtocol = resolvePiRouteProtocol(config.provider, config.customProtocol);
-        const piModel = resolvePiRegistryModel(modelString, {
-          configProvider: configProtocol,
-          customBaseUrl: config.baseUrl?.trim() || undefined,
-          rawProvider: config.provider,
+        const modelConfigResult = buildCodexModelConfig({
+          provider: config.provider || 'openai',
+          model: config.model?.trim() || '',
+          baseUrl: config.baseUrl,
+          apiKey: config.apiKey,
           customProtocol: config.customProtocol,
         });
-        if (!piModel) {
+        if (!modelConfigResult.supported) {
           return {
             content: [
               {
                 type: 'text' as const,
-                text: 'Error: could not resolve model for subagent. Check provider/model config.',
+                text: `Error: could not resolve model for subagent (${modelConfigResult.reason}). Check provider/model config.`,
+              },
+            ],
+            details: undefined as unknown,
+          };
+        }
+        const modelConfig = modelConfigResult.config;
+
+        // Project the API key into the environment so the (warm) app-server child can read
+        // it via the provider's env_key. Keys never round-trip through config files.
+        for (const [key, value] of Object.entries(modelConfig.env)) {
+          process.env[key] = value;
+        }
+
+        const cwd = config.defaultWorkdir || process.cwd();
+
+        const result = await runCodexSubagent(
+          {
+            task,
+            resultFormat: result_format,
+            cwd,
+            model: modelConfig.model,
+            modelProvider: modelConfig.providerId,
+            config: modelConfig.configOverrides,
+            timeoutMs,
+            // Child tool calls gate through the dedicated client's approval handler
+            // (see getSubagentClient). Full access matches the app's VM-delegated sandbox.
+            approvalPolicy: 'on-request',
+            sandbox: 'danger-full-access',
+            parentSignal: getParentAbortSignal(),
+            onProgress: (progress: CodexSubagentProgress) => {
+              // `started` was already emitted above; drop the runner's duplicate.
+              if (progress.event === 'started') return;
+              safeSendEvent(sendEvent, buildProgressEvent(parentSessionId, subagentId, progress));
+            },
+          },
+          {
+            client: getClient(),
+            subagentId,
+            logger: SUBAGENT_LOGGER,
+          }
+        );
+
+        if (result.status === 'timeout') {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: `Subagent timed out after ${Math.round(result.durationMs / 1000)}s. Consider simplifying the task or increasing timeout_seconds.`,
+              },
+            ],
+            details: undefined as unknown,
+          };
+        }
+        if (result.status === 'cancelled') {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: 'Subagent cancelled: parent session was stopped.',
+              },
+            ],
+            details: undefined as unknown,
+          };
+        }
+        if (result.status === 'error') {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: `Subagent error: ${result.error ?? 'unknown error'}`,
               },
             ],
             details: undefined as unknown,
           };
         }
 
-        // Build MCP tools (minus spawn_subagent)
-        let mcpCustomTools: ToolDefinition[] = [];
-        if (mcpManager) {
-          const mcpTools = mcpManager.getTools();
-          mcpCustomTools = mcpTools.map((mcpTool) => {
-            const parameters = Type.Unsafe<Record<string, unknown>>(
-              mcpTool.inputSchema as Record<string, unknown>
-            );
-            return {
-              name: mcpTool.name,
-              label: `${mcpTool.serverName} → ${mcpTool.originalName || mcpTool.name}`,
-              description: mcpTool.description || `MCP tool from ${mcpTool.serverName}`,
-              parameters,
-              async execute(_id: string, p: unknown) {
-                const result = await mcpManager.callTool(
-                  mcpTool.name,
-                  p as Record<string, unknown>
-                );
-                const resultContent = (
-                  result as { content?: Array<{ type: string; text?: string }> }
-                )?.content;
-                const text =
-                  resultContent?.map((c) => (c.type === 'text' ? c.text : '')).join('') || '';
-                return { content: [{ type: 'text' as const, text }], details: undefined };
-              },
-            } as ToolDefinition;
-          });
-        }
-
-        if (allowed_tools && allowed_tools.length > 0) {
-          const allowSet = new Set(allowed_tools);
-          mcpCustomTools = mcpCustomTools.filter((t) => allowSet.has(t.name));
-        }
-
-        const cwd = config.defaultWorkdir || process.cwd();
-        const codingTools = createCodingTools(cwd);
-
-        const childSystemPrompt = buildChildSystemPrompt(task, result_format);
-        const resourceLoader = new DefaultResourceLoader({
-          cwd,
-          appendSystemPrompt: childSystemPrompt,
-        });
-        await resourceLoader.reload();
-
-        const { session: childSession } = await createAgentSession({
-          model: piModel,
-          authStorage,
-          modelRegistry,
-          tools: codingTools,
-          customTools: mcpCustomTools,
-          sessionManager: PiSessionManager.inMemory(),
-          settingsManager: PiSettingsManager.inMemory({
-            compaction: { enabled: false },
-            retry: { enabled: true, maxRetries: 1 },
-          }),
-          resourceLoader,
-          cwd,
-        });
-
-        // Install permission gating on child session (mirrors parent behavior)
-        if (requestPermission) {
-          const piSession = childSession as unknown as {
-            setBeforeToolCall?: (
-              hook: (call: {
-                toolName: string;
-                args: unknown;
-              }) => Promise<{ block: boolean; reason?: string } | void>
-            ) => void;
-          };
-          if (typeof piSession.setBeforeToolCall === 'function') {
-            piSession.setBeforeToolCall(async (call) => {
-              const decision = await requestPermission(call.toolName, call.args);
-              if (decision === 'deny') {
-                return { block: true, reason: 'Permission denied by parent session policy' };
-              }
-              return undefined;
-            });
-          } else {
-            logError(
-              '[SubagentExtension] Child session does not support setBeforeToolCall — permission gating disabled'
-            );
-          }
-        }
-
-        let finalText = '';
-        const unsubscribe = childSession.subscribe((event) => {
-          if (event.type === 'agent_end') {
-            const messages = (event as { messages?: unknown[] }).messages || [];
-            for (let i = messages.length - 1; i >= 0; i--) {
-              const msg = messages[i] as { role?: string; content?: unknown } | undefined;
-              if (msg && msg.role === 'assistant' && Array.isArray(msg.content)) {
-                finalText = (msg.content as Array<{ type: string; text?: string }>)
-                  .filter((b) => b.type === 'text' && b.text)
-                  .map((b) => b.text)
-                  .join('');
-                break;
-              }
-            }
-          }
-
-          if (event.type === 'tool_execution_start') {
-            safeSendEvent(
-              sendEvent,
-              buildProgressEvent(parentSessionId, subagentId, {
-                event: 'tool_start',
-                toolName: (event as { toolName?: string }).toolName || 'unknown',
-              })
-            );
-          } else if (event.type === 'tool_execution_end') {
-            const e = event as { toolName?: string; isError?: boolean };
-            safeSendEvent(
-              sendEvent,
-              buildProgressEvent(parentSessionId, subagentId, {
-                event: 'tool_end',
-                toolName: e.toolName || 'unknown',
-                isError: e.isError || false,
-              })
-            );
-          } else if (event.type === 'message_update') {
-            const e = event as { message?: { content?: unknown[] } };
-            const content = e.message?.content;
-            if (Array.isArray(content)) {
-              const lastText = content
-                .filter((b): b is { type: 'text'; text: string } => {
-                  const block = b as { type?: string; text?: string };
-                  return block.type === 'text' && typeof block.text === 'string';
-                })
-                .pop();
-              if (lastText) {
-                safeSendEvent(
-                  sendEvent,
-                  buildProgressEvent(parentSessionId, subagentId, {
-                    event: 'text_delta',
-                    text: lastText.text,
-                  })
-                );
-              }
-            }
-          }
-        });
-
-        let timeoutId: NodeJS.Timeout | undefined;
-        const parentSignal = getParentAbortSignal();
-        let parentAbortHandler: (() => void) | undefined;
-
-        try {
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => reject(new SubagentTimeoutError()), timeoutMs);
-          });
-
-          // Propagate parent cancellation
-          const parentAbortPromise = parentSignal
-            ? new Promise<never>((_, reject) => {
-                if (parentSignal.aborted) {
-                  reject(new ParentCancelledError());
-                  return;
-                }
-                parentAbortHandler = () => reject(new ParentCancelledError());
-                parentSignal.addEventListener('abort', parentAbortHandler);
-              })
-            : null;
-
-          const racers: Promise<unknown>[] = [childSession.prompt(task), timeoutPromise];
-          if (parentAbortPromise) racers.push(parentAbortPromise);
-
-          await Promise.race(racers);
-        } finally {
-          if (timeoutId) clearTimeout(timeoutId);
-          if (parentAbortHandler && parentSignal) {
-            parentSignal.removeEventListener('abort', parentAbortHandler);
-          }
-          unsubscribe();
-          // Abort the child session to stop in-flight API calls and tool executions
-          try {
-            const abortable = childSession as unknown as { abort?: () => Promise<void> | void };
-            if (abortable.abort) {
-              const abortResult = abortable.abort();
-              if (abortResult && typeof abortResult === 'object' && 'then' in abortResult) {
-                const abortTimeout = new Promise<void>((r) => setTimeout(r, 5000));
-                await Promise.race([abortResult, abortTimeout]);
-              }
-            }
-          } catch {
-            // abort may throw if session already completed — safe to ignore
-          }
-          childSession.dispose();
-        }
-
-        const durationMs = Date.now() - startTime;
-        log(`[SubagentExtension] Child ${subagentId} completed in ${durationMs}ms`);
-
-        safeSendEvent(
-          sendEvent,
-          buildProgressEvent(parentSessionId, subagentId, {
-            event: 'completed',
-            durationMs,
-          })
-        );
-
-        return {
-          content: [
-            { type: 'text' as const, text: finalText || '(subagent produced no text output)' },
-          ],
-          details: undefined as unknown,
-        };
-      } catch (err: unknown) {
-        const durationMs = Date.now() - startTime;
-        const message = err instanceof Error ? err.message : String(err);
-        logError(`[SubagentExtension] Child ${subagentId} failed after ${durationMs}ms:`, message);
-
-        const isTimeout = err instanceof SubagentTimeoutError;
-        const isCancelled = err instanceof ParentCancelledError;
-
-        safeSendEvent(
-          sendEvent,
-          buildProgressEvent(parentSessionId, subagentId, {
-            event: 'failed',
-            error: isTimeout ? 'timeout' : isCancelled ? 'cancelled' : message.slice(0, 200),
-            durationMs,
-          })
-        );
-
         return {
           content: [
             {
               type: 'text' as const,
-              text: isTimeout
-                ? `Subagent timed out after ${Math.round(durationMs / 1000)}s. Consider simplifying the task or increasing timeout_seconds.`
-                : isCancelled
-                  ? 'Subagent cancelled: parent session was stopped.'
-                  : `Subagent error: ${message}`,
+              text: result.text || '(subagent produced no text output)',
             },
           ],
+          details: undefined as unknown,
+        };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        logError(`[SubagentExtension] Child ${subagentId} failed:`, message);
+        safeSendEvent(
+          sendEvent,
+          buildProgressEvent(parentSessionId, subagentId, {
+            event: 'failed',
+            error: message.slice(0, 200),
+            durationMs: 0,
+          })
+        );
+        return {
+          content: [{ type: 'text' as const, text: `Subagent error: ${message}` }],
           details: undefined as unknown,
         };
       } finally {
@@ -447,29 +272,93 @@ function createSpawnSubagentTool(
   };
 }
 
+const SUBAGENT_LOGGER: CodexLogger = {
+  log: (...args: unknown[]) => log('[codex subagent]', ...args),
+  warn: (...args: unknown[]) => logWarn('[codex subagent]', ...args),
+  error: (...args: unknown[]) => logError('[codex subagent]', ...args),
+};
+
 export class SubagentExtension implements AgentRuntimeExtension {
   readonly name = 'subagent';
   private concurrencyState = { active: 0 };
+  /** Lazily-constructed dedicated codex client for child threads (own approval handler). */
+  private client: CodexClient | null = null;
 
   constructor(
+    // Kept for wiring compatibility with the GUI/headless call sites. Under codex the child
+    // thread uses codex-native tools, so the parent MCP manager is no longer injected into
+    // the child; this getter is retained for future MCP-server passthrough.
     private readonly getMcpManager: () => MCPManager | null,
     private readonly sendEvent: SendEvent,
     private readonly requestPermission: PermissionHandler | null = null,
     private readonly getParentAbortSignal: () => AbortSignal | null = () => null
-  ) {}
+  ) {
+    void this.getMcpManager;
+  }
+
+  /**
+   * The dedicated codex client for spawned children. It installs its own approval server
+   * request handler routing every child command/file-change approval through the parent's
+   * `requestPermission` policy — preserving per-tool gating without touching the parent
+   * runtime's client or the shared one-shot client. Spawned lazily on first subagent run.
+   */
+  private getSubagentClient(): CodexClient {
+    if (this.client) return this.client;
+
+    const client = new CodexClient({
+      clientInfo: { name: 'open-cowork', version: app.getVersion() },
+      // Match the runner's handshake; harmless when no dynamic tools are registered.
+      capabilities: { experimentalApi: true, requestAttestation: false },
+      logger: SUBAGENT_LOGGER,
+    });
+
+    const requestPermission = this.requestPermission;
+    const bridge = new CodexPermissionBridge({
+      // With a gating callback wired, defer every approval to it; otherwise allow (mirrors
+      // the pi behavior where a missing permission handler left child tools ungated).
+      decide: () => (requestPermission ? 'ask' : 'allow'),
+      prompt: requestPermission
+        ? async (ctx) => {
+            const decision = await requestPermission(ctx.toolName, ctx.input);
+            return decision === 'allow' ? 'allow' : 'deny';
+          }
+        : undefined,
+      logger: SUBAGENT_LOGGER,
+    });
+
+    client.setServerRequestHandler(async (req) => {
+      if (bridge.canHandle(req.method)) {
+        // sessionId is only used for the prompt display context; the subagent permission
+        // policy is session-agnostic, so a stable label is sufficient.
+        return bridge.handle(req, 'subagent');
+      }
+      SUBAGENT_LOGGER.warn(`[SubagentExtension] Unhandled child server request: ${req.method}`);
+      return {};
+    });
+
+    this.client = client;
+    return client;
+  }
 
   async beforeSessionRun(context: BeforeSessionRunContext): Promise<BeforeSessionRunResult> {
     return {
       customTools: [
         createSpawnSubagentTool(
-          this.getMcpManager(),
+          () => this.getSubagentClient(),
           this.sendEvent,
           context.session.id,
-          this.requestPermission,
           this.getParentAbortSignal,
           this.concurrencyState
         ),
       ],
     };
+  }
+
+  /** Tear down the dedicated child app-server (called on app shutdown). */
+  dispose(): void {
+    if (this.client) {
+      this.client.dispose();
+      this.client = null;
+    }
   }
 }

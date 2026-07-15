@@ -25,8 +25,8 @@ import type { ConfigStore, AppConfig } from './config-store';
 import { FIELD_VALIDATORS } from './config-store';
 
 /**
- * A custom tool definition extended with a `permission` marker. The
- * pi-coding-agent SDK does not read this field — it only exists to declare,
+ * A custom tool definition extended with a `permission` marker. The codex runtime
+ * does not read this field — it only exists to declare,
  * at the point the tool is defined, that it must always require interactive
  * approval. The actual enforcement lives in two places:
  *  - the main-process permission gate (`decidePermission` in

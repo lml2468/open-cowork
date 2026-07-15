@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Open Cowork is an Electron desktop AI-agent app (Windows + macOS) that wraps multiple LLM providers (Anthropic, OpenAI, Gemini, and any OpenAI-compatible endpoint) behind a GUI, with VM-level sandbox isolation, an MCP tool layer, a Skills system, and remote control via Feishu/Slack. The agent loop itself is provided by the `@mariozechner/pi-coding-agent` / `pi-ai` SDK — this repo integrates and orchestrates it, it does not implement the LLM loop from scratch.
+Open Cowork is an Electron desktop AI-agent app (Windows + macOS) that wraps OpenAI and OpenAI-Responses-compatible endpoints behind a GUI, with VM-level sandbox isolation, an MCP tool layer, a Skills system, and remote control via Feishu/Slack. The agent loop itself runs on an embedded OpenAI Codex `app-server` backend (Codex CLI's JSON-RPC `codex app-server`), integrated and orchestrated from `src/main/agent/codex-runtime/` — this repo does not implement the LLM loop from scratch. (It previously used the `@mariozechner/pi-coding-agent` / `pi-ai` SDK, replaced in the codex-runtime migration.)
 
 ## Commands
 
@@ -45,11 +45,11 @@ Renderer ↔ main communicate through a **single typed event protocol**, not sca
 
 ### Agent execution path
 
-`SessionManager` (`src/main/session/session-manager.ts`) owns session CRUD + chat history (persisted in SQLite) and drives `CoworkAgentRunner` (`src/main/agent/agent-runner.ts`), which wraps the pi-coding-agent SDK. Provider/model routing, auth, and env-var projection live in `src/main/config/config-store.ts` (`applyToEnv`, `hasUsableCredentialsForActiveSet`) and `src/main/agent/pi-model-resolution.ts`. Streaming output and tool traces flow back out as `ServerEvent`s.
+`SessionManager` (`src/main/session/session-manager.ts`) owns session CRUD + chat history (persisted in SQLite) and drives `CoworkAgentRunner` (`src/main/agent/agent-runner.ts`), which owns a long-lived `CodexRuntime` (`src/main/agent/codex-runtime/`) over a `codex app-server` child. Provider/model routing, auth, and env-var projection live in `src/main/config/config-store.ts` (`applyToEnv`, `hasUsableCredentialsForActiveSet`) and `src/main/agent/codex-runtime/codex-model-config.ts` (`buildCodexModelConfig`). Streaming output and tool traces flow back out as `ServerEvent`s.
 
 ### Agent runtime extensions
 
-Agent capabilities beyond the base tools are composed as `AgentRuntimeExtension`s registered through `AgentRuntimeExtensionManager` (`src/main/extensions/`). Current extensions: `MemoryExtension`, `ConfigExtension` (the `config_read`/`config_write` agent tools), `SubagentExtension` (in-process child sessions), `CompactionExtension`. Both the GUI path and the headless path build their own manager instances in `src/main/index.ts` — keep the two extension lists in sync when adding one.
+Agent capabilities beyond the base tools are composed as `AgentRuntimeExtension`s registered through `AgentRuntimeExtensionManager` (`src/main/extensions/`). Current extensions: `MemoryExtension`, `ConfigExtension` (the `config_read`/`config_write` agent tools), and `SubagentExtension` (spawns child codex threads on a dedicated app-server client). Both the GUI path and the headless path build their own manager instances in `src/main/index.ts` — keep the two extension lists in sync when adding one. Custom tools implement the local `AgentRuntimeCustomTool` interface (`src/main/extensions/agent-runtime-extension.ts`), adapted into codex host `dynamic_tools` per turn.
 
 ### Headless / RPC surface
 
@@ -83,6 +83,6 @@ React + Zustand (`src/renderer/store/`) + Tailwind. All user-facing strings go t
 ## Gotchas
 
 - The repo path aliases: `@` → `src` (both vite and vitest); `@main` → `src/main`, `@renderer` → `src/renderer` (vite only).
-- Large main-process deps and ESM-only packages are handled explicitly in `vite.config.ts` `rollupOptions.external` — ESM-only packages (pi-coding-agent, pi-ai, electron-store, uuid) must stay **bundled**, CJS ones are externalized. Check that list before changing an import of a heavy dependency.
+- Large main-process deps and ESM-only packages are handled explicitly in `vite.config.ts` `rollupOptions.external` — ESM-only packages (electron-store, uuid) must stay **bundled**, CJS ones are externalized. Check that list before changing an import of a heavy dependency.
 - API keys live in an Electron-`safeStorage`-encrypted electron-store; only the non-sensitive subset (`EXPORTABLE_FIELDS` in `config-store.ts`) round-trips through the plaintext `config.public.json`. You cannot seed credentials by writing config files alone except for providers that allow an empty key (e.g. `ollama`).
 - CONTRIBUTING.md refers to `src/main/claude/` — the directory is now `src/main/agent/`.

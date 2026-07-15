@@ -12,8 +12,8 @@
  *
  * Dependencies: session-manager, mcp-manager, config-store, skills-manager, codex-runtime
  */
-import { type ToolDefinition } from '@mariozechner/pi-coding-agent';
-import { Type, type TSchema } from '@sinclair/typebox';
+import { Type } from '@sinclair/typebox';
+import { type AgentRuntimeCustomTool } from '../extensions/agent-runtime-extension';
 import type { Session, Message, TraceStep, ServerEvent, ContentBlock } from '../../renderer/types';
 import { v4 as uuidv4 } from 'uuid';
 import { decidePermission, rememberAlwaysAllow } from '../config/permission-rules-store';
@@ -100,7 +100,7 @@ function escapeXmlText(value: string): string {
  * Serialize a message's content blocks into the XML representation used inside the
  * cold-start `<conversation_history>` preamble.
  *
- * Why this exists: when the cached pi-coding-agent SDK session is disposed (cwd
+ * Why this exists: when the codex thread is disposed (cwd
  * change or runtime-signature change), agent-runner rebuilds history from
  * DB-persisted messages. The previous implementation only kept `text` blocks,
  * which silently dropped `thinking`, `tool_use`, and `tool_result` blocks.
@@ -367,7 +367,7 @@ async function enrichProcessPathForBuild(): Promise<void> {
  * Bridge MCP tools from MCPManager into ToolDefinition[] format for the agent SDK.
  * Each MCP tool becomes a customTool whose execute() delegates to mcpManager.callTool().
  */
-function buildMcpCustomTools(mcpManager: MCPManager): ToolDefinition[] {
+function buildMcpCustomTools(mcpManager: MCPManager): AgentRuntimeCustomTool[] {
   const mcpTools = mcpManager.getTools();
   return mcpTools.map((mcpTool) => {
     // Wrap the raw JSON Schema inputSchema as a TypeBox TSchema
@@ -375,7 +375,7 @@ function buildMcpCustomTools(mcpManager: MCPManager): ToolDefinition[] {
       mcpTool.inputSchema as Record<string, unknown>
     );
 
-    const toolDef: ToolDefinition<TSchema, unknown> = {
+    const toolDef: AgentRuntimeCustomTool = {
       name: mcpTool.name,
       label: `${mcpTool.serverName} → ${mcpTool.originalName || mcpTool.name}`,
       description: mcpTool.description || `MCP tool from ${mcpTool.serverName}`,

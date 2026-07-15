@@ -29,7 +29,7 @@ import { SubagentExtension } from './agent/subagent-extension';
 import { AgentRuntimeExtensionManager } from './extensions/agent-runtime-extension-manager';
 import {
   configStore,
-  getPiAiModelPresets,
+  getModelPresets,
   type AppConfig,
   type AppTheme,
   type CreateConfigSetPayload,
@@ -147,6 +147,9 @@ let skillsManager: SkillsManager | null = null;
 let pluginRuntimeService: PluginRuntimeService | null = null;
 let memoryService: MemoryService | null = null;
 let scheduledTaskManager: ScheduledTaskManager | null = null;
+// Holds the active SubagentExtension (GUI or headless) so its dedicated codex child
+// app-server can be torn down on shutdown alongside the shared one-shot client.
+let subagentExtension: SubagentExtension | null = null;
 
 /**
  * Tool names that a spawned subagent may never invoke, regardless of what
@@ -926,12 +929,12 @@ app
       const headlessExtensionManager = new AgentRuntimeExtensionManager([
         new MemoryExtension(memoryService),
         new ConfigExtension(configStore),
-        new SubagentExtension(
+        (subagentExtension = new SubagentExtension(
           () => sessionManager?.getMCPManager() ?? null,
           sendToRenderer,
           async (toolName, toolInput) =>
             resolveSubagentToolPermission(toolName, toolInput as Record<string, unknown>)
-        ),
+        )),
       ]);
 
       // Build the JSONL sender with permission interception BEFORE constructing SessionManager
@@ -1032,6 +1035,7 @@ app
         // LLM). The GUI path disposes it in cleanupSandboxResources, but headless has its
         // own shutdown that never reaches that — dispose here to avoid a leaked child.
         disposeSharedCodexClient();
+        subagentExtension?.dispose();
         try {
           const mcpManager = sessionManager?.getMCPManager();
           if (mcpManager) {
@@ -1349,12 +1353,12 @@ app
     const extensionManager = new AgentRuntimeExtensionManager([
       new MemoryExtension(memoryService),
       new ConfigExtension(configStore),
-      new SubagentExtension(
+      (subagentExtension = new SubagentExtension(
         () => sessionManager?.getMCPManager() ?? null,
         sendToRenderer,
         async (toolName, toolInput) =>
           resolveSubagentToolPermission(toolName, toolInput as Record<string, unknown>)
-      ),
+      )),
     ]);
 
     // Initialize session manager before creating an interactive window.
@@ -1565,6 +1569,7 @@ async function cleanupSandboxResources(): Promise<void> {
   skillsManager?.stopStorageMonitoring();
   scheduledTaskManager?.stop();
   disposeSharedCodexClient();
+  subagentExtension?.dispose();
   tray?.destroy();
   tray = null;
 
@@ -1652,6 +1657,7 @@ app.on('before-quit', async (event) => {
     if (process.env.VITE_DEV_SERVER_URL) {
       stopNavServer();
       disposeSharedCodexClient();
+      subagentExtension?.dispose();
       try {
         closeDatabase();
       } catch {
@@ -1927,7 +1933,7 @@ ipcMain.handle('config.get', () => {
 
 ipcMain.handle('config.getPresets', () => {
   try {
-    return getPiAiModelPresets();
+    return getModelPresets();
   } catch (error) {
     logError('[Config] Error getting presets:', error);
     return [];
