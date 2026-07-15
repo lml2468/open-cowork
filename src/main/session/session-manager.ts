@@ -172,6 +172,8 @@ export class SessionManager {
           toolName: string,
           input: Record<string, unknown>
         ) => this.requestPermission(sessionId, toolUseId, toolName, input),
+        persistCodexThread: (sessionId: string, threadId: string, runtimeSignature: string) =>
+          this.persistCodexThread(sessionId, threadId, runtimeSignature),
       },
       this.pathResolver,
       this.mcpManager,
@@ -342,6 +344,26 @@ export class SessionManager {
     };
   }
 
+  /**
+   * Persist the codex threadId + runtime signature for a session so a later cold start can
+   * `thread/resume` it instead of rebuilding the history preamble. Skips redundant writes.
+   */
+  private persistCodexThread(sessionId: string, threadId: string, runtimeSignature: string): void {
+    try {
+      const row = this.db.sessions.get(sessionId);
+      if (!row) return;
+      if (row.openai_thread_id === threadId && row.codex_runtime_signature === runtimeSignature) {
+        return;
+      }
+      this.db.sessions.update(sessionId, {
+        openai_thread_id: threadId,
+        codex_runtime_signature: runtimeSignature,
+      });
+    } catch (err: unknown) {
+      logWarn('[SessionManager] Failed to persist codex thread id:', err);
+    }
+  }
+
   // Save session to database
   private saveSession(session: Session) {
     this.db.sessions.create({
@@ -349,6 +371,7 @@ export class SessionManager {
       title: session.title,
       claude_session_id: session.claudeSessionId || null,
       openai_thread_id: session.openaiThreadId || null,
+      codex_runtime_signature: session.codexRuntimeSignature || null,
       status: session.status,
       cwd: session.cwd || null,
       mounted_paths: JSON.stringify(session.mountedPaths),
@@ -386,6 +409,7 @@ export class SessionManager {
       title: row.title,
       claudeSessionId: row.claude_session_id || undefined,
       openaiThreadId: row.openai_thread_id || undefined,
+      codexRuntimeSignature: row.codex_runtime_signature || undefined,
       status: row.status as Session['status'],
       cwd: row.cwd || undefined,
       mountedPaths,
@@ -423,6 +447,7 @@ export class SessionManager {
         title: row.title,
         claudeSessionId: row.claude_session_id || undefined,
         openaiThreadId: row.openai_thread_id || undefined,
+        codexRuntimeSignature: row.codex_runtime_signature || undefined,
         status: row.status as Session['status'],
         cwd: row.cwd || undefined,
         mountedPaths,

@@ -41,6 +41,8 @@ import type {
   CodexThreadCompactStartParams,
   CodexThreadStartParams,
   CodexThreadStartResponse,
+  CodexThreadResumeParams,
+  CodexThreadResumeResponse,
   CodexTurnInterruptParams,
   CodexTurnStartParams,
   CodexTurnStartResponse,
@@ -58,6 +60,7 @@ export interface CodexClientLike {
   onNotification(listener: CodexNotificationListener): () => void;
   setServerRequestHandler(handler: CodexServerRequestHandler | null): void;
   threadStart(params: CodexThreadStartParams): Promise<CodexThreadStartResponse>;
+  threadResume(params: CodexThreadResumeParams): Promise<CodexThreadResumeResponse>;
   turnStart(params: CodexTurnStartParams): Promise<CodexTurnStartResponse>;
   turnSteer(params: CodexTurnSteerParams): Promise<CodexTurnSteerResponse>;
   turnInterrupt(params: CodexTurnInterruptParams): Promise<Record<string, never>>;
@@ -107,6 +110,13 @@ export interface CodexRunTurnOptions {
   baseInstructions?: string;
   developerInstructions?: string;
   config?: Record<string, unknown>;
+  /**
+   * A persisted codex threadId to `thread/resume` on a cold start instead of starting a fresh
+   * thread. When resume succeeds, codex restores the thread's server-side history so the
+   * caller can skip the `<conversation_history>` preamble. Ignored if the session already has
+   * a live in-memory thread.
+   */
+  resumeThreadId?: string;
 }
 
 export interface CodexTurnResult {
@@ -281,12 +291,58 @@ export class CodexRuntime {
     return active;
   }
 
-  private async ensureThread(options: CodexRunTurnOptions): Promise<string> {
+  /**
+   * Resolve the codex thread for a session BEFORE its turn prompt is built: reuse a live
+   * in-memory thread; else `thread/resume` a persisted threadId (codex restores server-side
+   * history); else `thread/start` fresh. Returns `resumed` so the caller can skip the
+   * `<conversation_history>` preamble when codex already holds the history.
+   */
+  async prepareThread(
+    options: CodexRunTurnOptions
+  ): Promise<{ threadId: string; resumed: boolean }> {
     await this.ensureStarted();
 
     const existing = this.sessionToThread.get(options.sessionId);
-    if (existing) return existing;
+    if (existing) return { threadId: existing, resumed: false };
 
+    if (options.resumeThreadId) {
+      try {
+        const res = await this.client.threadResume({
+          threadId: options.resumeThreadId,
+          approvalPolicy: this.approvalPolicy,
+          sandbox: this.sandbox,
+          ...(options.model ? { model: options.model } : {}),
+          ...(options.modelProvider ? { modelProvider: options.modelProvider } : {}),
+          ...(options.cwd ? { cwd: options.cwd } : {}),
+          ...(options.baseInstructions ? { baseInstructions: options.baseInstructions } : {}),
+          ...(options.developerInstructions
+            ? { developerInstructions: options.developerInstructions }
+            : {}),
+          ...(options.config ? { config: options.config } : {}),
+        });
+        const threadId = res.thread.id;
+        this.sessionToThread.set(options.sessionId, threadId);
+        this.threadToSession.set(threadId, options.sessionId);
+        this.logger.log(
+          `[CodexRuntime] resumed thread ${threadId} for session ${options.sessionId}`
+        );
+        return { threadId, resumed: true };
+      } catch (err: unknown) {
+        // Thread evicted / not found / resume error → fall back to a fresh thread. The caller
+        // then rebuilds the <conversation_history> preamble so history is not lost.
+        this.logger.warn(
+          '[CodexRuntime] thread/resume failed; starting a fresh thread:',
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+    }
+
+    const threadId = await this.startFreshThread(options);
+    return { threadId, resumed: false };
+  }
+
+  /** Start a brand-new codex thread (with host `dynamic_tools` registered) and map it. */
+  private async startFreshThread(options: CodexRunTurnOptions): Promise<string> {
     // Register host function tools for this thread's turns. Codex only calls tools it
     // was told about at thread start; the bridge is (re)populated by the caller per turn.
     const dynamicTools = this.toolBridge.buildDynamicToolSpecs();
@@ -310,6 +366,20 @@ export class CodexRuntime {
     this.sessionToThread.set(options.sessionId, threadId);
     this.threadToSession.set(threadId, options.sessionId);
     return threadId;
+  }
+
+  private async ensureThread(options: CodexRunTurnOptions): Promise<string> {
+    const existing = this.sessionToThread.get(options.sessionId);
+    if (existing) return existing;
+    // runTurn without a prior prepareThread() — resolve now (resumes only if a resumeThreadId
+    // was supplied on the options).
+    const { threadId } = await this.prepareThread(options);
+    return threadId;
+  }
+
+  /** The live codex threadId for a session, if one has been resolved (for persistence). */
+  getThreadId(sessionId: string): string | undefined {
+    return this.sessionToThread.get(sessionId);
   }
 
   private async ensureStarted(): Promise<void> {

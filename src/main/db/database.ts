@@ -58,6 +58,7 @@ export interface SessionRow {
   title: string;
   claude_session_id: string | null;
   openai_thread_id: string | null;
+  codex_runtime_signature: string | null;
   status: string;
   cwd: string | null;
   mounted_paths: string; // JSON string
@@ -242,6 +243,7 @@ function initializeSchema(database: Database.Database): void {
   `);
 
     ensureColumn(database, 'sessions', 'openai_thread_id', 'openai_thread_id TEXT');
+    ensureColumn(database, 'sessions', 'codex_runtime_signature', 'codex_runtime_signature TEXT');
     ensureColumn(database, 'sessions', 'model', 'model TEXT');
 
     // Create messages table
@@ -297,18 +299,6 @@ function initializeSchema(database: Database.Database): void {
     database.exec(`
     CREATE INDEX IF NOT EXISTS idx_trace_steps_timestamp
     ON trace_steps(session_id, timestamp)
-  `);
-
-    // Create memory_entries table (for future use)
-    database.exec(`
-    CREATE TABLE IF NOT EXISTS memory_entries (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      content TEXT NOT NULL,
-      metadata TEXT,
-      created_at INTEGER NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
   `);
 
     // Create skills table (for future use)
@@ -435,8 +425,8 @@ export function initDatabase(): DatabaseInstance {
   // Prepare statements for better performance
   const insertSession = rawDb.prepare(`
     INSERT OR REPLACE INTO sessions
-    (id, title, claude_session_id, openai_thread_id, status, cwd, mounted_paths, allowed_tools, memory_enabled, model, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, title, claude_session_id, openai_thread_id, codex_runtime_signature, status, cwd, mounted_paths, allowed_tools, memory_enabled, model, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // Note: Dynamic update queries are built in sessions.update() for flexibility
@@ -521,6 +511,7 @@ export function initDatabase(): DatabaseInstance {
           session.title,
           session.claude_session_id,
           session.openai_thread_id,
+          session.codex_runtime_signature,
           session.status,
           session.cwd,
           session.mounted_paths,

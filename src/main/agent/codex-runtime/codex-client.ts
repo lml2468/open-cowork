@@ -89,6 +89,30 @@ export interface CodexThreadStartResponse {
   modelProvider: string;
 }
 
+/**
+ * Params for `thread/resume` — reload a persisted thread from codex's on-disk rollout by id
+ * and rejoin it, restoring its server-side history (text + reasoning + tool calls). Unlike
+ * `thread/start`, there is **no `dynamicTools` field** (host tools are re-registered by the
+ * runtime after resume, see codex-runtime). Config overrides (incl. `mcp_servers`) re-apply.
+ */
+export interface CodexThreadResumeParams {
+  threadId: string;
+  model?: string | null;
+  modelProvider?: string | null;
+  cwd?: string | null;
+  approvalPolicy?: CodexApprovalPolicy | null;
+  sandbox?: CodexSandboxMode | null;
+  config?: Record<string, unknown> | null;
+  baseInstructions?: string | null;
+  developerInstructions?: string | null;
+}
+
+export interface CodexThreadResumeResponse {
+  thread: CodexThreadRef;
+  model: string;
+  modelProvider: string;
+}
+
 /** A single user input element. Only the `text` variant is modeled here. */
 export interface CodexTextInput {
   type: 'text';
@@ -609,6 +633,10 @@ export class CodexClient {
 
   threadStart(params: CodexThreadStartParams): Promise<CodexThreadStartResponse> {
     return this.request<CodexThreadStartResponse>('thread/start', params);
+  }
+
+  threadResume(params: CodexThreadResumeParams): Promise<CodexThreadResumeResponse> {
+    return this.request<CodexThreadResumeResponse>('thread/resume', params);
   }
 
   turnStart(params: CodexTurnStartParams): Promise<CodexTurnStartResponse> {
