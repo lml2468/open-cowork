@@ -15,19 +15,7 @@
  * cannot return.
  */
 
-import { describe, expect, it, vi } from 'vitest';
-
-// agent-runner.ts pulls a wide tree of Electron + native deps via its
-// constructor; we only need a pure helper, so stub the heaviest imports.
-vi.mock('@mariozechner/pi-ai', () => ({
-  completeSimple: vi.fn(),
-  getModel: vi.fn(() => undefined),
-}));
-
-vi.mock('../../main/agent/shared-auth', () => ({
-  getSharedAuthStorage: () => ({ setRuntimeApiKey: vi.fn() }),
-  ModelRegistry: vi.fn(),
-}));
+import { describe, expect, it } from 'vitest';
 
 import type { ContentBlock } from '../../renderer/types';
 import { serializeMessageContentForHistory } from '../../main/agent/agent-runner';
