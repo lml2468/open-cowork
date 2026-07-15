@@ -9,10 +9,10 @@ so the only valid custom protocol is `openai`.
 
 ### Changes
 
-1. **Default protocol → `openai`** in `config-store.ts` (default config set, DEFAULT_CONFIG,
+1. **Default protocol → `openai`** in `config-store.ts` (default config set, DEFAULT*CONFIG,
    and the `profileKeyFromProvider` fallback param). Keep `CustomProtocolType` union BROAD
    (`'anthropic' | 'openai' | 'gemini'`) — do NOT narrow the type (5.4 lesson: narrowing
-   cascades ~60 sites). We only change runtime _values_, not the union.
+   cascades ~60 sites). We only change runtime \_values*, not the union.
 2. **Non-destructive load-time migration** in `config-store.ts` (config hydration path):
    for the top-level config and every entry in `configSets`, if `provider === 'custom'`
    and `customProtocol !== 'openai'`, coerce `customProtocol = 'openai'`. Preserve
