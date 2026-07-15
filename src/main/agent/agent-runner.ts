@@ -52,6 +52,7 @@ import {
 import { CodexClient, type CodexLogger } from './codex-runtime/codex-client';
 import { CodexRuntime, type CodexRuntimeEmitters } from './codex-runtime/codex-runtime';
 import { CodexPermissionBridge } from './codex-runtime/codex-permission-bridge';
+import { CodexElicitationBridge } from './codex-runtime/codex-elicitation-bridge';
 import { CodexToolBridge } from './codex-runtime/codex-tool-bridge';
 import { CodexEventTranslator } from './codex-runtime/codex-event-translator';
 import { adaptPiToolsToCodexHostTools } from './codex-runtime/codex-tool-adapter';
@@ -852,11 +853,34 @@ ${hints.join('\n')}
       logger,
     });
 
+    // Native MCP servers can elicit user input/confirmation mid-tool-call
+    // (`mcpServer/elicitation/request`). Route it to the same approve/deny UI the command/
+    // file approvals use so the user gets an interaction instead of a silent denial.
+    const elicitationBridge = new CodexElicitationBridge({
+      prompt: requestPermission
+        ? async (context) => {
+            const toolUseId = `codex-elicit-${uuidv4().slice(0, 8)}`;
+            const result = await requestPermission(
+              context.sessionId,
+              toolUseId,
+              context.serverName,
+              {
+                message: context.message,
+                mode: context.mode,
+              }
+            );
+            return result === 'deny' ? 'decline' : 'accept';
+          }
+        : undefined,
+      logger,
+    });
+
     const runtime = new CodexRuntime({
       client,
       emitters: this.buildCodexEmitters(),
       permissionBridge,
       toolBridge,
+      elicitationBridge,
       createTranslator: (sessionId: string) =>
         new CodexEventTranslator({
           sessionId,

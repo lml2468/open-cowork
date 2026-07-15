@@ -49,6 +49,7 @@ import type {
 } from './codex-client';
 import { CodexPermissionBridge } from './codex-permission-bridge';
 import { CodexToolBridge } from './codex-tool-bridge';
+import { CodexElicitationBridge } from './codex-elicitation-bridge';
 
 /** The subset of {@link CodexClient} the runtime depends on (satisfied structurally). */
 export interface CodexClientLike {
@@ -85,6 +86,8 @@ export interface CodexRuntimeOptions {
   emitters: CodexRuntimeEmitters;
   permissionBridge: CodexPermissionBridge;
   toolBridge: CodexToolBridge;
+  /** Handles `mcpServer/elicitation/request` from native MCP servers (approve/deny UI). */
+  elicitationBridge?: CodexElicitationBridge;
   /** Delegated to the app's Lima/WSL VM by default (see design.md sandbox section). */
   sandbox?: CodexSandboxMode;
   /** Default 'on-request' so the model escalates and the app answers per tool. */
@@ -128,6 +131,7 @@ export class CodexRuntime {
   private readonly emitters: CodexRuntimeEmitters;
   private readonly permissionBridge: CodexPermissionBridge;
   private readonly toolBridge: CodexToolBridge;
+  private readonly elicitationBridge?: CodexElicitationBridge;
   private readonly sandbox: CodexSandboxMode;
   private readonly approvalPolicy: CodexApprovalPolicy;
   private readonly createTranslator: (sessionId: string) => CodexEventTranslator;
@@ -147,6 +151,7 @@ export class CodexRuntime {
     this.emitters = options.emitters;
     this.permissionBridge = options.permissionBridge;
     this.toolBridge = options.toolBridge;
+    this.elicitationBridge = options.elicitationBridge;
     this.sandbox = options.sandbox ?? 'danger-full-access';
     this.approvalPolicy = options.approvalPolicy ?? 'on-request';
     this.createTranslator =
@@ -402,6 +407,10 @@ export class CodexRuntime {
     }
     if (this.toolBridge.canHandle(request.method)) {
       return this.toolBridge.handle(request);
+    }
+    if (this.elicitationBridge?.canHandle(request.method)) {
+      const sessionId = this.resolveSessionId(request.params);
+      return this.elicitationBridge.handle(request, sessionId);
     }
     this.logger.warn('[CodexRuntime] unhandled server request', request.method);
     throw new Error(`Unhandled codex server request: ${request.method}`);
