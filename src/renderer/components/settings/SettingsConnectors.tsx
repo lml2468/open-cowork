@@ -16,6 +16,20 @@ import {
 } from 'lucide-react';
 import type { MCPServerConfig, MCPServerStatus, MCPToolInfo, MCPPreset } from './shared';
 import { EmptyState } from '../EmptyState';
+import { CapabilityBadgeList } from '../CapabilityBadge';
+import { getConnectorCapabilityBadges } from '../../utils/capability-badges';
+
+/** True when a connector needs a token/secret (env vars or auth headers). */
+function connectorHasCredentials(input: {
+  env?: Record<string, string>;
+  headers?: Record<string, string>;
+  requiresEnv?: string[];
+}): boolean {
+  if (input.requiresEnv && input.requiresEnv.length > 0) return true;
+  if (input.env && Object.keys(input.env).length > 0) return true;
+  if (input.headers && Object.keys(input.headers).length > 0) return true;
+  return false;
+}
 
 const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
 
@@ -372,6 +386,17 @@ export function SettingsConnectors({ isActive }: { isActive: boolean }) {
                           ? `${preset.command} ${preset.args?.join(' ') || ''}`
                           : preset.url || 'Remote server'}
                       </div>
+                      <CapabilityBadgeList
+                        descriptors={getConnectorCapabilityBadges({
+                          type: preset.type,
+                          hasCredentials: connectorHasCredentials({
+                            env: preset.env,
+                            headers: preset.headers,
+                            requiresEnv: preset.requiresEnv,
+                          }),
+                        })}
+                        className="mt-1.5"
+                      />
                     </div>
                     {isAdded ? (
                       <div className="flex items-center gap-1 text-success text-caption whitespace-nowrap">
@@ -514,6 +539,17 @@ function ServerCard({
                   )}
                 </button>
               </div>
+
+              <CapabilityBadgeList
+                descriptors={getConnectorCapabilityBadges({
+                  type: server.type,
+                  hasCredentials: connectorHasCredentials({
+                    env: server.env,
+                    headers: server.headers,
+                  }),
+                })}
+                className="mt-2"
+              />
 
               {/* Tools List */}
               {showTools && tools.length > 0 && (

@@ -20,6 +20,8 @@ import { SettingsContentSection } from './shared';
 import type { LocalizedBanner } from './shared';
 import { SkeletonCardList } from '../Skeleton';
 import { localizeSkill } from '../../utils/localize-skill';
+import { CapabilityBadgeList } from '../CapabilityBadge';
+import { getSkillCapabilityBadges } from '../../utils/capability-badges';
 
 const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
 
@@ -806,6 +808,10 @@ function SkillCard({
           {description && (
             <p className="text-body-sm text-text-muted ml-6 line-clamp-2">{description}</p>
           )}
+          <CapabilityBadgeList
+            descriptors={getSkillCapabilityBadges({ type: skill.type })}
+            className="ml-6 mt-2"
+          />
         </div>
         <div className="flex items-center gap-2">
           <button

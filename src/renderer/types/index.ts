@@ -514,6 +514,12 @@ export interface Settings {
   globalSkillsPath: string;
   memoryStrategy: 'auto' | 'manual' | 'rolling';
   maxContextTokens: number;
+  /**
+   * When true, destructive delete commands always prompt for confirmation even
+   * if the command tool is otherwise auto-allowed. Enforced in the main-process
+   * permission gate (`decidePermission`).
+   */
+  deletionProtection: boolean;
 }
 
 // Tool types

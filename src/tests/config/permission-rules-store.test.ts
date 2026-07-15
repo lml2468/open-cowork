@@ -18,6 +18,9 @@ import {
   getPermissionRules,
   rememberAlwaysAllow,
   setPermissionRules,
+  setDeletionProtection,
+  isDeletionProtectionEnabled,
+  isDestructiveDeleteCommand,
 } from '../../main/config/permission-rules-store';
 
 const SESSION_A = 'session-a';
@@ -25,8 +28,11 @@ const SESSION_B = 'session-b';
 
 // Reset to DEFAULT_RULES before each test by passing garbage input — the
 // module documents that this falls back to defaults rather than empty rules.
+// Deletion protection is disabled here so the rule-resolution tests below are
+// deterministic; a dedicated describe block re-enables and exercises it.
 function resetToDefaults(): void {
   setPermissionRules(null);
+  setDeletionProtection(false);
   forgetSessionPermissions(SESSION_A);
   forgetSessionPermissions(SESSION_B);
 }
@@ -247,6 +253,80 @@ describe('permission-rules-store', () => {
       rules[0].action = 'deny';
       // Internal cache should be unaffected
       expect(decidePermission(SESSION_A, 'bash', {})).toBe('allow');
+    });
+  });
+
+  describe('deletion protection', () => {
+    it('setDeletionProtection toggles the flag; anything but false is enabled', () => {
+      setDeletionProtection(true);
+      expect(isDeletionProtectionEnabled()).toBe(true);
+      setDeletionProtection(false);
+      expect(isDeletionProtectionEnabled()).toBe(false);
+      setDeletionProtection(undefined);
+      expect(isDeletionProtectionEnabled()).toBe(true);
+    });
+
+    it('downgrades an auto-allowed destructive delete to ask', () => {
+      setPermissionRules([{ tool: 'bash', action: 'allow' }]);
+      setDeletionProtection(true);
+      expect(decidePermission(SESSION_A, 'bash', { command: 'rm -rf ./build' })).toBe('ask');
+      // Non-destructive command still auto-allows
+      expect(decidePermission(SESSION_A, 'bash', { command: 'ls -la' })).toBe('allow');
+    });
+
+    it('overrides a session always-allow for destructive deletes', () => {
+      setPermissionRules([{ tool: 'bash', action: 'ask' }]);
+      setDeletionProtection(true);
+      rememberAlwaysAllow(SESSION_A, 'bash');
+      expect(decidePermission(SESSION_A, 'bash', { command: 'echo hi' })).toBe('allow');
+      expect(decidePermission(SESSION_A, 'bash', { command: 'rm -rf /tmp/x' })).toBe('ask');
+    });
+
+    it('never weakens a deny rule (deny stays deny)', () => {
+      setPermissionRules([{ tool: 'bash', action: 'deny' }]);
+      setDeletionProtection(true);
+      expect(decidePermission(SESSION_A, 'bash', { command: 'rm -rf /' })).toBe('deny');
+    });
+
+    it('does nothing when disabled', () => {
+      setPermissionRules([{ tool: 'bash', action: 'allow' }]);
+      setDeletionProtection(false);
+      expect(decidePermission(SESSION_A, 'bash', { command: 'rm -rf ./build' })).toBe('allow');
+    });
+
+    it('applies to execute_command style tool names, not to non-shell tools', () => {
+      setPermissionRules([
+        { tool: 'execute_command', action: 'allow' },
+        { tool: 'write', action: 'allow' },
+      ]);
+      setDeletionProtection(true);
+      expect(decidePermission(SESSION_A, 'execute_command', { command: 'rm -rf x' })).toBe('ask');
+      // A write tool whose stringified input merely contains "rm" is not a shell command
+      expect(decidePermission(SESSION_A, 'write', { path: '/tmp/farm.txt' })).toBe('allow');
+    });
+  });
+
+  describe('isDestructiveDeleteCommand', () => {
+    it('detects recursive, wildcard, and absolute rm', () => {
+      expect(isDestructiveDeleteCommand('bash', 'rm -rf build')).toBe(true);
+      expect(isDestructiveDeleteCommand('bash', 'rm *.log')).toBe(true);
+      expect(isDestructiveDeleteCommand('bash', 'rm /var/tmp/x')).toBe(true);
+    });
+
+    it('detects rmdir, unlink, shred, find -delete, git clean, del, rd', () => {
+      expect(isDestructiveDeleteCommand('bash', 'rmdir foo')).toBe(true);
+      expect(isDestructiveDeleteCommand('bash', 'unlink foo')).toBe(true);
+      expect(isDestructiveDeleteCommand('bash', 'shred -u secret')).toBe(true);
+      expect(isDestructiveDeleteCommand('bash', 'find . -name "*.tmp" -delete')).toBe(true);
+      expect(isDestructiveDeleteCommand('bash', 'git clean -fd')).toBe(true);
+      expect(isDestructiveDeleteCommand('execute_command', 'del /s /q C:\\tmp')).toBe(true);
+      expect(isDestructiveDeleteCommand('execute_command', 'rd /s C:\\tmp')).toBe(true);
+    });
+
+    it('ignores non-destructive commands and non-shell tools', () => {
+      expect(isDestructiveDeleteCommand('bash', 'ls -la')).toBe(false);
+      expect(isDestructiveDeleteCommand('bash', 'echo remove')).toBe(false);
+      expect(isDestructiveDeleteCommand('read', 'rm -rf /')).toBe(false);
     });
   });
 });

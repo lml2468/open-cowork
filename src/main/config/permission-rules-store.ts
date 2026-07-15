@@ -31,6 +31,60 @@ const VALID_ACTIONS: ReadonlySet<PermissionRule['action']> = new Set(['allow', '
 
 let rules: PermissionRule[] = [...DEFAULT_RULES];
 
+/**
+ * Deletion protection: when enabled, destructive delete commands ALWAYS prompt
+ * for confirmation, even if the tool is otherwise auto-allowed (rule action
+ * `allow` or a session "always allow" decision). A `deny` rule still wins — this
+ * only downgrades an auto-allow to a prompt, never weakens a denial. Mirrors the
+ * renderer default (`deletionProtection: true`).
+ */
+let deletionProtectionEnabled = true;
+
+/** Tool names that carry a raw shell command in their input. */
+function isShellTool(loweredToolName: string): boolean {
+  return (
+    loweredToolName.includes('bash') ||
+    loweredToolName.includes('command') ||
+    loweredToolName.includes('shell') ||
+    loweredToolName.includes('exec')
+  );
+}
+
+/**
+ * Detect a destructive file-deletion command in a stringified tool input.
+ * Intentionally conservative: matching only forces an extra confirmation
+ * prompt, so a false positive is harmless while a miss loses protection.
+ *
+ * NOTE: this is duplicated (in spirit) by the renderer's
+ * `src/renderer/utils/destructive-command.ts` used to strengthen the
+ * permission dialog copy — the renderer cannot import main-process code.
+ */
+const DESTRUCTIVE_DELETE_PATTERNS: RegExp[] = [
+  /\brm\s+-[a-z]*[rf]/i, // rm -r / -rf / -fr ...
+  /\brm\s+[^|;&]*\*/i, // rm with a wildcard
+  /\brm\s+\//i, // rm targeting an absolute path
+  /\brmdir\b/i, // remove directory
+  /\bunlink\b/i, // unlink
+  /\bshred\b/i, // secure delete
+  /\bfind\b[^|;&]*-delete/i, // find ... -delete
+  /\bgit\s+clean\s+-[a-z]*f/i, // git clean -f (removes untracked files)
+  /\bdel\s+\/[a-z]/i, // Windows del /s /q ...
+  /\brd\s+\/s/i, // Windows rd /s
+];
+
+export function isDestructiveDeleteCommand(loweredToolName: string, inputStr: string): boolean {
+  if (!isShellTool(loweredToolName)) return false;
+  return DESTRUCTIVE_DELETE_PATTERNS.some((pattern) => pattern.test(inputStr));
+}
+
+export function setDeletionProtection(enabled: unknown): void {
+  deletionProtectionEnabled = enabled !== false;
+}
+
+export function isDeletionProtectionEnabled(): boolean {
+  return deletionProtectionEnabled;
+}
+
 /** Session-scoped "always allow" decisions, keyed by sessionId → set of lowercase tool names. */
 const alwaysAllowBySession = new Map<string, Set<string>>();
 
@@ -92,11 +146,29 @@ export function decidePermission(
   input: Record<string, unknown>
 ): 'allow' | 'deny' | 'ask' {
   const lowered = toolName.toLowerCase();
+  const inputStr = safeStringify(input);
+  const base = resolveDecision(sessionId, lowered, inputStr);
 
+  // Deletion protection downgrades an auto-allow to a prompt for destructive
+  // delete commands. It never overrides a `deny` (which is more restrictive).
+  if (
+    base === 'allow' &&
+    deletionProtectionEnabled &&
+    isDestructiveDeleteCommand(lowered, inputStr)
+  ) {
+    return 'ask';
+  }
+
+  return base;
+}
+
+function resolveDecision(
+  sessionId: string,
+  lowered: string,
+  inputStr: string
+): 'allow' | 'deny' | 'ask' {
   const session = alwaysAllowBySession.get(sessionId);
   if (session?.has(lowered)) return 'allow';
-
-  const inputStr = safeStringify(input);
 
   for (const rule of rules) {
     if (rule.tool.toLowerCase() !== lowered) continue;

@@ -20,6 +20,7 @@ const HOST = '127.0.0.1';
 const EXEC_TIMEOUT_MS = 3000;
 const VALID_TABS = new Set([
   'api',
+  'security',
   'sandbox',
   'connectors',
   'skills',
