@@ -41,3 +41,36 @@ Completed the pi->codex runtime migration by removing @mariozechner/pi outright 
 ### Next Steps
 
 - None - task complete
+
+## Session 2: Fix API config (Responses-only) + de-brand Claude UI
+
+**Date**: 2026-07-15
+**Task**: Fix API config (Responses-only) + de-brand Claude UI
+**Branch**: `main`
+
+### Summary
+
+Fixed the post-migration API blocker: codex 0.142 only accepts wire_api=responses, so stale custom+anthropic configs hard-failed. Defaulted fresh installs to openai+openai, added a one-time load migration coercing custom+non-openai config sets to custom+openai (preserving endpoint/model/key), and made the unsupported-provider error actionable. De-branded Claude from the 4 user-facing i18n strings, default/fallback models (gpt-5.4), and OpenRouter presets. tsc/lint/vitest green (1160). Merged as PR #28.
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash      | Message       |
+| --------- | ------------- |
+| `5f6fe3b` | (see git log) |
+| `a1ac041` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

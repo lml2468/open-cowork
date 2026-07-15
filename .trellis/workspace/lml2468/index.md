@@ -9,7 +9,7 @@
 <!-- @@@auto:current-status -->
 
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 1
+- **Total Sessions**: 2
 - **Last Active**: 2026-07-15
 <!-- @@@/auto:current-status -->
 
@@ -21,7 +21,7 @@
 
 | File           | Lines | Status |
 | -------------- | ----- | ------ |
-| `journal-1.md` | ~44   | Active |
+| `journal-1.md` | ~77   | Active |
 
 <!-- @@@/auto:active-documents -->
 
@@ -31,9 +31,10 @@
 
 <!-- @@@auto:session-history -->
 
-| #   | Date       | Title                                         | Commits                                                          | Branch |
-| --- | ---------- | --------------------------------------------- | ---------------------------------------------------------------- | ------ |
-| 1   | 2026-07-15 | Codex runtime migration — Phase 6 (remove pi) | `fe1dba2`, `fd5c8b8`, `2e1828e`, `5844c56`, `d32b2a1`, `8d2ee42` | `main` |
+| #   | Date       | Title                                                | Commits                                                          | Branch |
+| --- | ---------- | ---------------------------------------------------- | ---------------------------------------------------------------- | ------ |
+| 2   | 2026-07-15 | Fix API config (Responses-only) + de-brand Claude UI | `5f6fe3b`, `a1ac041`                                             | `main` |
+| 1   | 2026-07-15 | Codex runtime migration — Phase 6 (remove pi)        | `fe1dba2`, `fd5c8b8`, `2e1828e`, `5844c56`, `d32b2a1`, `8d2ee42` | `main` |
 
 <!-- @@@/auto:session-history -->
 
