@@ -1,23 +1,18 @@
-<!-- TRELLIS:START -->
+<!-- CODING:START -->
 
-# Trellis Instructions
+# Coding Instructions
 
 These instructions are for AI assistants working in this project.
 
-This project is managed by Trellis. The working knowledge you need lives under `.trellis/`:
+This project is managed by Coding. The working knowledge you need lives under `.coding/`:
 
-- `.trellis/workflow.md` — development phases, when to create tasks, skill routing
-- `.trellis/spec/` — package- and layer-scoped coding guidelines (read before writing code in a given layer)
-- `.trellis/workspace/` — per-developer journals and session traces
-- `.trellis/tasks/` — active and archived tasks (PRDs, research, jsonl context)
+- `.coding/workflow.md` — development phases, when to create tasks, skill routing
+- `.coding/spec/` — package- and layer-scoped coding guidelines (read before writing code in a given layer)
+- `.coding/workspace/` — per-developer journals and session traces
+- `.coding/tasks/` — active and archived tasks (PRDs, research, jsonl context)
 
-If a Trellis command is available on your platform (e.g. `/trellis:finish-work`, `/trellis:continue`), prefer it over manual steps. Not every platform exposes every command.
+If a Coding command is available (e.g. `/coding:finish-work`, `/coding:continue`), prefer it over manual steps.
 
-If you're using Codex or another agent-capable tool, additional project-scoped helpers may live in:
+Managed by Coding. Edits outside this block are preserved; edits inside may be overwritten by a future `coding update`.
 
-- `.agents/skills/` — reusable Trellis skills
-- `.codex/agents/` — optional custom subagents
-
-Managed by Trellis. Edits outside this block are preserved; edits inside may be overwritten by a future `trellis update`.
-
-<!-- TRELLIS:END -->
+<!-- CODING:END -->

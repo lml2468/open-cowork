@@ -1,0 +1,32 @@
+{
+  "id": "workbuddy-gap",
+  "name": "workbuddy-gap",
+  "title": "Refactor open-cowork UI/UX toward WorkBuddy parity",
+  "description": "Study WorkBuddy via screenshots, GAP-analyze vs open-cowork, close all GAPs (UI/interaction/features) iteratively with screenshot-compare + self-test. No WorkBuddy source copied.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "limenglin",
+  "assignee": "limenglin",
+  "createdAt": "2026-07-16",
+  "completedAt": "2026-07-16",
+  "branch": null,
+  "base_branch": "feat/workbuddy-gap-refresh",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "loop": {
+      "check_status": "pass",
+      "iteration_count": 0,
+      "last_check_at": "2026-07-15T21:43:45Z"
+    }
+  }
+}
