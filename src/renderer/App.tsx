@@ -24,6 +24,7 @@ import { SandboxSetupDialog } from './components/SandboxSetupDialog';
 import { SandboxSyncToast } from './components/SandboxSyncToast';
 import { GlobalNoticeToast } from './components/GlobalNoticeToast';
 import { GlobalSearch } from './components/GlobalSearch';
+import { PersonaManagerModal } from './components/PersonaManagerModal';
 import { PanelErrorBoundary } from './components/PanelErrorBoundary';
 import type { AppConfig } from './types';
 import type { GlobalNoticeAction } from './store';
@@ -86,6 +87,7 @@ function App() {
   const setSidebarCollapsed = useAppStore((s) => s.setSidebarCollapsed);
   const setContextPanelCollapsed = useAppStore((s) => s.setContextPanelCollapsed);
   const setShowGlobalSearch = useAppStore((s) => s.setShowGlobalSearch);
+  const showPersonaManager = useAppStore((s) => s.showPersonaManager);
 
   const { listSessions, isElectron } = useIPC();
   const { width } = useWindowSize();
@@ -99,6 +101,7 @@ function App() {
 
     if (isElectron) {
       listSessions();
+      useAppStore.getState().loadPersonas();
     }
   }, []); // Empty deps - run once
 
@@ -285,6 +288,7 @@ function App() {
       />
 
       <GlobalSearch />
+      {showPersonaManager && <PersonaManagerModal />}
     </div>
   );
 }

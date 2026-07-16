@@ -79,6 +79,8 @@ win:
       to: wsl-agent
     - from: .claude/skills
       to: skills
+    - from: resources/personas
+      to: personas
 
 mac:
   icon: resources/icon.icns
@@ -113,6 +115,8 @@ mac:
       to: lima-agent
     - from: .claude/skills
       to: skills
+    - from: resources/personas
+      to: personas
 
 linux:
   icon: resources/icon.png
@@ -132,6 +136,8 @@ linux:
       to: python
     - from: .claude/skills
       to: skills
+    - from: resources/personas
+      to: personas
 
 nsis:
   oneClick: false

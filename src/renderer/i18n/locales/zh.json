@@ -820,6 +820,12 @@
     },
     "command": {
       "title": "技能"
+    },
+    "persona": {
+      "none": "未选专家",
+      "title": "专家",
+      "enableSkills": "启用推荐技能 ({{count}})",
+      "manage": "管理专家"
     }
   },
   "chat": {
@@ -1210,5 +1216,25 @@
     "completed": "已完成",
     "inDuration": "耗时 {{duration}}",
     "showResult": "查看结果"
+  },
+  "persona": {
+    "manager": {
+      "title": "专家",
+      "new": "新建",
+      "newExpert": "新建专家",
+      "editing": "编辑中",
+      "viewingBuiltin": "内置（只读）",
+      "selectHint": "选择一个专家查看或编辑，或新建一个。",
+      "openDir": "打开专家目录",
+      "name": "名称",
+      "icon": "图标",
+      "description": "描述",
+      "systemPrompt": "系统提示",
+      "scenarios": "适用场景",
+      "recommendedSkills": "推荐技能",
+      "namePromptRequired": "名称和系统提示为必填。",
+      "deleteConfirm": "删除专家「{{name}}」？",
+      "builtinHint": "内置专家只读。新建一个专家以自定义。"
+    }
   }
 }

@@ -820,6 +820,12 @@
     },
     "command": {
       "title": "Skills"
+    },
+    "persona": {
+      "none": "No expert",
+      "title": "Expert",
+      "enableSkills": "Enable recommended skills ({{count}})",
+      "manage": "Manage experts"
     }
   },
   "chat": {
@@ -1210,5 +1216,25 @@
     "completed": "Completed",
     "inDuration": "in {{duration}}",
     "showResult": "Show result"
+  },
+  "persona": {
+    "manager": {
+      "title": "Experts",
+      "new": "New",
+      "newExpert": "New expert",
+      "editing": "Editing",
+      "viewingBuiltin": "Builtin (read-only)",
+      "selectHint": "Select an expert to view or edit, or create a new one.",
+      "openDir": "Open personas folder",
+      "name": "Name",
+      "icon": "Icon",
+      "description": "Description",
+      "systemPrompt": "System prompt",
+      "scenarios": "Scenarios",
+      "recommendedSkills": "Recommended skills",
+      "namePromptRequired": "Name and system prompt are required.",
+      "deleteConfirm": "Delete expert \"{{name}}\"?",
+      "builtinHint": "Builtin experts are read-only. Create a new expert to customize."
+    }
   }
 }

@@ -65,6 +65,7 @@ export function WelcomeView() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<ScenarioFilter>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPersonaId, setPendingPersonaId] = useState<string | null>(null);
   const isComposingRef = useRef(false);
   const [pastedImages, setPastedImages] = useState<
     Array<{ url: string; base64: string; mediaType: string }>
@@ -420,6 +421,21 @@ export function WelcomeView() {
       const sessionTitle = getInitialSessionTitle(currentPrompt, attachedFiles[0]?.name);
       const session = await startSession(sessionTitle, contentBlocks, workingDir || undefined);
       if (session) {
+        // Bind the persona picked on the welcome screen to the freshly-created session, so its
+        // system prompt is injected. Also enable its recommended skills (soft).
+        if (pendingPersonaId) {
+          useAppStore.getState().bindPersona(session.id, pendingPersonaId);
+          const picked = useAppStore.getState().personas.find((p) => p.id === pendingPersonaId);
+          const recommended = picked?.recommendedSkills ?? [];
+          if (recommended.length && window.electronAPI) {
+            await Promise.all(
+              recommended.map((id) =>
+                window.electronAPI!.skills.setEnabled(id, true).catch(() => undefined)
+              )
+            );
+          }
+          setPendingPersonaId(null);
+        }
         setPrompt('');
         if (textareaRef.current) {
           textareaRef.current.value = '';
@@ -496,6 +512,16 @@ export function WelcomeView() {
       el.setSelectionRange(text.length, text.length);
     }
   }, []);
+
+  // Pick a persona (expert) on the welcome screen: remember it so it's bound to the session
+  // created on submit, and seed a persona-framing prompt to get the user started.
+  const handlePickPersona = useCallback(
+    (personaId: string, seedPrompt: string) => {
+      setPendingPersonaId((current) => (current === personaId ? null : personaId));
+      seedComposer(seedPrompt);
+    },
+    [seedComposer]
+  );
 
   const quickTags = [
     {
@@ -812,7 +838,11 @@ export function WelcomeView() {
           <InspirationGallery scenario={selectedScenario} onSeed={seedComposer} />
         </div>
         <div className="order-7">
-          <ExpertsGallery scenario={selectedScenario} onSeed={seedComposer} />
+          <ExpertsGallery
+            scenario={selectedScenario}
+            onPick={handlePickPersona}
+            selectedId={pendingPersonaId}
+          />
         </div>
       </div>
     </div>

@@ -10,8 +10,10 @@ import {
 
 interface ExpertsGalleryProps {
   scenario: ScenarioFilter;
-  /** Seeds the composer with the persona-framing prompt. */
-  onSeed: (prompt: string) => void;
+  /** Bind this persona to the (next) session and seed a persona-framing prompt. */
+  onPick: (personaId: string, seedPrompt: string) => void;
+  /** The currently selected persona id (highlighted), if any. */
+  selectedId?: string | null;
 }
 
 const ICONS: Record<string, LucideIcon> = {
@@ -32,7 +34,8 @@ const ICONS: Record<string, LucideIcon> = {
  */
 export const ExpertsGallery = memo(function ExpertsGallery({
   scenario,
-  onSeed,
+  onPick,
+  selectedId,
 }: ExpertsGalleryProps) {
   const { t } = useTranslation();
   const personas = useMemo(() => filterByScenario(EXPERT_PERSONAS, scenario), [scenario]);
@@ -50,12 +53,15 @@ export const ExpertsGallery = memo(function ExpertsGallery({
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {personas.map((persona) => {
           const Icon = ICONS[persona.icon] ?? GraduationCap;
+          const isSelected = persona.id === selectedId;
           return (
             <button
               key={persona.id}
               type="button"
-              onClick={() => onSeed(t(`welcome.experts.${persona.id}.prompt`))}
-              className="card px-4 py-3.5 text-left flex items-start gap-3 hover:bg-surface-hover hover:shadow-soft transition-colors"
+              onClick={() => onPick(persona.id, t(`welcome.experts.${persona.id}.prompt`))}
+              className={`card px-4 py-3.5 text-left flex items-start gap-3 hover:bg-surface-hover hover:shadow-soft transition-colors ${
+                isSelected ? 'ring-2 ring-accent bg-accent-muted/40' : ''
+              }`}
             >
               <span className="w-8 h-8 rounded-full flex items-center justify-center bg-accent-muted flex-shrink-0">
                 <Icon className="w-4 h-4 text-accent" />

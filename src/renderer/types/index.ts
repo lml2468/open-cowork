@@ -6,6 +6,8 @@ export interface Session {
   openaiThreadId?: string;
   /** Runtime signature the persisted codex thread was created under (resume-vs-fresh gate). */
   codexRuntimeSignature?: string;
+  /** Bound persona (expert) id; its system prompt is injected into the agent turn. */
+  personaId?: string;
   status: SessionStatus;
   cwd?: string;
   mountedPaths: MountedPath[];
@@ -191,6 +193,39 @@ export interface Skill {
 }
 
 export type SkillType = 'builtin' | 'mcp' | 'custom';
+
+// Persona (expert) types
+export interface Persona {
+  id: string;
+  name: string;
+  icon?: string;
+  description?: string;
+  /** Welcome scenario tags (e.g. 'daily' | 'coding' | 'design'); free-form here. */
+  scenarios?: string[];
+  /** Skill ids this persona recommends (soft one-click enable, no hard scoping). */
+  recommendedSkills?: string[];
+  /** MCP connector/server keys this persona recommends. */
+  recommendedConnectors?: string[];
+  /** Optional model preference (advisory in MVP; does not force-override the session model). */
+  model?: string;
+  /** The system prompt body (Markdown after frontmatter). */
+  systemPrompt: string;
+  builtin: boolean;
+  source: 'builtin' | 'user';
+}
+
+/** Input for creating/editing a user persona (id auto-slugged from name when absent). */
+export interface PersonaSaveInput {
+  id?: string;
+  name: string;
+  icon?: string;
+  description?: string;
+  scenarios?: string[];
+  recommendedSkills?: string[];
+  recommendedConnectors?: string[];
+  model?: string;
+  systemPrompt: string;
+}
 
 export type PluginComponentKind = 'skills' | 'commands' | 'agents' | 'hooks' | 'mcp';
 
@@ -389,7 +424,8 @@ export type ClientEvent =
   | { type: 'folder.select'; payload: Record<string, never> }
   | { type: 'workdir.get'; payload: Record<string, never> }
   | { type: 'workdir.set'; payload: { path: string; sessionId?: string } }
-  | { type: 'workdir.select'; payload: { sessionId?: string; currentPath?: string } };
+  | { type: 'workdir.select'; payload: { sessionId?: string; currentPath?: string } }
+  | { type: 'session.setPersona'; payload: { sessionId: string; personaId: string | null } };
 
 // Sandbox setup types (app startup)
 export type SandboxSetupPhase =

@@ -10,6 +10,7 @@ import type {
   SandboxSetupProgress,
   SandboxSyncStatus,
   SkillsStorageChangeEvent,
+  Persona,
 } from '../types';
 import { applySessionUpdate } from '../utils/session-update';
 
@@ -110,6 +111,9 @@ interface AppState {
   sessions: Session[];
   activeSessionId: string | null;
 
+  // Personas (experts) — builtin + user, loaded from main
+  personas: Persona[];
+
   // Per-session state (messages, partials, turns, traces, etc.)
   sessionStates: Record<string, SessionState>;
 
@@ -118,6 +122,7 @@ interface AppState {
   sidebarCollapsed: boolean;
   contextPanelCollapsed: boolean;
   showSettings: boolean;
+  showPersonaManager: boolean;
   settingsTab: string | null;
   activeView: ActiveView;
   showGlobalSearch: boolean;
@@ -161,6 +166,11 @@ interface AppState {
   removeSessions: (sessionIds: string[]) => void;
   setActiveSession: (sessionId: string | null) => void;
 
+  // Personas (experts)
+  setPersonas: (personas: Persona[]) => void;
+  loadPersonas: () => Promise<void>;
+  bindPersona: (sessionId: string, personaId: string | null) => void;
+
   addMessage: (sessionId: string, message: Message) => void;
   updateMessage: (sessionId: string, messageId: string, updates: Partial<Message>) => void;
   startExecutionClock: (sessionId: string, startAt: number) => void;
@@ -188,6 +198,7 @@ interface AppState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   setContextPanelCollapsed: (collapsed: boolean) => void;
   setShowSettings: (show: boolean) => void;
+  setShowPersonaManager: (show: boolean) => void;
   setSettingsTab: (tab: string | null) => void;
   setActiveView: (view: ActiveView) => void;
   setShowGlobalSearch: (show: boolean) => void;
@@ -265,11 +276,13 @@ export const useAppStore = create<AppState>((set) => ({
   // Initial state
   sessions: [],
   activeSessionId: null,
+  personas: [],
   sessionStates: {},
   isLoading: false,
   sidebarCollapsed: false,
   contextPanelCollapsed: false,
   showSettings: false,
+  showPersonaManager: false,
   settingsTab: null,
   activeView: 'home',
   showGlobalSearch: false,
@@ -335,6 +348,28 @@ export const useAppStore = create<AppState>((set) => ({
   // Selecting a session (or clearing it via "new task") always leaves any
   // full-width nav destination and returns to the chat/welcome view.
   setActiveSession: (sessionId) => set({ activeSessionId: sessionId, activeView: 'home' }),
+
+  // Persona actions
+  setPersonas: (personas) => set({ personas }),
+  loadPersonas: async () => {
+    if (typeof window === 'undefined' || !window.electronAPI?.personas) return;
+    try {
+      const personas = await window.electronAPI.personas.getAll();
+      set({ personas });
+    } catch (err) {
+      console.error('[store] Failed to load personas:', err);
+    }
+  },
+  bindPersona: (sessionId, personaId) => {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.send({ type: 'session.setPersona', payload: { sessionId, personaId } });
+    }
+    set((state) => ({
+      sessions: applySessionUpdate(state.sessions, sessionId, {
+        personaId: personaId ?? undefined,
+      }),
+    }));
+  },
 
   // Message actions
   addMessage: (sessionId, message) =>
@@ -589,6 +624,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   setContextPanelCollapsed: (collapsed) => set({ contextPanelCollapsed: collapsed }),
   setShowSettings: (show) => set({ showSettings: show }),
+  setShowPersonaManager: (show) => set({ showPersonaManager: show }),
   setSettingsTab: (tab) => set({ settingsTab: tab }),
   // Opening a nav destination closes Settings but preserves activeSessionId so
   // returning to chat is just setActiveView('home').
