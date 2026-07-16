@@ -16,7 +16,7 @@
 
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from './index';
-import type { Session, Message, TraceStep, Settings, AppConfig } from '../types';
+import type { Session, Message, TraceStep, Settings, AppConfig, Persona } from '../types';
 import type {
   GlobalNotice,
   SessionExecutionClock,
@@ -59,6 +59,20 @@ export function useActiveSessionTitle(): string | null {
   return useAppStore((s) =>
     s.activeSessionId
       ? (s.sessions.find((sess) => sess.id === s.activeSessionId)?.title ?? null)
+      : null
+  );
+}
+
+/** All loaded personas (builtin + user). */
+export function usePersonas(): Persona[] {
+  return useAppStore((s) => s.personas);
+}
+
+/** The active session's bound persona id (or null). */
+export function useActiveSessionPersonaId(): string | null {
+  return useAppStore((s) =>
+    s.activeSessionId
+      ? (s.sessions.find((sess) => sess.id === s.activeSessionId)?.personaId ?? null)
       : null
   );
 }

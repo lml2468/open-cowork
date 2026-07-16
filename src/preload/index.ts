@@ -6,6 +6,8 @@ import type {
   CreateSetPayload,
   ProviderPresets,
   Skill,
+  Persona,
+  PersonaSaveInput,
   ApiTestInput,
   ApiTestResult,
   PluginCatalogItemV2,
@@ -269,7 +271,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getPresets: (): Promise<McpPresetsMap> => ipcRenderer.invoke('mcp.getPresets'),
   },
 
-  // Skills methods
+  // Persona (expert) methods
+  personas: {
+    getAll: (): Promise<Persona[]> => ipcRenderer.invoke('personas.getAll'),
+    get: (id: string): Promise<Persona | null> => ipcRenderer.invoke('personas.get', id),
+    save: (input: PersonaSaveInput): Promise<Persona> => ipcRenderer.invoke('personas.save', input),
+    delete: (id: string): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('personas.delete', id),
+    openDir: (): Promise<{ path: string }> => ipcRenderer.invoke('personas.openDir'),
+  },
   skills: {
     getAll: (): Promise<Skill[]> => ipcRenderer.invoke('skills.getAll'),
     install: (skillPath: string): Promise<{ success: boolean; skill: Skill }> =>
@@ -579,6 +589,13 @@ declare global {
         getTools: () => Promise<McpTool[]>;
         getServerStatus: () => Promise<McpServerStatus[]>;
         getPresets: () => Promise<McpPresetsMap>;
+      };
+      personas: {
+        getAll: () => Promise<Persona[]>;
+        get: (id: string) => Promise<Persona | null>;
+        save: (input: PersonaSaveInput) => Promise<Persona>;
+        delete: (id: string) => Promise<{ success: boolean }>;
+        openDir: () => Promise<{ path: string }>;
       };
       skills: {
         getAll: () => Promise<Skill[]>;

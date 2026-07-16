@@ -63,6 +63,7 @@ import type {
   DiagnosticInput,
   ProviderModelInfo,
   PermissionRule,
+  PersonaSaveInput,
 } from '../renderer/types';
 import { remoteManager, type AgentExecutor } from './remote/remote-manager';
 import { remoteConfigStore } from './remote/remote-config-store';
@@ -2268,6 +2269,35 @@ ipcMain.handle('skills.getAll', async () => {
   }
 });
 
+// ── Personas (experts) ──
+function requirePersonaManager() {
+  const pm = sessionManager?.getPersonaManager();
+  if (!pm) throw new Error('Persona manager not initialized');
+  return pm;
+}
+
+ipcMain.handle('personas.getAll', async () => requirePersonaManager().loadAll());
+
+ipcMain.handle('personas.get', async (_event, id: string) => requirePersonaManager().get(id));
+
+ipcMain.handle('personas.save', async (_event, input: PersonaSaveInput) =>
+  requirePersonaManager().save(input)
+);
+
+ipcMain.handle('personas.delete', async (_event, id: string) => {
+  const pm = requirePersonaManager();
+  const persona = pm.get(id);
+  if (persona?.builtin) throw new Error('Builtin personas cannot be deleted');
+  return { success: pm.delete(id) };
+});
+
+ipcMain.handle('personas.openDir', async () => {
+  const dir = requirePersonaManager().getUserDir();
+  fs.mkdirSync(dir, { recursive: true });
+  await shell.openPath(dir);
+  return { path: dir };
+});
+
 ipcMain.handle('skills.install', async (_event, skillPath: string) => {
   try {
     if (!skillsManager) {
@@ -3240,6 +3270,9 @@ async function handleClientEvent(event: ClientEvent): Promise<unknown> {
 
     case 'session.delete':
       return sm.deleteSession(event.payload.sessionId);
+
+    case 'session.setPersona':
+      return sm.setSessionPersona(event.payload.sessionId, event.payload.personaId);
 
     case 'session.batchDelete':
       return sm.batchDeleteSessions(event.payload.sessionIds);

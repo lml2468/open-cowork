@@ -59,6 +59,7 @@ export interface SessionRow {
   claude_session_id: string | null;
   openai_thread_id: string | null;
   codex_runtime_signature: string | null;
+  persona_id: string | null;
   status: string;
   cwd: string | null;
   mounted_paths: string; // JSON string
@@ -244,6 +245,7 @@ function initializeSchema(database: Database.Database): void {
 
     ensureColumn(database, 'sessions', 'openai_thread_id', 'openai_thread_id TEXT');
     ensureColumn(database, 'sessions', 'codex_runtime_signature', 'codex_runtime_signature TEXT');
+    ensureColumn(database, 'sessions', 'persona_id', 'persona_id TEXT');
     ensureColumn(database, 'sessions', 'model', 'model TEXT');
 
     // Create messages table
@@ -425,8 +427,8 @@ export function initDatabase(): DatabaseInstance {
   // Prepare statements for better performance
   const insertSession = rawDb.prepare(`
     INSERT OR REPLACE INTO sessions
-    (id, title, claude_session_id, openai_thread_id, codex_runtime_signature, status, cwd, mounted_paths, allowed_tools, memory_enabled, model, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, title, claude_session_id, openai_thread_id, codex_runtime_signature, persona_id, status, cwd, mounted_paths, allowed_tools, memory_enabled, model, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // Note: Dynamic update queries are built in sessions.update() for flexibility
@@ -512,6 +514,7 @@ export function initDatabase(): DatabaseInstance {
           session.claude_session_id,
           session.openai_thread_id,
           session.codex_runtime_signature,
+          session.persona_id,
           session.status,
           session.cwd,
           session.mounted_paths,

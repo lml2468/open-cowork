@@ -36,6 +36,7 @@ import { SandboxSync } from '../sandbox/sandbox-sync';
 import { CoworkAgentRunner } from '../agent/agent-runner';
 import { configStore } from '../config/config-store';
 import { MCPManager } from '../mcp/mcp-manager';
+import { PersonaManager } from '../personas/persona-manager';
 import { mcpConfigStore } from '../mcp/mcp-config-store';
 import { PluginRuntimeService } from '../skills/plugin-runtime-service';
 import { AgentRuntimeExtensionManager } from '../extensions/agent-runtime-extension-manager';
@@ -109,6 +110,8 @@ export class SessionManager {
   private messageCache: Map<string, Message[]> = new Map();
   private static readonly MAX_CACHE_SIZE = 100;
   private readonly traceWriteQueue: TraceStepWriteQueue;
+  /** Shared persona (expert) store; also exposed for the personas.* IPC handlers. */
+  private readonly personaManager = new PersonaManager();
 
   constructor(
     db: DatabaseInstance,
@@ -174,6 +177,7 @@ export class SessionManager {
         ) => this.requestPermission(sessionId, toolUseId, toolName, input),
         persistCodexThread: (sessionId: string, threadId: string, runtimeSignature: string) =>
           this.persistCodexThread(sessionId, threadId, runtimeSignature),
+        getPersona: (personaId: string) => this.personaManager.get(personaId),
       },
       this.pathResolver,
       this.mcpManager,
@@ -372,6 +376,7 @@ export class SessionManager {
       claude_session_id: session.claudeSessionId || null,
       openai_thread_id: session.openaiThreadId || null,
       codex_runtime_signature: session.codexRuntimeSignature || null,
+      persona_id: session.personaId || null,
       status: session.status,
       cwd: session.cwd || null,
       mounted_paths: JSON.stringify(session.mountedPaths),
@@ -410,6 +415,7 @@ export class SessionManager {
       claudeSessionId: row.claude_session_id || undefined,
       openaiThreadId: row.openai_thread_id || undefined,
       codexRuntimeSignature: row.codex_runtime_signature || undefined,
+      personaId: row.persona_id || undefined,
       status: row.status as Session['status'],
       cwd: row.cwd || undefined,
       mountedPaths,
@@ -448,6 +454,7 @@ export class SessionManager {
         claudeSessionId: row.claude_session_id || undefined,
         openaiThreadId: row.openai_thread_id || undefined,
         codexRuntimeSignature: row.codex_runtime_signature || undefined,
+        personaId: row.persona_id || undefined,
         status: row.status as Session['status'],
         cwd: row.cwd || undefined,
         mountedPaths,
@@ -1126,6 +1133,25 @@ export class SessionManager {
       payload: { sessionId, updates: { title } },
     });
     return true;
+  }
+
+  /** Shared persona store, for the personas.* IPC handlers in index.ts. */
+  getPersonaManager(): PersonaManager {
+    return this.personaManager;
+  }
+
+  // Bind (or clear) the session's persona. The persona's system prompt is injected into the
+  // agent turn (see agent-runner); personaId is folded into the codex runtime signature there,
+  // so a change disposes the warm thread and re-seeds developerInstructions on the next turn.
+  setSessionPersona(sessionId: string, personaId: string | null): void {
+    this.db.sessions.update(sessionId, {
+      persona_id: personaId,
+      updated_at: Date.now(),
+    });
+    this.sendToRenderer({
+      type: 'session.update',
+      payload: { sessionId, updates: { personaId: personaId ?? undefined } },
+    });
   }
 
   // Update session's working directory

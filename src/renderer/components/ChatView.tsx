@@ -19,6 +19,7 @@ import { MessageCard } from './MessageCard';
 import { SubagentTracker } from './SubagentTracker';
 import { ContextUsageBar } from './ContextUsageBar';
 import { ModelPicker } from './composer/ModelPicker';
+import { PersonaSelector } from './composer/PersonaSelector';
 import { SkillPicker } from './composer/SkillPicker';
 import { ConnectorPicker } from './composer/ConnectorPicker';
 import { ModePicker } from './composer/ModePicker';
@@ -828,6 +829,7 @@ export function ChatView() {
               {/* Per-turn composer controls (G7–G9, G12) */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <ModelPicker />
+                <PersonaSelector />
                 <SkillPicker onSelectSkill={handleInsertSkill} />
                 <ConnectorPicker />
                 <ModePicker

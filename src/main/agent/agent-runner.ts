@@ -12,7 +12,14 @@
  *
  * Dependencies: session-manager, mcp-manager, config-store, skills-manager, codex-runtime
  */
-import type { Session, Message, TraceStep, ServerEvent, ContentBlock } from '../../renderer/types';
+import type {
+  Session,
+  Message,
+  TraceStep,
+  ServerEvent,
+  ContentBlock,
+  Persona,
+} from '../../renderer/types';
 import { v4 as uuidv4 } from 'uuid';
 import { decidePermission, rememberAlwaysAllow } from '../config/permission-rules-store';
 import { PathResolver } from '../sandbox/path-resolver';
@@ -94,6 +101,17 @@ function escapeXmlAttr(value: string): string {
 
 function escapeXmlText(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * Build the `<persona>` system-prompt section injected into the turn's developerInstructions
+ * for a bound persona. Returns null when there is no persona or it has no system prompt, so the
+ * caller's `.filter(Boolean)` drops it and behavior is unchanged (unbound fallback).
+ */
+export function buildPersonaInstructionSection(persona: Persona | null | undefined): string | null {
+  const body = persona?.systemPrompt?.trim();
+  if (!body) return null;
+  return `<persona name="${escapeXmlAttr(persona!.name)}">\n${body}\n</persona>`;
 }
 
 /**
@@ -421,6 +439,8 @@ interface AgentRunnerOptions {
    * rebuilding the `<conversation_history>` preamble.
    */
   persistCodexThread?: (sessionId: string, threadId: string, runtimeSignature: string) => void;
+  /** Resolve a bound persona by id (system prompt injected into developerInstructions). */
+  getPersona?: (personaId: string) => Persona | null;
 }
 
 /** Per-session codex bookkeeping (replaces the pi `CachedPiSession` cache). */
@@ -464,6 +484,7 @@ export class CoworkAgentRunner {
     threadId: string,
     runtimeSignature: string
   ) => void;
+  private getPersona?: (personaId: string) => Persona | null;
   private pathResolver: PathResolver;
   private mcpManager?: MCPManager;
   private _pluginRuntimeService?: PluginRuntimeService;
@@ -803,6 +824,7 @@ ${hints.join('\n')}
     this.saveMessage = options.saveMessage;
     this.requestPermission = options.requestPermission;
     this.persistCodexThread = options.persistCodexThread;
+    this.getPersona = options.getPersona;
     this.pathResolver = pathResolver;
     this.mcpManager = mcpManager;
     this._pluginRuntimeService = pluginRuntimeService;
@@ -1650,7 +1672,13 @@ ${hints.join('\n')}
       logCtx('[CoworkAgentRunner] Enable thinking mode:', enableThinking);
       const effort: string | undefined = enableThinking ? 'medium' : undefined;
 
-      // Runtime signature — a change (provider/model/base URL/key/cwd) invalidates the
+      // Bound persona (expert): its system prompt is injected into developerInstructions below,
+      // and its id is folded into the runtime signature so switching personas disposes the warm
+      // thread and re-seeds the system prompt on the next turn.
+      const persona =
+        session.personaId && this.getPersona ? this.getPersona(session.personaId) : null;
+
+      // Runtime signature — a change (provider/model/base URL/key/cwd/persona) invalidates the
       // warm codex thread so a fresh thread is started with the new settings.
       const sessionRuntimeSignature = JSON.stringify({
         provider,
@@ -1659,6 +1687,7 @@ ${hints.join('\n')}
         baseUrl: modelConfig.provider.base_url,
         hasKey: Object.keys(modelConfig.env).length > 0,
         effectiveCwd,
+        personaId: persona?.id ?? null,
         // Re-create the thread when the MCP server set changes so codex reconnects.
         mcpServers: Object.keys(mcpServersConfig).sort().join('|'),
       });
@@ -1969,6 +1998,10 @@ This is an isolated sandbox environment. Use ${VIRTUAL_WORKSPACE_PATH} as the ro
 - Memory: ${runtimeConfig.memoryEnabled ? 'enabled' : 'disabled'}
 </your_configuration>`;
 
+      // Bound persona's system prompt, injected as a role layer after the behavioral rules and
+      // before the config/workspace context. Empty/unbound → null → dropped by the `.filter`.
+      const personaSection = buildPersonaInstructionSection(persona);
+
       const coworkAppendPrompt = [
         'You are an Open Cowork assistant. Be concise, accurate, and tool-capable.',
         `CRITICAL BEHAVIORAL RULES:
@@ -1977,6 +2010,7 @@ This is an isolated sandbox environment. Use ${VIRTUAL_WORKSPACE_PATH} as the ro
 3. For relative time windows like "within two days" in browsing or research tasks, assume the most recent two relevant publication days unless the user explicitly defines another date range.
 4. For bracketed placeholders like [Agent], [Topic], etc., treat the word inside brackets as the literal search keyword unless the user says otherwise.
 5. When given a task, START DOING IT. Do not restate the task, do not list what you will do, do not ask for confirmation. Just execute.`,
+        personaSection,
         configSummaryPrompt,
         workspaceInfoPrompt,
         `<citation_requirements>
